@@ -1,0 +1,9 @@
+{
+	"compilerOptions": {
+		"target": "ES3",
+		"outDir": "js",
+		"watch": true,
+		"lib": ["DOM", "es2017"]
+	},
+	"include": [ "ts/*" ],
+}
