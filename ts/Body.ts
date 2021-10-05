@@ -4,7 +4,8 @@ class Body {
 	public v: Vec2; //The velocity of the body
 	public forces: Vec2[]; //The list of forces applied to the body
 
-	constructor(mass: Number, r: Vec2 = new Vec2()) {
+	constructor(mass: number, r: Vec2 = new Vec2()) {
+		this.mass = mass;
 		this.r = r;
 		this.v = new Vec2(0, 0);
 		this.forces = [];
@@ -15,12 +16,12 @@ class Body {
 		//Calculate the resultant of the forces and the acceleration
 		let Fr: Vec2 = new Vec2();
 		for (let i: number = 0; i < this.forces.length; ++i) {
-			Fr.add(this.forces[i]);
+			Fr = Fr.add(this.forces[i]);
 		}
 		let a = Fr.scale(1 / this.mass);
 		
 		//Add the acceleration to the the velocity and the velocity to the position
-		this.v.add(a.scale(dt));
-		this.r.add(this.v.scale(dt));
+		this.v = this.v.add(a.scale(dt));
+		this.r = this.r.add(this.v.scale(dt));
 	}
 }
