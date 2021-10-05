@@ -12,7 +12,7 @@ class Body {
 	}
 
 	//Advances the simulation after some time (dt IN SECONDS) has passed
-	step(dt: number) {
+	step(dt: number): void {
 		//Calculate the resultant of the forces and the acceleration
 		let Fr: Vec2 = new Vec2();
 		for (let i: number = 0; i < this.forces.length; ++i) {
