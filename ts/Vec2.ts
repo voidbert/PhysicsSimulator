@@ -25,6 +25,11 @@ class Vec2 {
 		return new Vec2(this.x * scale, this.y * scale);
 	}
 
+	//Given the vectors (a, b) and (c, d), this function will return (ac, bd)
+	scale2(scale: Vec2): Vec2 {
+		return new Vec2(this.x * scale.x, this.y * scale.y);
+	}
+
 	dotProduct(vec: Vec2): number {
 		return (this.x * vec.x) + (this.y * vec.y);
 	}
