@@ -60,10 +60,16 @@ document.addEventListener("wheel", function(e: WheelEvent) {
 
 //Update the canvas size in the camera when the window is resized (and set it for the first time
 //too).
-window.addEventListener("resize", function() {
-	cam.canvasSize = new Vec2(window.innerWidth, window.innerHeight);
+window.addEventListener("resize", function(e : UIEvent) {
+	cam.canvasSize = new Vec2(
+		window.innerWidth * window.devicePixelRatio,
+		window.innerHeight * window.devicePixelRatio
+	);
 });
-cam.canvasSize = new Vec2(window.innerWidth, window.innerHeight);
+cam.canvasSize = new Vec2(
+	window.innerWidth * window.devicePixelRatio,
+	window.innerHeight * window.devicePixelRatio
+);
 
 window.addEventListener("load", function() {
 	let renderer: Renderer =

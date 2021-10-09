@@ -12,11 +12,11 @@ class Renderer {
 		this.ctx = canvas.getContext("2d");
 		this.renderCallback = renderCallback;
 
-		canvas.width  = window.innerWidth;
-		canvas.height = window.innerHeight;
+		canvas.width  = window.innerWidth * window.devicePixelRatio;
+		canvas.height = window.innerHeight * window.devicePixelRatio;
 		window.addEventListener("resize", function() {
-			canvas.width  = window.innerWidth;
-			canvas.height = window.innerHeight;
+			canvas.width  = window.innerWidth * window.devicePixelRatio;
+			canvas.height = window.innerHeight * window.devicePixelRatio;
 		});
 	}
 
