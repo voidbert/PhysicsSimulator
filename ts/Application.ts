@@ -1,10 +1,16 @@
 let bodies: Body[] = [];
 
+let bodyGeometry: Vec2[] = [
+	new Vec2(32, 32),
+	new Vec2(64, 32),
+	new Vec2(64, 64),
+	new Vec2(32, 64)
+];
+
 let mousePos = new Vec2();
 
-function render(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): void {
-	ctx.fillStyle = "#FF0000";
-	ctx.fillRect(mousePos.x - 32, mousePos.y - 32, 64, 64);
+function render(renderer: Renderer): void {
+	renderer.renderPolygon(bodyGeometry, "#00FF00");
 }
 
 window.addEventListener("mousemove", function(e) {
