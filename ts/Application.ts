@@ -1,11 +1,15 @@
 let cam: Camera = new Camera(new Vec2(-2, -2), 32);
-let bodies: Body[] = [ new Body(1, new Vec2(1, 1)), new Body(1, new Vec2(3, 3)) ];
 
 let bodyGeometry: Vec2[] = [
-	new Vec2(-1, -1),
-	new Vec2( 1, -1),
-	new Vec2( 1,  1),
-	new Vec2(-1,  1)
+	new Vec2(-0.5, -0.5),
+	new Vec2( 0.5, -0.5),
+	new Vec2( 0.5,  0.5),
+	new Vec2(-0.5,  0.5)
+];
+
+let bodies: Body[] = [
+	new Body(1, bodyGeometry, new Vec2(1, 1)),
+	new Body(1, bodyGeometry, new Vec2(3, 3))
 ];
 
 let mousePos = new Vec2();
@@ -13,11 +17,9 @@ let mousePos = new Vec2();
 function render(renderer: Renderer): void {
 	//Camera.polygonToScreenPosition test
 	for (let i: number = 0; i < bodies.length; ++i) {
-		let vertices: Vec2[] = bodyGeometry.map(function(v): Vec2 {
-			return v.add(bodies[i].r);
-		});
-		vertices = cam.polygonToScreenPosition(vertices);
-		renderer.renderPolygon(vertices, "#00FF00");
+		renderer.renderPolygon(
+			cam.polygonToScreenPosition(bodies[i].transformGeometry()), "#00FF00"
+		);
 	}
 
 	//Camera.pointToWorldPosition test
