@@ -24,13 +24,12 @@ function render(renderer: Renderer): void {
 
 	//Camera.pointToWorldPosition test
 	let worldPosition: Vec2 = cam.pointToWorldPosition(mousePos);
-	renderer.ctx.font = "1rem sans-serif";
-	renderer.ctx.fillStyle = "#000000";
-	renderer.ctx.textBaseline = "top";
-	//As of now, there is no multi-line text renderer.
-	renderer.ctx.fillText("Camera position: " + cam.r.x + ", " + cam.r.y, 5, 5);
-	renderer.ctx.fillText("Mouse position: " + mousePos.x + ", " + mousePos.y, 5, 25);
-	renderer.ctx.fillText("World position: " + worldPosition.x + ", " + worldPosition.y, 5, 45);
+	renderer.renderText(
+		"Camera position: " + cam.r.x + ", " + cam.r.y + "\n" +
+		"Mouse position: " + mousePos.x + ", " + mousePos.y + "\n" +
+		"World position: " + worldPosition.x + ", " + worldPosition.y,
+		mousePos, 1.5, "#000000", "1.0rem serif"
+	);
 }
 
 window.addEventListener("mousemove", function(e) {

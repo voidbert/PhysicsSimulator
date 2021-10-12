@@ -43,6 +43,48 @@ class Renderer {
 		this.ctx.fill();
 	}
 
+	//Renders (single- or multi-line) text to the canvas using textBaseline = "top". If the color or
+	//the font is left unset, the rendering context's color and font font will be used. The font
+	//size must be provided in px or in rem.
+	renderText(text: string, position: Vec2, lineSpacing: number = 1.5,
+		color: string = "", font: string = "") {
+
+		if (color !== "") {
+			this.ctx.fillStyle = color;
+		}
+
+		if (font !== "") {
+			this.ctx.font = font;
+		}		
+		this.ctx.textBaseline = "top";
+
+		//Split the canvas font and find its size (px or rem). Convert from rem to px if needed.
+		let lineHeight: number = 0;
+		let fontSplit = this.ctx.font.split(" ");
+		for (let i: number = 0; i < fontSplit.length; ++i) {
+			if (fontSplit[i].endsWith("px")) {
+				lineHeight = parseFloat(fontSplit[i]);
+				break;
+			} else if (fontSplit[i].endsWith("rem")) {
+				lineHeight = parseFloat(fontSplit[i]) *
+					parseFloat(getComputedStyle(document.documentElement).fontSize);
+				break;
+			}
+		}
+		if (lineHeight == 0) {
+			//Unknown height. Write an error to the console and use the default font.
+			console.log("Unknown font size: using 10px sans-serif");
+			lineHeight = 10;
+			this.ctx.font = "10px sans-serif";
+		}
+
+		let lines: string[] = text.split("\n");
+		for (let i: number = 0; i < lines.length; ++i) {
+			this.ctx.fillText(lines[i], position.x, position.y);
+			position = position.add(new Vec2(0, lineHeight * lineSpacing));
+		}
+	}
+
 	//Starts the rendering loop.
 	renderLoop(): void {
 		//Weird trick to avoid stack overflows (requestAnimationFrame and wait until the frame is
