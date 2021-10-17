@@ -1,4 +1,5 @@
 let cam: Camera = new Camera(new Vec2(-2, -2), 32);
+let axes: AxisSystem = new AxisSystem(cam);
 
 let bodyGeometry: Vec2[] = [
 	new Vec2(-0.5, -0.5),
@@ -15,6 +16,8 @@ let bodies: Body[] = [
 let mousePos = new Vec2();
 
 function render(renderer: Renderer): void {
+	axes.drawAxes(renderer);
+
 	//Camera.polygonToScreenPosition test
 	for (let i: number = 0; i < bodies.length; ++i) {
 		renderer.renderPolygon(
@@ -49,6 +52,7 @@ window.addEventListener("keydown", function(e) {
 		movement = new Vec2(0, -1); //Inverted because the camera's position is in world coordinates
 	}
 	cam.r = cam.r.add(movement.scale(0.5));
+	axes.updateCaches();
 });
 
 //Zoom in and out by scrolling the mouse wheel
@@ -57,22 +61,23 @@ document.addEventListener("wheel", function(e: WheelEvent) {
 	if (cam.scale <= 10) {
 		cam.scale = 10;
 	}
+	axes.updateCaches();
 })
 
 //Update the canvas size in the camera when the window is resized (and set it for the first time
-//too).
-window.addEventListener("resize", function(e : UIEvent) {
+//too when the window loads).
+function resizeHandler() {
 	cam.canvasSize = new Vec2(
 		window.innerWidth * window.devicePixelRatio,
 		window.innerHeight * window.devicePixelRatio
 	);
-});
-cam.canvasSize = new Vec2(
-	window.innerWidth * window.devicePixelRatio,
-	window.innerHeight * window.devicePixelRatio
-);
+	axes.updateCaches();
+}
+window.addEventListener("resize", resizeHandler);
 
 window.addEventListener("load", function() {
+	resizeHandler();
+
 	let renderer: Renderer =
 		new Renderer(window, document.getElementById("canvas") as HTMLCanvasElement, render);
 	renderer.renderLoop();
