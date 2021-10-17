@@ -82,34 +82,41 @@ class Renderer {
 
 		if (font !== "") {
 			this.ctx.font = font;
-		}		
+		}
 		this.ctx.textBaseline = "top";
 
-		//Split the canvas font and find its size (px or rem). Convert from rem to px if needed.
-		let lineHeight: number = 0;
-		let fontSplit = this.ctx.font.split(" ");
-		for (let i: number = 0; i < fontSplit.length; ++i) {
-			if (fontSplit[i].endsWith("px")) {
-				lineHeight = parseFloat(fontSplit[i]);
-				break;
-			} else if (fontSplit[i].endsWith("rem")) {
-				lineHeight = parseFloat(fontSplit[i]) *
-					parseFloat(getComputedStyle(document.documentElement).fontSize);
-				break;
-			}
-		}
-		if (lineHeight == 0) {
-			//Unknown height. Write an error to the console and use the default font.
-			console.log("Unknown font size: using 10px sans-serif");
-			lineHeight = 10;
-			this.ctx.font = "10px sans-serif";
-		}
-
+		let lineHeight = this.fontHeight();
 		let lines: string[] = text.split("\n");
 		for (let i: number = 0; i < lines.length; ++i) {
 			this.ctx.fillText(lines[i], position.x, position.y);
 			position = position.add(new Vec2(0, lineHeight * lineSpacing));
 		}
+	}
+
+	//Measures the height of the canvas font (if it is in px or in rem). The canvas' font will be
+	//set to "10px sans-serif" if the provided font isn't in px or rem.
+	fontHeight() {
+		//Split the canvas font and find its size (px or rem). Convert from rem to px if needed.
+		let height: number = 0;
+		let fontSplit = this.ctx.font.split(" ");
+		for (let i: number = 0; i < fontSplit.length; ++i) {
+			if (fontSplit[i].endsWith("px")) {
+				height = parseFloat(fontSplit[i]);
+				break;
+			} else if (fontSplit[i].endsWith("rem")) {
+				height = parseFloat(fontSplit[i]) *
+					parseFloat(getComputedStyle(document.documentElement).fontSize);
+				break;
+			}
+		}
+		if (height === 0) {
+			//Unknown height. Write an error to the console and use the default font.
+			console.log("Unknown font size: using 10px sans-serif");
+			height = 10;
+			this.ctx.font = "10px sans-serif";
+		}
+
+		return height;
 	}
 
 	//Starts the rendering loop.

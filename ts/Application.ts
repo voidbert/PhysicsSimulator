@@ -1,5 +1,12 @@
 let cam: Camera = new Camera(new Vec2(-2, -2), 32);
-let axes: AxisSystem = new AxisSystem(cam);
+let axes: AxisSystem = new AxisSystem(
+	cam,
+	true, "#000000", 2,
+	true, "#00dddd", 1,
+	true, true, "1rem sans-serif",
+	"#ffffff",
+	false
+);
 
 let bodyGeometry: Vec2[] = [
 	new Vec2(-0.5, -0.5),
@@ -27,11 +34,12 @@ function render(renderer: Renderer): void {
 
 	//Camera.pointToWorldPosition test
 	let worldPosition: Vec2 = cam.pointToWorldPosition(mousePos);
+	renderer.ctx.textAlign = "left";
 	renderer.renderText(
 		"Camera position: " + cam.r.x + ", " + cam.r.y + "\n" +
 		"Mouse position: " + mousePos.x + ", " + mousePos.y + "\n" +
 		"World position: " + worldPosition.x + ", " + worldPosition.y,
-		mousePos, 1.5, "#000000", "1.0rem serif"
+		mousePos, 1.5, "#000000", "1.0rem sans-serif"
 	);
 }
 
