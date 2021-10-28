@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Lançamento de um projétil</title>
+
+		<script src="../js/Vec2.js"></script>
+		<script src="../js/TimeStepper.js"></script>
+		<script src="../js/Body.js"></script>
+		<script src="../js/Camera.js"></script>
+		<script src="../js/Renderer.js"></script>
+		<script src="../js/AxisSystem.js"></script>
+
+		<script src="../js/ProjectileThrow.js" defer></script>
+	</head>
+	<body style="background-color: black;">
+		<canvas id="canvas" style="position: fixed; top: 0px; left: 0px; width: 100%; height: 100%;">
+			<!--No <canvas> support warning-->
+			Este browser não suporta o elemento HTML &lt;canvas&gt;, necessário para o funcionamento
+			desta aplicação Web.
+		</canvas>
+
+		<!--Javascript turned off warning-->
+		<div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif;">
+			<noscript>
+				Por favor, ative o JavaScript.
+			</noscript>
+		</div>
+	</body>
+</html>

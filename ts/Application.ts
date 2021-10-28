@@ -1,3 +1,5 @@
+/*
+
 let cam: Camera = new Camera(new Vec2(-2, -2), 32);
 let axes: AxisSystem = new AxisSystem(
 	cam,
@@ -111,5 +113,7 @@ window.addEventListener("load", function() {
 			}
 		}
 	}, SimulationQuality.VeryLow);
-	setTimeout(() => { stepper.changeTimeout(1); }, 500);
+	//setTimeout(() => { stepper.changeTimeout(1); }, 500);
 });
+
+*/

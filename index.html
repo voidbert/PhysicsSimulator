@@ -2,27 +2,12 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>Simulador de Física</title>
-
-		<script src="js/TimeStepper.js"></script>
-		<script src="js/Body.js"></script>
-		<script src="js/Vec2.js"></script>
-		<script src="js/Camera.js"></script>
-		<script src="js/Renderer.js"></script>
-		<script src="js/AxisSystem.js"></script>
-
-		<script src="js/Application.js" defer></script>
+		<!--No main menu as of now. Redirect the use to the only simulation available-->
+		<meta http-equiv="refresh" content="0; url='./pages/ProjectileThrow.html'">
 	</head>
-	<body>
-		<canvas id="canvas" style="position: fixed; top: 0px; left: 0px; width: 100%; height: 100%;">
-			Este browser não suporta o elemento HTML &lt;canvas&gt;, necessário para o funcionamento
-			desta aplicação Web.
-		</canvas>
-		<div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif;">
-			<noscript>
-				Por favor, ative o JavaScript.
-			</noscript>
-		</div>
+	<body style="font: 1rem sans-serif">
+		<!--Old browser support-->
+		O redirecionamento não funcionou corretamente? Por favor,
+		<a href="./pages/ProjectileThrow.html">clique aqui</a>.
 	</body>
 </html>
