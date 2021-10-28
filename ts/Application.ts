@@ -17,7 +17,7 @@ let bodyGeometry: Vec2[] = [
 
 let bodies: Body[] = [
 	new Body(1, bodyGeometry, new Vec2(1, 1)),
-	new Body(1, bodyGeometry, new Vec2(3, 3))
+	//new Body(1, bodyGeometry, new Vec2(3, 3))
 ];
 
 let mousePos = new Vec2();
@@ -86,7 +86,20 @@ window.addEventListener("resize", resizeHandler);
 window.addEventListener("load", function() {
 	resizeHandler();
 
+	//Start rendering the scene
 	let renderer: Renderer =
 		new Renderer(window, document.getElementById("canvas") as HTMLCanvasElement, render);
 	renderer.renderLoop();
+
+	//Add gravity to all the bodies
+	for (let i: number = 0; i < bodies.length; ++i) {
+		bodies[i].forces = [ new Vec2(0, -bodies[i].mass * 9.8) ];
+	}
+	bodies[0].v = new Vec2(10, 10); //Launch the body - test
+
+	//Start running the simulation
+	let stepper: TimeStepper = new TimeStepper(function(dt) {
+		for (let i: number = 0; i < bodies.length; ++i)
+			bodies[i].step(dt);
+	}, 10);
 });

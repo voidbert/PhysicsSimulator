@@ -25,8 +25,10 @@ class Body {
 		return geometry.map((v) => { return this.transformVertex(v); });
 	}
 
-	//Advances the simulation after some time (dt IN SECONDS) has passed
+	//Advances the simulation after some time (dt in milliseconds) has passed
 	step(dt: number): void {
+		dt *= 0.001; //ms -> s
+
 		//Calculate the resultant of the forces and the acceleration
 		let Fr: Vec2 = new Vec2();
 		for (let i: number = 0; i < this.forces.length; ++i) {
