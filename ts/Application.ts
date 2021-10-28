@@ -16,9 +16,9 @@ let bodyGeometry: Vec2[] = [
 ];
 
 let bodies: Body[] = [
-	new Body(1, bodyGeometry, new Vec2(1, 1)),
-	//new Body(1, bodyGeometry, new Vec2(3, 3))
+	new Body(1, bodyGeometry, new Vec2(0, 0)),
 ];
+let stepper: TimeStepper;
 
 let mousePos = new Vec2();
 
@@ -98,8 +98,18 @@ window.addEventListener("load", function() {
 	bodies[0].v = new Vec2(10, 10); //Launch the body - test
 
 	//Start running the simulation
-	let stepper: TimeStepper = new TimeStepper(function(dt) {
-		for (let i: number = 0; i < bodies.length; ++i)
+	let reachedZeroOnce = false;
+	stepper = new TimeStepper(function(dt) {
+		for (let i: number = 0; i < bodies.length; ++i) {
 			bodies[i].step(dt);
-	}, 10);
+			if (!reachedZeroOnce && bodies[i].r.y <= 0) {
+				//Pause the simulation. Don't pause the simulation again if the developer unpauses
+				//the simulation through the dev tools (reachedZeroOnce). 
+				alert(bodies[i].r.x);
+				stepper.stopPause();
+				reachedZeroOnce = true;
+			}
+		}
+	}, SimulationQuality.VeryLow);
+	setTimeout(() => { stepper.changeTimeout(1); }, 500);
 });
