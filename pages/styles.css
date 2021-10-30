@@ -1,0 +1,67 @@
+body {
+	background-color: black;
+	color: white;
+
+	font-family: sans-serif;
+}
+
+#canvas {
+	position: fixed;
+	top: 0px; left: 0px;
+	width: 100%; height: 100%;
+}
+
+#ui-div {
+	position: fixed;
+	top: 0px; left: 0px;
+	width: 100%; height: 100%;
+
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+}
+
+#no-script-div {
+	display: flex;
+	flex-grow: 1000;
+	justify-content: center;
+}
+
+#simulation-interaction-div {
+	height: 100%;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: space-between;
+	flex-basis: content;
+
+	background-color: white;
+	color: black;
+}
+
+#simulation-interaction-options {
+	flex-grow: 1000;
+
+	padding: 1rem;
+}
+
+#launch-button-container {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	padding-bottom: 1rem;
+}
+
+.simulation-interaction-section {
+	padding-bottom: 0.5rem;
+	border-bottom: 1px solid black;
+}
+
+.simulation-interaction-section-title {
+	margin-bottom: 0.5rem;
+
+	font-weight: bold;
+}

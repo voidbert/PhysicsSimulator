@@ -4,7 +4,8 @@ const MAX_GRID_SIZE: number = 64;
 class AxisSystem {
 	camera: Camera;
 
-	drawArrows: boolean;
+	showAxes: boolean;
+	showArrows: boolean;
 	axisColor: string;
 	axisWidth: number;
 
@@ -30,21 +31,24 @@ class AxisSystem {
 
 	//margin -> the number of pixels from the end of the axis (positive and negative) and the
 	//borders of the camera's rendering area.
-	//drawArrows -> whether or not to draw arrows showing the positive orientation
+	//showArrows -> whether or not to draw arrows showing the positive orientation
 	//onlyPositive -> if true, only the positive parts of the axes.
 	//
 	//labelFont MUST BE in px or in rem.
 	//
 	//The constructor doesn't generate the axes' caches. Do that when you are sure the camera has a
 	//set canvasSize
-	constructor(camera: Camera, drawArrows: boolean = false, axisColor: string = "#000000",
-		axisWidth = 2, showGrid: boolean = false, gridColor: string = "#cccccc",
-		gridWidth: number = 1, showAxisLabels: boolean = false, showUnitLabels: boolean = false,
-		labelFont: string, pageBackgroundColor: string = "#ffffff", onlyPositive: boolean = true) {
+	constructor(camera: Camera,
+		showAxes: boolean = true, showArrows: boolean = true, axisColor: string = "#000000",
+		axisWidth = 2,
+		showGrid: boolean = false, gridColor: string = "#cccccc", gridWidth: number = 1,
+		showAxisLabels: boolean = false, showUnitLabels: boolean = false, labelFont: string,
+		pageBackgroundColor: string = "#ffffff", onlyPositive: boolean = true) {
 
 		this.camera = camera;
 
-		this.drawArrows = drawArrows;
+		this.showAxes = showAxes;
+		this.showArrows = showArrows;
 		this.axisColor = axisColor;
 		this.axisWidth = axisWidth;
 
@@ -228,30 +232,30 @@ class AxisSystem {
 	//camera is updated (position, scale, canvas size, ...) or when either showGrid, showArrows or
 	//onlyPositive is changed.
 	updateCaches() {
-		this.cachedAxesBaseLines = this.generateAxesBaseLines();
-
-		if (this.drawArrows)
-			this.cachedArrowPolygons = this.generateArrows();
-
 		this.cachedAxesScale = this.generateAxesScale();
-		this.cachedAxesScaleLines =
-			this.generateAxesScaleLines(this.cachedAxesScale.gridScreenSize);
-		
-		if (this.showGrid)
-			this.cachedGridLines = this.generateGridLines(this.cachedAxesScale.gridScreenSize);
+		this.cachedArrowPolygons = this.generateArrows();
+		this.cachedAxesBaseLines = this.generateAxesBaseLines();
+		this.cachedAxesScaleLines = this.generateAxesScaleLines(this.cachedAxesScale.gridScreenSize);
+		this.cachedGridLines = this.generateGridLines(this.cachedAxesScale.gridScreenSize);
 	}
 
 	drawAxes(renderer: Renderer) {
 		//Draw the grid
-		renderer.renderLines(this.cachedGridLines, this.gridColor, this.gridWidth);
+		if (this.showGrid) {
+			renderer.renderLines(this.cachedGridLines, this.gridColor, this.gridWidth);
+		}
 
-		//Draw the axis lines (base and unit separator)
-		renderer.renderLines(this.cachedAxesBaseLines, this.axisColor, this.axisWidth);
-		renderer.renderLines(this.cachedAxesScaleLines, this.axisColor, this.axisWidth);
+		//Draw the axis lines (base and unit separators)
+		if (this.showAxes) {
+			renderer.renderLines(this.cachedAxesBaseLines, this.axisColor, this.axisWidth);
+			renderer.renderLines(this.cachedAxesScaleLines, this.axisColor, this.axisWidth);
+		}
 
 		//Draw the arrows
-		for (let i: number = 0; i < this.cachedArrowPolygons.length; ++i) {
-			renderer.renderPolygon(this.cachedArrowPolygons[i], this.axisColor);
+		if (this.showArrows) {
+			for (let i: number = 0; i < this.cachedArrowPolygons.length; ++i) {
+				renderer.renderPolygon(this.cachedArrowPolygons[i], this.axisColor);
+			}
 		}
 
 		let origin: Vec2 = this.camera.pointToScreenPosition(new Vec2(0, 0));
