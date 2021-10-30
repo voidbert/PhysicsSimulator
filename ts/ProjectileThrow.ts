@@ -25,7 +25,18 @@ function updateRenderingSurfaceSize(camera: Camera, axes: AxisSystem) {
 	lastRenderingSurfaceSize = renderingSurfaceSize;
 }
 
-function settingsUpdateCallback(axes: AxisSystem) {
+//Transforms the select quality in the <select> element into a simulation quality time.
+function selectedSimulationQuality(): SimulationQuality {
+	return {
+		"vl": SimulationQuality.VeryLow,
+		"l": SimulationQuality.Low,
+		"m": SimulationQuality.Medium,
+		"h": SimulationQuality.High,
+		"vh": SimulationQuality.VeryHigh
+	}[(document.getElementById("simulation-quality") as HTMLSelectElement).value];
+}
+
+function settingsUpdateCallback(axes: AxisSystem, stepper: TimeStepper) {
 	let showAxes = (document.getElementById("axes") as HTMLInputElement).checked;
 		axes.showAxes = showAxes;
 		axes.showArrows = showAxes; //Show both arrows and the axis or none at all
@@ -48,6 +59,11 @@ function settingsUpdateCallback(axes: AxisSystem) {
 
 		axes.showGrid = (document.getElementById("grid") as HTMLInputElement).checked;
 		axes.updateCaches();
+		
+		//Update the simulation quality if the projectile was already launched
+		if (stepper) {
+			stepper.changeTimeout(selectedSimulationQuality());
+		}
 }
 
 window.addEventListener("load", () => {
@@ -66,7 +82,6 @@ window.addEventListener("load", () => {
 
 	const BODY_MASS = 1;
 	let projectile: Body = new Body(BODY_MASS, bodyGeometry, new Vec2(0, 0));
-	projectile.v = new Vec2(10, 10);
 	projectile.forces = [ new Vec2(0, -9.8 * BODY_MASS) ] //Gravity
 
 	//When the user changes the settings, update the world.
@@ -74,18 +89,19 @@ window.addEventListener("load", () => {
 	let settingsElements: HTMLElement[] = [
 		document.getElementById("axes"),
 		document.getElementById("axes-labels"),
-		document.getElementById("grid")
+		document.getElementById("grid"),
+		document.getElementById("simulation-quality")
 	];
 	//When an element is changed, call settingsUpdateCallback
 	for (let i: number = 0; i < settingsElements.length; ++i) {
 		settingsElements[i].addEventListener("change", () => {
-			settingsUpdateCallback(axes);
+			settingsUpdateCallback(axes, stepper);
 		});
 	}
 
 	//Set the surface size and use the correct settings when the simulation starts.
 	updateRenderingSurfaceSize(camera, axes);
-	settingsUpdateCallback(axes);
+	settingsUpdateCallback(axes, stepper);
 
 	//Start rendering
 	let renderer: Renderer = new Renderer(window,
@@ -98,9 +114,17 @@ window.addEventListener("load", () => {
 	});
 	renderer.renderLoop();
 
-	//Start the physics simulation
-	stepper = new TimeStepper((dt: number) => {
-		projectile.step(dt);
-	}, SimulationQuality.VeryHigh);
+	//Start the physics simulation when the launch button is pressed
+	document.getElementById("launch-button").addEventListener("click", () => {
+		//Reset the body's position and velocity, hardcoded as of now
+		if (stepper)
+			stepper.stopPause();
 
+		projectile.r = new Vec2(0, 0);
+		projectile.v = new Vec2(10, 10);
+
+		stepper = new TimeStepper((dt: number) => {
+			projectile.step(dt);
+		}, selectedSimulationQuality());
+	});
 });

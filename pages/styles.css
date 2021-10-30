@@ -44,7 +44,8 @@ body {
 #simulation-interaction-options {
 	flex-grow: 1000;
 
-	padding: 1rem;
+	padding-left: 1rem;
+	padding-right: 1rem;
 }
 
 #launch-button-container {
@@ -56,7 +57,8 @@ body {
 }
 
 .simulation-interaction-section {
-	padding-bottom: 0.5rem;
+	padding-top: 1rem;
+	padding-bottom: 1rem;
 	border-bottom: 1px solid black;
 }
 
@@ -64,4 +66,8 @@ body {
 	margin-bottom: 0.5rem;
 
 	font-weight: bold;
+}
+
+select {
+	width: 100%;
 }
