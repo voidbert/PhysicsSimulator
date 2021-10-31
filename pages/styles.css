@@ -71,3 +71,27 @@ body {
 select {
 	width: 100%;
 }
+
+#height-input-container {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+}
+
+#height-input {
+	width: 7ch;
+	margin-right: 0.5rem;
+}
+
+#invalid-height {
+	display: none;
+
+	text-align: center;
+
+	margin-top: 0.5rem;
+	border: 1px solid red;
+
+	color: red;
+	font-weight: bold;
+}

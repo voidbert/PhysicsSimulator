@@ -42,7 +42,7 @@ window.addEventListener("load", () => {
 	let stepper: TimeStepper; //Simulation time control
 
 	//Simulation settings
-	let settings = ProjectileThrowSettings.getFromPage();
+	let settings = new ProjectileThrowSettings();
 
 	const BODY_MASS = 1;
 	let projectile: Body = new Body(BODY_MASS, bodyGeometry, new Vec2(0, 0));
@@ -61,16 +61,27 @@ window.addEventListener("load", () => {
 	//When an element is changed, call settingsUpdateCallback
 	for (let i: number = 0; i < settingsElements.length; ++i) {
 		settingsElements[i].addEventListener("change", () => {
-			settings = ProjectileThrowSettings.getFromPage();
-			settings.updatePage(axes, stepper);
+			settings = ProjectileThrowSettings.getFromPage(settings);
+			settings.updatePage(projectile, axes, stepper);
+		});
+	}
 
-			console.log(settings.heightReference); //TODO - remove DEBUG code
+	//The same as before but with the oninput event, so that the user doesn't need to unfocus a text
+	//input for the value to update
+	settingsElements = [
+		document.getElementById("height-input")
+	];
+	for (let i: number = 0; i < settingsElements.length; ++i) {
+		settingsElements[i].addEventListener("input", () => {
+			settings = ProjectileThrowSettings.getFromPage(settings);
+			settings.updatePage(projectile, axes, stepper);
 		});
 	}
 
 	//Set the surface size and use the correct settings when the simulation starts.
 	updateRenderingSurfaceSize(camera, axes);
-	settings.updatePage(axes, stepper);
+	settings = ProjectileThrowSettings.getFromPage(settings);
+	settings.updatePage(projectile, axes, stepper);
 
 	//Start rendering
 	let renderer: Renderer = new Renderer(window,
@@ -90,9 +101,9 @@ window.addEventListener("load", () => {
 			stepper.stopPause();
 
 		if (settings.heightReference === HeightReference.BodyCM)
-			projectile.r = new Vec2(0, 0);
+			projectile.r = new Vec2(0, settings.height);
 		else
-			projectile.r = new Vec2(0, bodyApothem);
+			projectile.r = new Vec2(0, settings.height + bodyApothem);
 		projectile.v = new Vec2(10, 10);
 
 		stepper = new TimeStepper((dt: number) => {
