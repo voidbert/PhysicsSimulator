@@ -14,6 +14,7 @@ class TimeStepper {
 	private timeout: number;
 	private interval: number; //The result of setInterval
 	private lastTime: number; //When setIntervalCallback was last called
+	public _isRunning: boolean; //Prevents clearing an already-cleared interval.
 
 	//The function that gets called in every setInterval. dt is in milliseconds.
 	public callbackFunction: (dt: number) => any;
@@ -22,8 +23,13 @@ class TimeStepper {
 		this.callbackFunction = callbackFunction;
 
 		this.timeout = timeout;
+		this._isRunning = true;
 		this.lastTime = Date.now();
 		this.interval = setInterval(() => { this.setIntervalCallback(); }, timeout);
+	}
+
+	public get isRunning(): boolean {
+		return this._isRunning;
 	}
 
 	//Changes the time between simulation steps
@@ -31,19 +37,27 @@ class TimeStepper {
 		this.timeout = timeout;
 
 		//Stop the current setInterval loop and start another one
-		clearInterval(this.interval);
-		this.interval = setInterval(() => { this.setIntervalCallback(); }, timeout);
+		if (this.isRunning) {
+			clearInterval(this.interval);
+			this.interval = setInterval(() => { this.setIntervalCallback(); }, timeout);
+		}
 	}
 
 	//Resumes the simulation after stopPause()
 	public resume() {
-		this.lastTime = Date.now();
-		this.interval = setInterval(() => { this.setIntervalCallback(); }, this.timeout);
+		if (!this.isRunning) {
+			this.lastTime = Date.now();
+			this._isRunning = true;
+			this.interval = setInterval(() => { this.setIntervalCallback(); }, this.timeout);
+		}
 	}
 
 	//Stops / pauses the simulation.
 	public stopPause() {
-		clearInterval(this.interval);
+		if (this._isRunning) {
+			clearInterval(this.interval);
+			this._isRunning = false;
+		}	
 	}
 
 	private setIntervalCallback() {

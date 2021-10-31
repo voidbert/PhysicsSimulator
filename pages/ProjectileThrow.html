@@ -12,6 +12,7 @@
 		<script src="../js/Renderer.js"></script>
 		<script src="../js/AxisSystem.js"></script>
 
+		<script src="../js/ProjectileThrowSettings.js" defer></script>
 		<script src="../js/ProjectileThrow.js" defer></script>
 
 		<link rel="stylesheet" type="text/css" href="styles.css">
@@ -35,15 +36,15 @@
 					<div class="simulation-interaction-section">
 						<div class="simulation-interaction-section-title">Visual</div>
 						<div>
-							<input type="checkbox" id="axes" name="axes" checked></input>
+							<input type="checkbox" id="axes" name="axes" value="axes" checked></input>
 							<label for="axes">Eixos</label>
 						</div>
 						<div>
-							<input type="checkbox" id="axes-labels" name="axes-labels" checked></input>
-							<label for="axes-labes">Marcações nos eixos</label>
+							<input type="checkbox" id="axes-labels" name="axes-labels" value="axes-labels" checked></input>
+							<label for="axes-labels">Marcações nos eixos</label>
 						</div>
 						<div>
-							<input type="checkbox" id="grid" name="grid"></input>
+							<input type="checkbox" id="grid" name="grid" value="grid"></input>
 							<label for="grid">Grelha</label>
 						</div>
 					</div>
@@ -57,6 +58,18 @@
 							<option value="h">Alta</option>
 							<option value="vh" selected="selected">Muito alta</option>
 						</select>
+					</div>
+
+					<div class="simulation-interaction-section">
+						<div class="simulation-interaction-section-title">Referência de altura</div>
+						<div>
+							<input type="radio" id="body-base" name="body-collision" value="body-base" checked></input>
+							<label for="body-base">Base do corpo</label>
+						</div>
+						<div>
+							<input type="radio" id="body-cm" name="body-collision" value="body-cm"></input>
+							<label for="body-cm">C.M. do corpo</label>
+						</div>
 					</div>
 				</div>
 				<div id="launch-button-container">

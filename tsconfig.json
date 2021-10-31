@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"target": "ES3",
+		"target": "ES5",
 		"outDir": "js",
 		"watch": true,
 		"lib": ["DOM", "es2017"]

@@ -1,5 +1,7 @@
+const bodyApothem = 0.5;
 const bodyGeometry = [
-	new Vec2(-0.5, -0.5), new Vec2(0.5, -0.5), new Vec2(0.5, 0.5), new Vec2(-0.5, 0.5)
+	new Vec2(-bodyApothem, -bodyApothem), new Vec2(bodyApothem, -bodyApothem),
+	new Vec2(bodyApothem, bodyApothem), new Vec2(-bodyApothem, bodyApothem)
 ];
 
 //Get the size of the area on the screen that can be rendered on (canvas minus sidebar);
@@ -25,47 +27,6 @@ function updateRenderingSurfaceSize(camera: Camera, axes: AxisSystem) {
 	lastRenderingSurfaceSize = renderingSurfaceSize;
 }
 
-//Transforms the select quality in the <select> element into a simulation quality time.
-function selectedSimulationQuality(): SimulationQuality {
-	return {
-		"vl": SimulationQuality.VeryLow,
-		"l": SimulationQuality.Low,
-		"m": SimulationQuality.Medium,
-		"h": SimulationQuality.High,
-		"vh": SimulationQuality.VeryHigh
-	}[(document.getElementById("simulation-quality") as HTMLSelectElement).value];
-}
-
-function settingsUpdateCallback(axes: AxisSystem, stepper: TimeStepper) {
-	let showAxes = (document.getElementById("axes") as HTMLInputElement).checked;
-		axes.showAxes = showAxes;
-		axes.showArrows = showAxes; //Show both arrows and the axis or none at all
-
-		if (showAxes) {
-			//Allow the user to toggle the axes' labels if the axes are visible
-			(document.getElementById("axes-labels") as HTMLInputElement).disabled = false;
-		} else {
-			//Don't allow the user to toggle the axes' labels if the axes aren't visible
-			let axesLabels: HTMLInputElement =
-				document.getElementById("axes-labels") as HTMLInputElement;
-
-			axesLabels.checked = false;
-			axesLabels.disabled = true;
-		}
-		
-		let showLabels = (document.getElementById("axes-labels") as HTMLInputElement).checked;
-		axes.showUnitLabels = showLabels;
-		axes.showAxisLabels = showLabels;
-
-		axes.showGrid = (document.getElementById("grid") as HTMLInputElement).checked;
-		axes.updateCaches();
-		
-		//Update the simulation quality if the projectile was already launched
-		if (stepper) {
-			stepper.changeTimeout(selectedSimulationQuality());
-		}
-}
-
 window.addEventListener("load", () => {
 	
 	//Camera and display
@@ -80,6 +41,9 @@ window.addEventListener("load", () => {
 	//Physics
 	let stepper: TimeStepper; //Simulation time control
 
+	//Simulation settings
+	let settings = ProjectileThrowSettings.getFromPage();
+
 	const BODY_MASS = 1;
 	let projectile: Body = new Body(BODY_MASS, bodyGeometry, new Vec2(0, 0));
 	projectile.forces = [ new Vec2(0, -9.8 * BODY_MASS) ] //Gravity
@@ -90,18 +54,23 @@ window.addEventListener("load", () => {
 		document.getElementById("axes"),
 		document.getElementById("axes-labels"),
 		document.getElementById("grid"),
-		document.getElementById("simulation-quality")
+		document.getElementById("simulation-quality"),
+		document.getElementById("body-base"),
+		document.getElementById("body-cm"),
 	];
 	//When an element is changed, call settingsUpdateCallback
 	for (let i: number = 0; i < settingsElements.length; ++i) {
 		settingsElements[i].addEventListener("change", () => {
-			settingsUpdateCallback(axes, stepper);
+			settings = ProjectileThrowSettings.getFromPage();
+			settings.updatePage(axes, stepper);
+
+			console.log(settings.heightReference); //TODO - remove DEBUG code
 		});
 	}
 
 	//Set the surface size and use the correct settings when the simulation starts.
 	updateRenderingSurfaceSize(camera, axes);
-	settingsUpdateCallback(axes, stepper);
+	settings.updatePage(axes, stepper);
 
 	//Start rendering
 	let renderer: Renderer = new Renderer(window,
@@ -120,11 +89,28 @@ window.addEventListener("load", () => {
 		if (stepper)
 			stepper.stopPause();
 
-		projectile.r = new Vec2(0, 0);
+		if (settings.heightReference === HeightReference.BodyCM)
+			projectile.r = new Vec2(0, 0);
+		else
+			projectile.r = new Vec2(0, bodyApothem);
 		projectile.v = new Vec2(10, 10);
 
 		stepper = new TimeStepper((dt: number) => {
 			projectile.step(dt);
-		}, selectedSimulationQuality());
+
+			//Stop the body when it reaches the ground
+			if (settings.heightReference === HeightReference.BodyCM) {
+				//Stop the body when its center of mass reaches the ground
+				if (projectile.r.y <= 0) {
+					stepper.stopPause();
+				}
+			} else {
+				//Stop the body when its base reaches the ground (center of mass reaches 1 body
+				//apothem above 0)
+				if (projectile.r.y <= bodyApothem) {
+					stepper.stopPause();
+				}
+			}
+		}, settings.simulationQuality);
 	});
 });
