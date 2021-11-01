@@ -36,8 +36,7 @@ window.addEventListener("load", () => {
 
 	function enterChoosingVelocityMode() {
 		//Make sure the body the body is in its start position
-		if (settings.updatePage(projectile, axes, stepper, trajectory))
-			stepper = undefined;
+		settings.updatePage(projectile, axes, stepper, trajectory);
 		//Store the previous velocity in case the user cancels the action 
 		velocityBeforeChoosing = settings.launchVelocity;
 		//Enter mode
@@ -52,8 +51,7 @@ window.addEventListener("load", () => {
 		document.getElementById("choose-velocity-instructions").style.removeProperty("display");
 		//Update page settings
 		settings = ProjectileThrowSettings.getFromPage(settings);
-		if (settings.updatePage(projectile, axes, stepper, trajectory))
-			stepper = undefined;
+		settings.updatePage(projectile, axes, stepper, trajectory);
 	}
 
 	//Camera and display
@@ -69,39 +67,16 @@ window.addEventListener("load", () => {
 	let stepper: TimeStepper; //Simulation time control
 	let trajectory: ProjectileTrajectory = new ProjectileTrajectory();
 
-	//Simulation settings
-	let settings = new ProjectileThrowSettings();
-
 	const BODY_MASS = 1;
 	let projectile: Body = new Body(BODY_MASS, bodyGeometry, new Vec2(0, 0));
 	projectile.forces = [ new Vec2(0, -9.8 * BODY_MASS) ] //Gravity
 
-	//When the user changes the settings, update the world.
-	//The list of elements that, when changed, require the simulation to be updated.
-	let settingsElements: string[] = [
-		"axes", "axes-labels", "grid", "trajectory", "simulation-quality", "body-base", "body-cm"
-	];
-	//When an element is changed, call settingsUpdateCallback
-	for (let i: number = 0; i < settingsElements.length; ++i) {
-		document.getElementById(settingsElements[i]).addEventListener("change", () => {
-			settings = ProjectileThrowSettings.getFromPage(settings);
-			if (settings.updatePage(projectile, axes, stepper, trajectory))
-				stepper = undefined;
-		});
-	}
+	//Simulation settings
+	let settings = new ProjectileThrowSettings();
 
-	//The same as before but with the oninput event, so that the user doesn't need to unfocus a text
-	//input for the value to update
-	settingsElements = [
-		"height-input", "vx-input", "vy-input"
-	];
-	for (let i: number = 0; i < settingsElements.length; ++i) {
-		document.getElementById(settingsElements[i]).addEventListener("input", () => {
-			settings = ProjectileThrowSettings.getFromPage(settings);
-			if (settings.updatePage(projectile, axes, stepper, trajectory))
-				stepper = undefined;
-		});
-	}
+	let updateStepper = settings.addEvents(projectile, axes, stepper, trajectory, settings, (s) => {
+		settings = s;
+	});
 
 	//Keep track of the mouse position for the program to be able to know what velocity the user is
 	//choosing
@@ -124,8 +99,7 @@ window.addEventListener("load", () => {
 	//Set the surface size and use the correct settings when the simulation starts.
 	updateRenderingSurfaceSize(camera, axes);
 	settings = ProjectileThrowSettings.getFromPage(settings);
-	if (settings.updatePage(projectile, axes, stepper, trajectory))
-		stepper = undefined;
+	settings.updatePage(projectile, axes, stepper, trajectory);
 
 	//Start rendering
 	let renderer: Renderer = new Renderer(window,
@@ -182,36 +156,17 @@ window.addEventListener("load", () => {
 	document.getElementById("reset-button").addEventListener("click", () => {
 		if (stepper)
 			stepper.stopPause();
-		//Reset the stepper (so that the pause button won't be able to start the simulation)
-		stepper = undefined;
-		//Update the settings on the page and the pause button
-		if (settings.updatePage(projectile, axes, stepper, trajectory))
-			stepper = undefined;
-		document.getElementById("pause-button").textContent = "Pausa";
-	});
+		updateStepper(stepper);
 
-	//Pause the simulation if asked to. If the simulation is paused, start where left of.
-	document.getElementById("pause-button").addEventListener("click", () => {
-		if (stepper && stepper.isRunning) {
-			stepper.stopPause();
-			document.getElementById("pause-button").textContent = "Continuar";
-		} else if (stepper && !stepper.isRunning) {
-			//Don't continue the simulation if the body has already reached the ground
-			if (!ProjectileTrajectory.bodyReachedGround(projectile, settings)) {
-				stepper.resume();
-				document.getElementById("pause-button").textContent = "Pausa";
-			}
-		}
+		//Update the settings on the page
+		settings.updatePage(projectile, axes, stepper, trajectory);
 	});
 
 	//Start the physics simulation when the launch button is pressed
 	document.getElementById("launch-button").addEventListener("click", () => {
-		//Reset the body's position and velocity and the text in the pause / play button
+		//Reset the body's position and velocity
 		if (stepper)
 			stepper.stopPause();
-		if (settings.updatePage(projectile, axes, stepper, trajectory))
-			stepper = undefined;
-		document.getElementById("pause-button").textContent = "Pausa";
 
 		stepper = new TimeStepper((dt: number) => {
 			projectile.step(dt);
@@ -220,5 +175,6 @@ window.addEventListener("load", () => {
 				stepper.stopPause();
 			}
 		}, settings.simulationQuality);
+		updateStepper(stepper);
 	});
 });

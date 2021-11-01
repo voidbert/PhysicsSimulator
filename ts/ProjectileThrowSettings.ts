@@ -101,10 +101,9 @@ class ProjectileThrowSettings {
 		return settings;
 	}
 
-	//Updates the simulation and the page (some choices may have to be disabled). If true is
-	//returned, stepper must be set to undefined.
+	//Updates the simulation and the page (some choices may have to be disabled)
 	updatePage(projectile: Body, axes: AxisSystem, stepper: TimeStepper,
-		trajectory: ProjectileTrajectory): boolean {
+		trajectory: ProjectileTrajectory): void {
 
 		axes.showAxes = this._showAxes;
 		axes.showAxisLabels = this._showAxesLabels;
@@ -164,12 +163,46 @@ class ProjectileThrowSettings {
 			bodyCopy.forces = projectile.forces;
 
 			trajectory.points = new ProjectileTrajectory(bodyCopy, this).points;
-
-			//Because the body's position and velocity were changed, make the pause button have the
-			//"pause" text instead of continue
-			document.getElementById("pause-button").textContent = "Pausa";
-			return true; //Reset the stepper
 		}
-		return false; //Don't reset the stepper
+	}
+
+	//Adds events to the UI elements in the page. So, when something is inputted, the page is
+	//updated. setSettings is a function that when called, sets settings to the provided value. The
+	//returned function must be called whenever the stepper is changed. 
+	addEvents(projectile: Body, axes: AxisSystem, stepper: TimeStepper,
+		trajectory: ProjectileTrajectory, settings: ProjectileThrowSettings,
+		setSettings: (s: ProjectileThrowSettings) => any):
+		(stp: TimeStepper) => any {
+
+		//The list of elements that, when changed, require the simulation to be updated.
+		let settingsElements: string[] = [
+			"axes", "axes-labels", "grid", "trajectory", "simulation-quality", "body-base",
+			"body-cm"
+		];
+		//When an element is changed, call settingsUpdateCallback
+		for (let i: number = 0; i < settingsElements.length; ++i) {
+			document.getElementById(settingsElements[i]).addEventListener("change", () => {
+				settings = ProjectileThrowSettings.getFromPage(settings);
+				setSettings(settings);
+				settings.updatePage(projectile, axes, stepper, trajectory);
+			});
+		}
+
+		//The same as before but with the oninput event, so that the user doesn't need to unfocus a
+		//text input for the value to update
+		settingsElements = [
+			"height-input", "vx-input", "vy-input"
+		];
+		for (let i: number = 0; i < settingsElements.length; ++i) {
+			document.getElementById(settingsElements[i]).addEventListener("input", () => {
+				settings = ProjectileThrowSettings.getFromPage(settings);
+				setSettings(settings);
+				settings.updatePage(projectile, axes, stepper, trajectory);
+			});
+		}
+
+		return (stp: TimeStepper) => {
+			stepper = stp;
+		}
 	}
 }
