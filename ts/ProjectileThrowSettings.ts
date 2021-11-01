@@ -6,6 +6,7 @@ class ProjectileThrowSettings {
 	private _showAxes: boolean;
 	private _showAxesLabels: boolean;
 	private _showGrid: boolean;
+	private _showTrajectory: boolean;
 
 	private _simulationQuality: SimulationQuality;
 
@@ -21,6 +22,7 @@ class ProjectileThrowSettings {
 		this._showAxes = true;
 		this._showAxesLabels = true;
 		this._showGrid = false;
+		this._showTrajectory = true;
 		this._simulationQuality = SimulationQuality.VeryHigh;
 		this._heightReference = HeightReference.BodyBase;
 		this._height = 0;
@@ -32,6 +34,7 @@ class ProjectileThrowSettings {
 	public get showAxes() { return this._showAxes; }
 	public get showAxesLabels() { return this._showAxesLabels; }
 	public get showGrid() { return this._showGrid; }
+	public get showTrajectory() { return this._showTrajectory; }
 	public get simulationQuality() { return this._simulationQuality; }
 	public get heightReference() { return this._heightReference; }
 	public get height() { return this._height; }
@@ -53,6 +56,9 @@ class ProjectileThrowSettings {
 		}
 
 		settings._showGrid = (document.getElementById("grid") as HTMLInputElement).checked;
+
+		settings._showTrajectory =
+			(document.getElementById("trajectory") as HTMLInputElement).checked;
 
 		settings._simulationQuality = {
 			"vl": SimulationQuality.VeryLow,
@@ -95,8 +101,11 @@ class ProjectileThrowSettings {
 		return settings;
 	}
 
-	//Updates the simulation and the page (some choices may have to be disabled).
-	updatePage(projectile: Body, axes: AxisSystem, stepper: TimeStepper): void {
+	//Updates the simulation and the page (some choices may have to be disabled). If true is
+	//returned, stepper must be set to undefined.
+	updatePage(projectile: Body, axes: AxisSystem, stepper: TimeStepper,
+		trajectory: ProjectileTrajectory): boolean {
+
 		axes.showAxes = this._showAxes;
 		axes.showAxisLabels = this._showAxesLabels;
 		axes.showUnitLabels = this._showAxesLabels;
@@ -146,5 +155,21 @@ class ProjectileThrowSettings {
 		} else {
 			document.getElementById("invalid-velocity").style.display = "flex";
 		}
+
+		//If the change was applied to a non-moving body, recalculate the trajectory
+		if ((stepper && !stepper.isRunning) || !stepper) {
+			//Copy the body first
+			let bodyCopy = new Body(projectile.mass, projectile.geometry, projectile.r);
+			bodyCopy.v = projectile.v;
+			bodyCopy.forces = projectile.forces;
+
+			trajectory.points = new ProjectileTrajectory(bodyCopy, this).points;
+
+			//Because the body's position and velocity were changed, make the pause button have the
+			//"pause" text instead of continue
+			document.getElementById("pause-button").textContent = "Pausa";
+			return true; //Reset the stepper
+		}
+		return false; //Don't reset the stepper
 	}
 }

@@ -27,24 +27,6 @@ function updateRenderingSurfaceSize(camera: Camera, axes: AxisSystem) {
 	lastRenderingSurfaceSize = renderingSurfaceSize;
 }
 
-//Checks if the body has reached the ground
-function bodyReachedTheGround(projectile: Body, settings: ProjectileThrowSettings): boolean {
-	//Stop the body when it reaches the ground
-	if (settings.heightReference === HeightReference.BodyCM) {
-		//Stop the body when its center of mass reaches the ground
-		if (projectile.r.y <= 0) {
-			return true;
-		}
-	} else {
-		//Stop the body when its base reaches the ground (center of mass reaches 1 body
-		//apothem above 0)
-		if (projectile.r.y <= bodyApothem) {
-			return true;
-		}
-	}
-	return false;
-}
-
 window.addEventListener("load", () => {
 	//State (choosing velocity or not choosing)
 	let choosingVelocity: boolean = false;
@@ -54,7 +36,8 @@ window.addEventListener("load", () => {
 
 	function enterChoosingVelocityMode() {
 		//Make sure the body the body is in its start position
-		settings.updatePage(projectile, axes, stepper);
+		if (settings.updatePage(projectile, axes, stepper, trajectory))
+			stepper = undefined;
 		//Store the previous velocity in case the user cancels the action 
 		velocityBeforeChoosing = settings.launchVelocity;
 		//Enter mode
@@ -69,7 +52,8 @@ window.addEventListener("load", () => {
 		document.getElementById("choose-velocity-instructions").style.removeProperty("display");
 		//Update page settings
 		settings = ProjectileThrowSettings.getFromPage(settings);
-		settings.updatePage(projectile, axes, stepper);
+		if (settings.updatePage(projectile, axes, stepper, trajectory))
+			stepper = undefined;
 	}
 
 	//Camera and display
@@ -83,6 +67,7 @@ window.addEventListener("load", () => {
 
 	//Physics
 	let stepper: TimeStepper; //Simulation time control
+	let trajectory: ProjectileTrajectory = new ProjectileTrajectory();
 
 	//Simulation settings
 	let settings = new ProjectileThrowSettings();
@@ -94,13 +79,14 @@ window.addEventListener("load", () => {
 	//When the user changes the settings, update the world.
 	//The list of elements that, when changed, require the simulation to be updated.
 	let settingsElements: string[] = [
-		"axes", "axes-labels", "grid", "simulation-quality", "body-base", "body-cm"
+		"axes", "axes-labels", "grid", "trajectory", "simulation-quality", "body-base", "body-cm"
 	];
 	//When an element is changed, call settingsUpdateCallback
 	for (let i: number = 0; i < settingsElements.length; ++i) {
 		document.getElementById(settingsElements[i]).addEventListener("change", () => {
 			settings = ProjectileThrowSettings.getFromPage(settings);
-			settings.updatePage(projectile, axes, stepper);
+			if (settings.updatePage(projectile, axes, stepper, trajectory))
+				stepper = undefined;
 		});
 	}
 
@@ -112,7 +98,8 @@ window.addEventListener("load", () => {
 	for (let i: number = 0; i < settingsElements.length; ++i) {
 		document.getElementById(settingsElements[i]).addEventListener("input", () => {
 			settings = ProjectileThrowSettings.getFromPage(settings);
-			settings.updatePage(projectile, axes, stepper);
+			if (settings.updatePage(projectile, axes, stepper, trajectory))
+				stepper = undefined;
 		});
 	}
 
@@ -137,7 +124,8 @@ window.addEventListener("load", () => {
 	//Set the surface size and use the correct settings when the simulation starts.
 	updateRenderingSurfaceSize(camera, axes);
 	settings = ProjectileThrowSettings.getFromPage(settings);
-	settings.updatePage(projectile, axes, stepper);
+	if (settings.updatePage(projectile, axes, stepper, trajectory))
+		stepper = undefined;
 
 	//Start rendering
 	let renderer: Renderer = new Renderer(window,
@@ -154,6 +142,11 @@ window.addEventListener("load", () => {
 				camera.pointToScreenPosition(projectile.transformVertex(new Vec2())),
 				mousePosition
 			], "#00ff00", 2);
+		}
+
+		//Draw the trajectory if turned on
+		if (settings.showTrajectory && trajectory) {
+			renderer.renderLines(camera.polygonToScreenPosition(trajectory.points), "white", 2);
 		}
 	});
 	renderer.renderLoop();
@@ -192,7 +185,8 @@ window.addEventListener("load", () => {
 		//Reset the stepper (so that the pause button won't be able to start the simulation)
 		stepper = undefined;
 		//Update the settings on the page and the pause button
-		settings.updatePage(projectile, axes, stepper);
+		if (settings.updatePage(projectile, axes, stepper, trajectory))
+			stepper = undefined;
 		document.getElementById("pause-button").textContent = "Pausa";
 	});
 
@@ -203,7 +197,7 @@ window.addEventListener("load", () => {
 			document.getElementById("pause-button").textContent = "Continuar";
 		} else if (stepper && !stepper.isRunning) {
 			//Don't continue the simulation if the body has already reached the ground
-			if (!bodyReachedTheGround(projectile, settings)) {
+			if (!ProjectileTrajectory.bodyReachedGround(projectile, settings)) {
 				stepper.resume();
 				document.getElementById("pause-button").textContent = "Pausa";
 			}
@@ -215,13 +209,14 @@ window.addEventListener("load", () => {
 		//Reset the body's position and velocity and the text in the pause / play button
 		if (stepper)
 			stepper.stopPause();
-		settings.updatePage(projectile, axes, stepper);
+		if (settings.updatePage(projectile, axes, stepper, trajectory))
+			stepper = undefined;
 		document.getElementById("pause-button").textContent = "Pausa";
 
 		stepper = new TimeStepper((dt: number) => {
 			projectile.step(dt);
 
-			if (bodyReachedTheGround(projectile, settings)) {
+			if (ProjectileTrajectory.bodyReachedGround(projectile, settings)) {
 				stepper.stopPause();
 			}
 		}, settings.simulationQuality);
