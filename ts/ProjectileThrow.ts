@@ -28,7 +28,32 @@ function updateRenderingSurfaceSize(camera: Camera, axes: AxisSystem) {
 }
 
 window.addEventListener("load", () => {
+	//State (choosing velocity or not choosing)
+	let choosingVelocity: boolean = false;
+	//Keep track of the velocity before the user starting choosing another velocity in case they
+	//want to cancel their action.
+	let velocityBeforeChoosing: Vec2 = new Vec2();
+
+	function enterChoosingVelocityMode() {
+		//Make sure the body the body is in its start position
+		settings.updatePage(projectile, axes, stepper);
+		//Store the previous velocity in case the user cancels the action 
+		velocityBeforeChoosing = settings.launchVelocity;
+		//Enter mode
+		choosingVelocity = true;
+		//Show instructions
+		document.getElementById("choose-velocity-instructions").style.display = "block";
+	}
 	
+	function exitChoosingVelocityMode() {
+		choosingVelocity = false; //Exit mode
+		//Hide the velocity choosing instructions
+		document.getElementById("choose-velocity-instructions").style.removeProperty("display");
+		//Update page settings
+		settings = ProjectileThrowSettings.getFromPage(settings);
+		settings.updatePage(projectile, axes, stepper);
+	}
+
 	//Camera and display
 	let camera: Camera = new Camera(new Vec2(-1.5, -1.5), 32);
 	let axes: AxisSystem = new AxisSystem(camera,
@@ -73,6 +98,24 @@ window.addEventListener("load", () => {
 		});
 	}
 
+	//Keep track of the mouse position for the program to be able to know what velocity the user is
+	//choosing
+	let mousePosition: Vec2 = new Vec2(0, 0);
+	window.addEventListener("mousemove", (e: MouseEvent) => {
+		mousePosition = new Vec2(e.clientX, e.clientY);
+
+		//If the user is choosing the velocity, update the velocity inputs
+		if (choosingVelocity) {
+			let v: Vec2 =
+				camera.pointToWorldPosition(mousePosition)
+				.subtract(projectile.transformVertex(new Vec2(0, 0)))
+				.scale(3);
+		
+			(document.getElementById("vx-input") as HTMLInputElement).value = v.x.toString();
+			(document.getElementById("vy-input") as HTMLInputElement).value = v.y.toString();
+		}
+	});
+
 	//Set the surface size and use the correct settings when the simulation starts.
 	updateRenderingSurfaceSize(camera, axes);
 	settings = ProjectileThrowSettings.getFromPage(settings);
@@ -86,8 +129,43 @@ window.addEventListener("load", () => {
 		axes.drawAxes(renderer);
 		renderer.renderPolygon(
 			camera.polygonToScreenPosition(projectile.transformGeometry()), "red");
+
+		//Draw the velocity vector if the user is choosing it interactively
+		if (choosingVelocity) {
+			renderer.renderLines([
+				camera.pointToScreenPosition(projectile.transformVertex(new Vec2())),
+				mousePosition
+			], "#00ff00", 2);
+		}
 	});
 	renderer.renderLoop();
+
+	//When ESC is pressed, exit velocity selection mode
+	window.addEventListener("keydown", (e: KeyboardEvent) => {
+		if (e.key === "Escape") {
+			//Update the velocity input boxes to have the values before the action was cancelled
+			(document.getElementById("vx-input") as HTMLInputElement).value =
+				velocityBeforeChoosing.x.toString();
+			(document.getElementById("vy-input") as HTMLInputElement).value =
+				velocityBeforeChoosing.y.toString();
+
+			exitChoosingVelocityMode();
+		}
+	});
+
+	//Enter velocity choosing mode when the user clicks on the button
+	document.getElementById("choose-screen-velocity").addEventListener("click", () => {
+		//Only select a velocity if the body isn't moving
+		if ((stepper && !stepper.isRunning) || !stepper) {
+			enterChoosingVelocityMode();
+		}
+	});
+
+	//If the user clicks on top of the canvas while choosing the body's velocity, stop choosing the
+	//velocity
+	document.getElementById("no-script-div").addEventListener("click", () => {
+		exitChoosingVelocityMode();
+	});
 
 	//Start the physics simulation when the launch button is pressed
 	document.getElementById("launch-button").addEventListener("click", () => {

@@ -26,6 +26,11 @@
 
 		<div id="ui-div"> <!--Where HTML UI elements are-->
 			<div id="no-script-div">
+				<div id="choose-velocity-instructions">
+					Clique para escolher a velocidade<br/>
+					Carregue em <span class="bold">ESC</span> para sair deste modo
+				</div>
+
 				<noscript>
 					Por favor, ative o JavaScript.
 				</noscript>
@@ -82,18 +87,19 @@
 						<div class="invalid-input" id="invalid-height">Altura inválida</div>
 
 						<div id="velocity-container">
-							<div>Velocidade inicial:</div>
+							<div>Velocidade inicial (m s <span class="superscript">-1</span>):</div>
 							<div id="velocity-input-container">
 								<input id="vx-input" type="text" value="7"></input>
 								ê<span class="subscript">x</span> +
 
 								<input id="vy-input" type="text" value="7"></input>
 								ê<span class="subscript">y</span>
-								(m s <span class="superscript">-1</span>)
 							</div>
 						</div>
 						<div class="invalid-input" id="invalid-velocity">Velocidade inválida</div>
-
+						<div id="choose-screen-velocity-container">
+							<button id="choose-screen-velocity">Escolher velocidade no mundo</button>
+						</div>
 					</div>
 				</div>
 				<div id="launch-button-container">

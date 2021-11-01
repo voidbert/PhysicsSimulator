@@ -23,9 +23,22 @@ body {
 }
 
 #no-script-div {
+	position: relative;
 	display: flex;
+	height: 100%;
 	flex-grow: 1000;
 	justify-content: center;
+	align-items: center;
+}
+
+#choose-velocity-instructions {
+	display: none;
+	position: absolute;
+	left: 50%;
+	top: 1rem;
+	transform: translateX(-50%);
+
+	text-align: center;
 }
 
 #simulation-interaction-div {
@@ -37,6 +50,8 @@ body {
 	justify-content: space-between;
 	flex-basis: content;
 
+	overflow-x: hidden;
+	overflow-y: auto;
 	background-color: white;
 	color: black;
 }
@@ -44,6 +59,7 @@ body {
 #simulation-interaction-options {
 	flex-grow: 1000;
 
+	padding-top: 1rem;
 	padding-left: 1rem;
 	padding-right: 1rem;
 }
@@ -57,8 +73,8 @@ body {
 }
 
 .simulation-interaction-section {
-	padding-top: 1rem;
 	padding-bottom: 1rem;
+	margin-bottom: 1rem;
 	border-bottom: 1px solid black;
 }
 
@@ -109,6 +125,11 @@ select {
 	width: 7ch;
 }
 
+#choose-screen-velocity-container {
+	margin-top: 0.5rem;
+	text-align: center;
+}
+
 .subscript {
 	vertical-align: sub;
 	font-size: smaller;
@@ -116,4 +137,8 @@ select {
 .superscript {
 	vertical-align: super;
 	font-size: smaller;
+}
+
+.bold {
+	font-weight: bold;
 }
