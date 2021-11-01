@@ -14,7 +14,7 @@ class TimeStepper {
 	private timeout: number;
 	private interval: number; //The result of setInterval
 	private lastTime: number; //When setIntervalCallback was last called
-	public _isRunning: boolean; //Prevents clearing an already-cleared interval.
+	private _isRunning: boolean; //Prevents clearing an already-cleared interval.
 
 	//The function that gets called in every setInterval. dt is in milliseconds.
 	public callbackFunction: (dt: number) => any;

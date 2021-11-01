@@ -27,6 +27,24 @@ function updateRenderingSurfaceSize(camera: Camera, axes: AxisSystem) {
 	lastRenderingSurfaceSize = renderingSurfaceSize;
 }
 
+//Checks if the body has reached the ground
+function bodyReachedTheGround(projectile: Body, settings: ProjectileThrowSettings): boolean {
+	//Stop the body when it reaches the ground
+	if (settings.heightReference === HeightReference.BodyCM) {
+		//Stop the body when its center of mass reaches the ground
+		if (projectile.r.y <= 0) {
+			return true;
+		}
+	} else {
+		//Stop the body when its base reaches the ground (center of mass reaches 1 body
+		//apothem above 0)
+		if (projectile.r.y <= bodyApothem) {
+			return true;
+		}
+	}
+	return false;
+}
+
 window.addEventListener("load", () => {
 	//State (choosing velocity or not choosing)
 	let choosingVelocity: boolean = false;
@@ -167,33 +185,44 @@ window.addEventListener("load", () => {
 		exitChoosingVelocityMode();
 	});
 
-	//Start the physics simulation when the launch button is pressed
-	document.getElementById("launch-button").addEventListener("click", () => {
-		//Reset the body's position and velocity, hardcoded as of now
+	//Reset the position and velocity of the body when asked to
+	document.getElementById("reset-button").addEventListener("click", () => {
 		if (stepper)
 			stepper.stopPause();
+		//Reset the stepper (so that the pause button won't be able to start the simulation)
+		stepper = undefined;
+		//Update the settings on the page and the pause button
+		settings.updatePage(projectile, axes, stepper);
+		document.getElementById("pause-button").textContent = "Pausa";
+	});
 
-		if (settings.heightReference === HeightReference.BodyCM)
-			projectile.r = new Vec2(0, settings.height);
-		else
-			projectile.r = new Vec2(0, settings.height + bodyApothem);
-		projectile.v = settings.launchVelocity;
+	//Pause the simulation if asked to. If the simulation is paused, start where left of.
+	document.getElementById("pause-button").addEventListener("click", () => {
+		if (stepper && stepper.isRunning) {
+			stepper.stopPause();
+			document.getElementById("pause-button").textContent = "Continuar";
+		} else if (stepper && !stepper.isRunning) {
+			//Don't continue the simulation if the body has already reached the ground
+			if (!bodyReachedTheGround(projectile, settings)) {
+				stepper.resume();
+				document.getElementById("pause-button").textContent = "Pausa";
+			}
+		}
+	});
+
+	//Start the physics simulation when the launch button is pressed
+	document.getElementById("launch-button").addEventListener("click", () => {
+		//Reset the body's position and velocity and the text in the pause / play button
+		if (stepper)
+			stepper.stopPause();
+		settings.updatePage(projectile, axes, stepper);
+		document.getElementById("pause-button").textContent = "Pausa";
 
 		stepper = new TimeStepper((dt: number) => {
 			projectile.step(dt);
 
-			//Stop the body when it reaches the ground
-			if (settings.heightReference === HeightReference.BodyCM) {
-				//Stop the body when its center of mass reaches the ground
-				if (projectile.r.y <= 0) {
-					stepper.stopPause();
-				}
-			} else {
-				//Stop the body when its base reaches the ground (center of mass reaches 1 body
-				//apothem above 0)
-				if (projectile.r.y <= bodyApothem) {
-					stepper.stopPause();
-				}
+			if (bodyReachedTheGround(projectile, settings)) {
+				stepper.stopPause();
 			}
 		}, settings.simulationQuality);
 	});
