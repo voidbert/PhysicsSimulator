@@ -14,6 +14,9 @@ class ProjectileThrowSettings {
 	private _height: number;
 	private _validHeight: boolean;
 
+	private _launchVelocity: Vec2;
+	private _validVelocity: boolean;
+
 	constructor() {
 		this._showAxes = true;
 		this._showAxesLabels = true;
@@ -22,6 +25,8 @@ class ProjectileThrowSettings {
 		this._heightReference = HeightReference.BodyBase;
 		this._height = 0;
 		this._validHeight = true;
+		this._launchVelocity = new Vec2(0, 0);
+		this._validVelocity = true;
 	}
 
 	public get showAxes() { return this._showAxes; }
@@ -30,6 +35,8 @@ class ProjectileThrowSettings {
 	public get simulationQuality() { return this._simulationQuality; }
 	public get heightReference() { return this._heightReference; }
 	public get height() { return this._height; }
+	public get launchVelocity() { return this._launchVelocity; }
+	public get validVelocity() { return this._validVelocity; }
 
 	//Gets the settings set by the user in the sidebar.
 	static getFromPage(previousSettings: ProjectileThrowSettings): ProjectileThrowSettings {
@@ -61,7 +68,7 @@ class ProjectileThrowSettings {
 			settings._heightReference = HeightReference.BodyCM;
 		}
 
-		//Get the height and see if it's a valid integer
+		//Get the height and see if it's a valid number
 		let stringHeight = (document.getElementById("height-input") as HTMLInputElement).value;
 		let numberHeight = Number(stringHeight);
 		if (isNaN(numberHeight) || (!isNaN(numberHeight) && numberHeight < 0)) {
@@ -70,6 +77,19 @@ class ProjectileThrowSettings {
 		} else {
 			settings._height = numberHeight;
 			settings._validHeight = true;
+		}
+
+		//Get the x and y velocities and check if they're valid numbers
+		let stringVx = (document.getElementById("vx-input") as HTMLInputElement).value;
+		let stringVy = (document.getElementById("vy-input") as HTMLInputElement).value;
+		let numberVx = Number(stringVx);
+		let numberVy = Number(stringVy);
+		if (isNaN(numberVx) || isNaN(numberVy)) {
+			settings._launchVelocity = previousSettings._launchVelocity;
+			settings._validVelocity = false;
+		} else {
+			settings._launchVelocity = new Vec2(numberVx, numberVy);
+			settings._validVelocity = true;
 		}
 
 		return settings;
@@ -99,7 +119,7 @@ class ProjectileThrowSettings {
 		}
 
 		//If the height is valid, update the position of the body it not mid-simulation. Show a
-		//warning if the height is invalid
+		//warning if the height is invalid.
 		if (this._validHeight) {
 			if ((stepper && !stepper.isRunning) || !stepper) {
 				if (this._heightReference === HeightReference.BodyCM)
@@ -112,6 +132,19 @@ class ProjectileThrowSettings {
 			document.getElementById("invalid-height").style.removeProperty("display");
 		} else {
 			document.getElementById("invalid-height").style.display = "flex";
+		}
+
+		//If the velocity is valid, update the velocity of the body it not mid-simulation. Show a
+		//warning if the velocity is invalid.
+		if (this._validVelocity) {
+			if ((stepper && !stepper.isRunning) || !stepper) {
+				projectile.v = this._launchVelocity;
+			}
+
+			//Hide any invalid velocity warning
+			document.getElementById("invalid-velocity").style.removeProperty("display");
+		} else {
+			document.getElementById("invalid-velocity").style.display = "flex";
 		}
 	}
 }

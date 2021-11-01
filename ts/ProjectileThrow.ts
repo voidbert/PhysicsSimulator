@@ -50,17 +50,12 @@ window.addEventListener("load", () => {
 
 	//When the user changes the settings, update the world.
 	//The list of elements that, when changed, require the simulation to be updated.
-	let settingsElements: HTMLElement[] = [
-		document.getElementById("axes"),
-		document.getElementById("axes-labels"),
-		document.getElementById("grid"),
-		document.getElementById("simulation-quality"),
-		document.getElementById("body-base"),
-		document.getElementById("body-cm"),
+	let settingsElements: string[] = [
+		"axes", "axes-labels", "grid", "simulation-quality", "body-base", "body-cm"
 	];
 	//When an element is changed, call settingsUpdateCallback
 	for (let i: number = 0; i < settingsElements.length; ++i) {
-		settingsElements[i].addEventListener("change", () => {
+		document.getElementById(settingsElements[i]).addEventListener("change", () => {
 			settings = ProjectileThrowSettings.getFromPage(settings);
 			settings.updatePage(projectile, axes, stepper);
 		});
@@ -69,10 +64,10 @@ window.addEventListener("load", () => {
 	//The same as before but with the oninput event, so that the user doesn't need to unfocus a text
 	//input for the value to update
 	settingsElements = [
-		document.getElementById("height-input")
+		"height-input", "vx-input", "vy-input"
 	];
 	for (let i: number = 0; i < settingsElements.length; ++i) {
-		settingsElements[i].addEventListener("input", () => {
+		document.getElementById(settingsElements[i]).addEventListener("input", () => {
 			settings = ProjectileThrowSettings.getFromPage(settings);
 			settings.updatePage(projectile, axes, stepper);
 		});
@@ -104,7 +99,7 @@ window.addEventListener("load", () => {
 			projectile.r = new Vec2(0, settings.height);
 		else
 			projectile.r = new Vec2(0, settings.height + bodyApothem);
-		projectile.v = new Vec2(10, 10);
+		projectile.v = settings.launchVelocity;
 
 		stepper = new TimeStepper((dt: number) => {
 			projectile.step(dt);

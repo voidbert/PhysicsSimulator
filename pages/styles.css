@@ -84,7 +84,7 @@ select {
 	margin-right: 0.5rem;
 }
 
-#invalid-height {
+.invalid-input {
 	display: none;
 
 	text-align: center;
@@ -94,4 +94,26 @@ select {
 
 	color: red;
 	font-weight: bold;
+}
+
+#velocity-container {
+	margin-top: 0.5rem;
+}
+
+#velocity-input-container {
+	margin-top: 0.25rem;
+	text-align: center;
+}
+
+#vx-input, #vy-input {
+	width: 7ch;
+}
+
+.subscript {
+	vertical-align: sub;
+	font-size: smaller;
+}
+.superscript {
+	vertical-align: super;
+	font-size: smaller;
 }
