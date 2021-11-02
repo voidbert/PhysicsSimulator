@@ -7,6 +7,7 @@ class ProjectileThrowSettings {
 	private _showAxesLabels: boolean;
 	private _showGrid: boolean;
 	private _showTrajectory: boolean;
+	private _showSimulationResults: boolean;
 
 	private _simulationQuality: SimulationQuality;
 
@@ -35,6 +36,7 @@ class ProjectileThrowSettings {
 	public get showAxesLabels() { return this._showAxesLabels; }
 	public get showGrid() { return this._showGrid; }
 	public get showTrajectory() { return this._showTrajectory; }
+	public get showSimulationResults() { return this._showSimulationResults; }
 	public get simulationQuality() { return this._simulationQuality; }
 	public get heightReference() { return this._heightReference; }
 	public get height() { return this._height; }
@@ -56,9 +58,10 @@ class ProjectileThrowSettings {
 		}
 
 		settings._showGrid = (document.getElementById("grid") as HTMLInputElement).checked;
-
 		settings._showTrajectory =
 			(document.getElementById("trajectory") as HTMLInputElement).checked;
+		settings._showSimulationResults =
+			(document.getElementById("simulation-results-checkbox") as HTMLInputElement).checked;
 
 		settings._simulationQuality = {
 			"vl": SimulationQuality.VeryLow,
@@ -175,8 +178,8 @@ class ProjectileThrowSettings {
 
 		//The list of elements that, when changed, require the simulation to be updated.
 		let settingsElements: string[] = [
-			"axes", "axes-labels", "grid", "trajectory", "simulation-quality", "body-base",
-			"body-cm"
+			"axes", "axes-labels", "grid", "trajectory", "simulation-results-checkbox",
+			"simulation-quality", "body-base", "body-cm"
 		];
 		//When an element is changed, call settingsUpdateCallback
 		for (let i: number = 0; i < settingsElements.length; ++i) {

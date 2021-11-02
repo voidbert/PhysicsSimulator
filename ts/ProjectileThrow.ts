@@ -185,7 +185,9 @@ window.addEventListener("load", () => {
 	//If the user clicks on top of the canvas while choosing the body's velocity, stop choosing the
 	//velocity
 	document.getElementById("no-script-div").addEventListener("click", () => {
-		exitChoosingVelocityMode();
+		if (choosingVelocity) {
+			exitChoosingVelocityMode();
+		}
 	});
 
 	//Reset the position and velocity of the body when asked to
@@ -236,7 +238,8 @@ window.addEventListener("load", () => {
 				theoretical.applyToPage(elapsedTime, projectile.r.x, maxHeight);
 
 				//Show the menu, blur the background and stop the user from clicking on places
-				showSimulationResults();
+				if (settings.showSimulationResults)
+					showSimulationResults();
 			}
 		}, settings.simulationQuality);
 		updateFunctions.updateStepper(stepper);
