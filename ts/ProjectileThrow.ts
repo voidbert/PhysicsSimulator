@@ -136,6 +136,12 @@ window.addEventListener("load", () => {
 		document.getElementById("canvas") as HTMLCanvasElement, (renderer) => {
 
 		updateRenderingSurfaceSize(camera, axes);
+
+		//Center the body on the camera (move the camera so that the body is on the center of the
+		//screen)
+		camera.r = projectile.r.subtract(camera.canvasSize.scale(0.5 / camera.scale));
+		console.log(camera.r);
+
 		axes.drawAxes(renderer);
 		renderer.renderPolygon(
 			camera.polygonToScreenPosition(projectile.transformGeometry()), "red");
