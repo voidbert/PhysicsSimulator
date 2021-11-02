@@ -33,6 +33,8 @@ window.addEventListener("load", () => {
 	//Keep track of the velocity before the user starting choosing another velocity in case they
 	//want to cancel their action.
 	let velocityBeforeChoosing: Vec2 = new Vec2();
+	//State (background blurred when showing)
+	let showingSimulationResults: boolean = false;
 
 	function enterChoosingVelocityMode() {
 		//Make sure the body the body is in its start position
@@ -52,6 +54,22 @@ window.addEventListener("load", () => {
 		//Update page settings
 		settings = ProjectileThrowSettings.getFromPage(settings);
 		settings.updatePage(projectile, axes, stepper, trajectory);
+	}
+
+	function showSimulationResults() {
+		renderer.canvas.style.filter = "blur(5px)";
+		document.getElementById("simulation-interaction-div").style.filter = "blur(5px)";
+		document.getElementById("simulation-results").style.display = "flex";
+		document.body.style.pointerEvents = "none";
+		showingSimulationResults = true;
+	}
+
+	function hideSimulationResults() {
+		document.getElementById("simulation-results").style.removeProperty("display");
+		renderer.canvas.style.removeProperty("filter");
+		document.getElementById("simulation-interaction-div").style.removeProperty("filter");
+		document.body.style.removeProperty("pointer-events");
+		showingSimulationResults = false;
 	}
 
 	//Camera and display
@@ -92,7 +110,7 @@ window.addEventListener("load", () => {
 				.subtract(projectile.transformVertex(new Vec2(0, 0)))
 				.scale(3);
 			//Max of 2 decimal places in the velocity inputs
-			v = new Vec2(Math.round(v.x * 100) / 100, Math.round(v.y * 100) / 100);
+			v = new Vec2(ExtraMath.round(v.x, 2),　ExtraMath.round(v.y, 2));
 			
 			(document.getElementById("vx-input") as HTMLInputElement).value = v.x.toString();
 			(document.getElementById("vy-input") as HTMLInputElement).value = v.y.toString();
@@ -140,13 +158,19 @@ window.addEventListener("load", () => {
 	//When ESC is pressed, exit velocity selection mode
 	window.addEventListener("keydown", (e: KeyboardEvent) => {
 		if (e.key === "Escape") {
-			//Update the velocity input boxes to have the values before the action was cancelled
-			(document.getElementById("vx-input") as HTMLInputElement).value =
-				velocityBeforeChoosing.x.toString();
-			(document.getElementById("vy-input") as HTMLInputElement).value =
-				velocityBeforeChoosing.y.toString();
+			if (choosingVelocity) {
+				//Update the velocity input boxes to have the values before the action was cancelled
+				(document.getElementById("vx-input") as HTMLInputElement).value =
+					velocityBeforeChoosing.x.toString();
+				(document.getElementById("vy-input") as HTMLInputElement).value =
+					velocityBeforeChoosing.y.toString();
 
-			exitChoosingVelocityMode();
+				exitChoosingVelocityMode();
+			}
+
+			if (showingSimulationResults) {
+				hideSimulationResults();
+			}
 		}
 	});
 
@@ -173,6 +197,11 @@ window.addEventListener("load", () => {
 		settings.updatePage(projectile, axes, stepper, trajectory);
 	});
 
+	//When the user clicks the ok button on the simulation results, hide that menu.
+	document.getElementById("simulation-results-ok").addEventListener("click", () => {
+		hideSimulationResults();
+	});
+
 	//Start the physics simulation when the launch button is pressed
 	document.getElementById("launch-button").addEventListener("click", () => {
 		//Reset the body's position and velocity
@@ -184,11 +213,30 @@ window.addEventListener("load", () => {
 		settings.updatePage(projectile, axes, stepper, trajectory);
 		updateFunctions.updateSettings(settings);
 
+		//Calculate the theoretical outcome
+		let theoretical: ProjectileTheoreticalOutcome =
+			new ProjectileTheoreticalOutcome(projectile, bodyApothem, settings);
+
+		//Count the time between the start and the end of the simulation.
+		let beginningTime = Date.now();
+		//Keep track of the maximum height reached
+		let maxHeight = projectile.r.y;
+
 		stepper = new TimeStepper((dt: number) => {
 			projectile.step(dt);
 
+			if (projectile.r.y > maxHeight) {
+				maxHeight = projectile.r.y;
+			}
+
 			if (ProjectileTrajectory.bodyReachedGround(projectile, settings)) {
 				stepper.stopPause();
+
+				let elapsedTime = Date.now() - beginningTime;
+				theoretical.applyToPage(elapsedTime, projectile.r.x, maxHeight);
+
+				//Show the menu, blur the background and stop the user from clicking on places
+				showSimulationResults();
 			}
 		}, settings.simulationQuality);
 		updateFunctions.updateStepper(stepper);

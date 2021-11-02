@@ -41,6 +41,52 @@ body {
 	text-align: center;
 }
 
+#simulation-results {
+	display: none; /*flex when shown*/
+	flex-direction: column;
+	position: absolute;
+
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+
+	align-items: center;
+	justify-content: center;
+
+	padding: 1rem;
+
+	background-color: white;
+	color: black;
+	filter: none;
+	border-radius: 0.5rem;
+
+	pointer-events: all;
+}
+
+table, th, td {
+	border: 1px solid black;
+	border-collapse: collapse;
+	padding: 1rem;
+}
+
+/*Weird trick to "hide" top-left borders*/
+.table-top-left-corner {
+	border-top: 1px solid white !important;
+	border-left: 1px solid white !important;
+}
+
+#simulation-results-ok-container {
+	display: block;
+	width: 100%;
+	text-align: right;
+
+	margin: 0.5rem 0px 0px 0px;
+}
+
+#simulation-results-ok {
+	margin: 0px !important;
+}
+
 #simulation-interaction-div {
 	height: 100%;
 

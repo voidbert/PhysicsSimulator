@@ -5,6 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>Lançamento de um projétil</title>
 
+		<script src="../js/ExtraMath.js"></script>
 		<script src="../js/Vec2.js"></script>
 		<script src="../js/TimeStepper.js"></script>
 		<script src="../js/Body.js"></script>
@@ -12,6 +13,7 @@
 		<script src="../js/Renderer.js"></script>
 		<script src="../js/AxisSystem.js"></script>
 
+		<script src="../js/ProjectileTheoreticalOutcome.js"></script>
 		<script src="../js/ProjectileTrajectory.js"></script>
 		<script src="../js/ProjectileThrowSettings.js"></script>
 		<script src="../js/ProjectileThrow.js" defer></script>
@@ -30,6 +32,44 @@
 				<div id="choose-velocity-instructions">
 					Clique para escolher a velocidade<br/>
 					Carregue em <span class="bold">ESC</span> para sair deste modo
+				</div>
+
+				<div id="simulation-results">
+					<div>
+						<table>
+							<thead>
+								<tr>
+									<th class="table-top-left-corner"></th>
+									<th>Simulador</th>
+									<th>Valor teórico</th>
+									<th>Erro relativo (%)</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>Tempo de voo (s)</td>
+									<td id="simulated-time">0.00</td>
+									<td id="real-time">0.00</td>
+									<td id="error-time">0.00</td>
+								</tr>
+								<tr>
+									<td>Alcance (m)</td>
+									<td id="simulated-distance">0.00</td>
+									<td id="real-distance">0.00</td>
+									<td id="error-distance">0.00</td>
+								</tr>
+								<tr>
+									<td>Altura máxima (m)</td>
+									<td id="simulated-height">0.00</td>
+									<td id="real-height">0.00</td>
+									<td id="error-height">0.00</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<div id="simulation-results-ok-container">
+						<button id="simulation-results-ok">OK</button>
+					</div>
 				</div>
 
 				<noscript>
