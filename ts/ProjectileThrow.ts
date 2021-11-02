@@ -91,9 +91,20 @@ window.addEventListener("load", () => {
 				camera.pointToWorldPosition(mousePosition)
 				.subtract(projectile.transformVertex(new Vec2(0, 0)))
 				.scale(3);
-		
+			//Max of 2 decimal places in the velocity inputs
+			v = new Vec2(Math.round(v.x * 100) / 100, Math.round(v.y * 100) / 100);
+			
 			(document.getElementById("vx-input") as HTMLInputElement).value = v.x.toString();
 			(document.getElementById("vy-input") as HTMLInputElement).value = v.y.toString();
+
+			//Calculate the trajectory. Copy the body first.
+			let bodyCopy = new Body(projectile.mass, projectile.geometry, projectile.r);
+			bodyCopy.v = v;
+			bodyCopy.forces = projectile.forces;
+
+			//Don't use trajectory = new ProjectileTrajectory() so that the trajectory stored in
+			//ProjectileThrowSettings.addEvents() doesn't get out of date.
+			trajectory.points = new ProjectileTrajectory(bodyCopy, settings).points;
 		}
 	});
 
