@@ -56,32 +56,36 @@ class ProjectileTheoreticalOutcome {
 
 	//Puts the real and theoretical values in the simulation-results div. 
 	applyToPage(realTime: number, bodyDistance: number, maxHeight: number) {
+		//Converts a number to a string, returning user-readable results for NaN and infinity
+		function toString(n: number) {
+			if (isNaN(n) || n === Infinity || n === -Infinity) {
+				//In this case, NaN and Infinity can only originate in a division by 0:
+				//0 / 0 or other / 0, respectively
+				return "Divisão por 0";
+			}
+			return n.toString();
+		}
+
 		//Fill the table with the values
 		document.getElementById("simulated-time").textContent =
-			ExtraMath.round(realTime * 0.001, 2).toString(); // * 0.001 -> s to ms
+			toString(ExtraMath.round(realTime * 0.001, 2)); // * 0.001 -> s to ms
 		document.getElementById("real-time").textContent =
-			ExtraMath.round(this.time, 2).toString();
+			toString(ExtraMath.round(this.time, 2));
 		document.getElementById("error-time").textContent =
-			ExtraMath.round(
-				ExtraMath.relativeError(realTime * 0.001, this.time) * 100, 2
-			).toString();
+			toString(ExtraMath.round(ExtraMath.relativeError(realTime * 0.001, this.time) * 100, 2));
 		
 		document.getElementById("simulated-distance").textContent =
-			ExtraMath.round(bodyDistance, 2).toString();
+			toString(ExtraMath.round(bodyDistance, 2));
 		document.getElementById("real-distance").textContent =
-			ExtraMath.round(this.distance, 2).toString();
+			toString(ExtraMath.round(this.distance, 2));
 		document.getElementById("error-distance").textContent =
-			ExtraMath.round(
-				ExtraMath.relativeError(bodyDistance, this.distance) * 100, 2
-			).toString();
+			toString(ExtraMath.round(ExtraMath.relativeError(bodyDistance, this.distance) * 100, 2));
 
 		document.getElementById("simulated-height").textContent =
-			ExtraMath.round(maxHeight, 2).toString();
+			toString(ExtraMath.round(maxHeight, 2));
 		document.getElementById("real-height").textContent =
-			ExtraMath.round(this.maxHeight, 2).toString();
+			toString(ExtraMath.round(this.maxHeight, 2));
 		document.getElementById("error-height").textContent =
-			ExtraMath.round(
-				ExtraMath.relativeError(maxHeight, this.maxHeight) * 100, 2
-			).toString();
+			toString(ExtraMath.round(ExtraMath.relativeError(maxHeight, this.maxHeight) * 100, 2));
 	}
 }
