@@ -74,8 +74,9 @@ window.addEventListener("load", () => {
 	//Simulation settings
 	let settings = new ProjectileThrowSettings();
 
-	let updateStepper = settings.addEvents(projectile, axes, stepper, trajectory, settings, (s) => {
-		settings = s;
+	let updateFunctions = ProjectileThrowSettings.addEvents(
+		projectile, axes, stepper, trajectory, settings, (s) => {
+			settings = s;
 	});
 
 	//Keep track of the mouse position for the program to be able to know what velocity the user is
@@ -156,7 +157,6 @@ window.addEventListener("load", () => {
 	document.getElementById("reset-button").addEventListener("click", () => {
 		if (stepper)
 			stepper.stopPause();
-		updateStepper(stepper);
 
 		//Update the settings on the page
 		settings.updatePage(projectile, axes, stepper, trajectory);
@@ -168,6 +168,11 @@ window.addEventListener("load", () => {
 		if (stepper)
 			stepper.stopPause();
 
+		//Make sure the body is launched from the right position with the right velocity
+		settings = ProjectileThrowSettings.getFromPage(settings);
+		settings.updatePage(projectile, axes, stepper, trajectory);
+		updateFunctions.updateSettings(settings);
+
 		stepper = new TimeStepper((dt: number) => {
 			projectile.step(dt);
 
@@ -175,6 +180,6 @@ window.addEventListener("load", () => {
 				stepper.stopPause();
 			}
 		}, settings.simulationQuality);
-		updateStepper(stepper);
+		updateFunctions.updateStepper(stepper);
 	});
 });

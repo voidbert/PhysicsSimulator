@@ -126,29 +126,26 @@ class ProjectileThrowSettings {
 			stepper.changeTimeout(this._simulationQuality);
 		}
 
-		//If the height is valid, update the position of the body it not mid-simulation. Show a
-		//warning if the height is invalid.
+		//Update the position of the body it not mid-simulation. If the height is invalid, show a
+		//warning.
+		if ((stepper && !stepper.isRunning) || !stepper) {
+			if (this._heightReference === HeightReference.BodyCM)
+				projectile.r = new Vec2(0, this._height);
+			else
+				projectile.r = new Vec2(0, this._height + bodyApothem);
+		}
 		if (this._validHeight) {
-			if ((stepper && !stepper.isRunning) || !stepper) {
-				if (this._heightReference === HeightReference.BodyCM)
-					projectile.r = new Vec2(0, this._height);
-				else
-					projectile.r = new Vec2(0, this._height + bodyApothem);
-			}
-
 			//Hide any invalid height warning
 			document.getElementById("invalid-height").style.removeProperty("display");
 		} else {
 			document.getElementById("invalid-height").style.display = "flex";
 		}
 
-		//If the velocity is valid, update the velocity of the body it not mid-simulation. Show a
-		//warning if the velocity is invalid.
+		//Update the velocity of the body it not mid-simulation. If it is invalid, show a warning.
+		if ((stepper && !stepper.isRunning) || !stepper) {
+			projectile.v = this._launchVelocity;
+		}
 		if (this._validVelocity) {
-			if ((stepper && !stepper.isRunning) || !stepper) {
-				projectile.v = this._launchVelocity;
-			}
-
 			//Hide any invalid velocity warning
 			document.getElementById("invalid-velocity").style.removeProperty("display");
 		} else {
@@ -168,11 +165,13 @@ class ProjectileThrowSettings {
 
 	//Adds events to the UI elements in the page. So, when something is inputted, the page is
 	//updated. setSettings is a function that when called, sets settings to the provided value. The
-	//returned function must be called whenever the stepper is changed. 
-	addEvents(projectile: Body, axes: AxisSystem, stepper: TimeStepper,
+	//returned functions must be called whenever the stepper or settings are changed (new objects). 
+	static addEvents(projectile: Body, axes: AxisSystem, stepper: TimeStepper,
 		trajectory: ProjectileTrajectory, settings: ProjectileThrowSettings,
 		setSettings: (s: ProjectileThrowSettings) => any):
-		(stp: TimeStepper) => any {
+
+		{updateStepper: (s: TimeStepper) => any,
+		updateSettings: (s: ProjectileThrowSettings) => any} {
 
 		//The list of elements that, when changed, require the simulation to be updated.
 		let settingsElements: string[] = [
@@ -201,8 +200,14 @@ class ProjectileThrowSettings {
 			});
 		}
 
-		return (stp: TimeStepper) => {
-			stepper = stp;
+		return {
+			updateStepper: (s: TimeStepper) => {
+				stepper = s;
+			},
+
+			updateSettings: (s: ProjectileThrowSettings) => {
+				settings = s;
+			}
 		}
 	}
 }
