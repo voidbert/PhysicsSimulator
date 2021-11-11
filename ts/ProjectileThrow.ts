@@ -140,7 +140,6 @@ window.addEventListener("load", () => {
 		//Center the body on the camera (move the camera so that the body is on the center of the
 		//screen)
 		camera.r = projectile.r.subtract(camera.canvasSize.scale(0.5 / camera.scale));
-		console.log(camera.r);
 
 		axes.drawAxes(renderer);
 		renderer.renderPolygon(
