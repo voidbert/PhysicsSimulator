@@ -107,7 +107,7 @@ window.addEventListener("load", () => {
 		if (choosingVelocity) {
 			let v: Vec2 =
 				camera.pointToWorldPosition(mousePosition)
-				.subtract(projectile.transformVertex(new Vec2(0, 0)))
+				.subtract(projectile.r)
 				.scale(3);
 			//Max of 2 decimal places in the velocity inputs
 			v = new Vec2(ExtraMath.round(v.x, 2),　ExtraMath.round(v.y, 2));
