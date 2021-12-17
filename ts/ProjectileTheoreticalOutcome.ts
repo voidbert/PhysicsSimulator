@@ -1,61 +1,78 @@
-//Responsible for calculating the theoretical outcome of the projectile's launch.
-class ProjectileTheoreticalOutcome {
+//Stores results from the projectile throw experience (flight time, horizontal distance and maximum
+//height). These can be the theoretical values or the measured ones.
+class ProjectileThrowResults {
 	public time: number; //Time of flight
 	public distance: number; //Maximum distance from starting point
 	public maxHeight: number;
 
-	constructor(projectile: Body, bodyApothem: number, settings: ProjectileThrowSettings) {
+	constructor() {
+		this.time = 0;
+		this.distance = 0;
+		this.maxHeight = 0;
+	}
+
+	//Calculates the theoretical results based on data from ProjectileThrowSimulation
+	static calculateTheoreticalResults(): ProjectileThrowResults {
+		let results = new ProjectileThrowResults(); //Value to be returned
+
 		//Calculate the resultant of the forces and the acceleration
 		let Fr: Vec2 = new Vec2();
-		for (let i: number = 0; i < projectile.forces.length; ++i) {
-			Fr = Fr.add(projectile.forces[i]);
+		for (let i: number = 0; i < ProjectileThrowSimulation.projectile.forces.length; ++i) {
+			Fr = Fr.add(ProjectileThrowSimulation.projectile.forces[i]);
 		}
-		let a = Fr.scale(1 / projectile.mass);
+		let a = Fr.scale(1 / ProjectileThrowSimulation.projectile.mass);
 
 		//y = y0 + vy * t + 0.5 * a * t^2 (y = 0 -> ground reached). y = bodyApothem if the body
 		//base is used as reference.
 		let solutions = undefined;
-		if (settings.heightReference === HeightReference.BodyCM) {
-			solutions = ExtraMath.solveQuadratic(0.5 * a.y, projectile.v.y, projectile.r.y);
+		if (ProjectileThrowSimulation.settings.heightReference === HeightReference.BodyCM) {
+			solutions = ExtraMath.solveQuadratic(0.5 * a.y,
+				ProjectileThrowSimulation.projectile.v.y, ProjectileThrowSimulation.projectile.r.y);
 		} else {
 			solutions =
-				ExtraMath.solveQuadratic(0.5 * a.y, projectile.v.y, projectile.r.y - bodyApothem);
+				ExtraMath.solveQuadratic(0.5 * a.y, ProjectileThrowSimulation.projectile.v.y,
+				ProjectileThrowSimulation.projectile.r.y - BODY_APOTHEM);
 		}
 
 		if (solutions.length === 0) {
 			//No solutions. This shouldn't happen under any circumstance but let's make sure the
 			//program doesn't catch on fire if it does happen.
 			alert("Falha no cálculo de resultados teóricos - quadrática sem soluções!");
-			this.time = 0;
-			this.maxHeight = 0;
-			this.distance = 0;
+			results.time = 0;
+			results.maxHeight = 0;
+			results.distance = 0;
 			return;
 		}
 
 		//Choose the largest solution. The smaller one can be negative or 0 (if the body starts
 		//from the ground)
-		this.time = Math.max(...solutions);
+		results.time = Math.max(...solutions);
 
 		//The distance the body reached is the x position when the body touched the ground
 		//x = vx * t
-		this.distance = projectile.v.x * this.time;
+		results.distance = ProjectileThrowSimulation.projectile.v.x * results.time;
 
 		//The body reaches max height when the height derivative (velocity) is 0.
 		//vy = vy0 + a * t => 0 = vy0 + a * t, then y = y0 + vy * t + 0.5 * a * t^2
-		let maxHeightTime = - projectile.v.y / a.y;
-		if (projectile.v.y > 0) {
-			this.maxHeight =
-				projectile.r.y +
-				projectile.v.y * maxHeightTime +
+		let maxHeightTime = - ProjectileThrowSimulation.projectile.v.y / a.y;
+		if (ProjectileThrowSimulation.projectile.v.y > 0) {
+			results.maxHeight =
+				ProjectileThrowSimulation.projectile.r.y +
+				ProjectileThrowSimulation.projectile.v.y * maxHeightTime +
 				0.5 * a.y * (maxHeightTime * maxHeightTime);
 		} else {
 			//The body was launched down. maxHeight is height at launch
-			this.maxHeight = projectile.r.y;
+			results.maxHeight = ProjectileThrowSimulation.projectile.r.y;
 		}
+
+		return results;
 	}
 
 	//Puts the real and theoretical values in the simulation-results div. 
-	applyToPage(realTime: number, bodyDistance: number, maxHeight: number) {
+	static applyToPage(
+		theoreticalValues: ProjectileThrowResults,
+		experimentalValues: ProjectileThrowResults) {
+
 		//Converts a number to a string, returning user-readable results for NaN and infinity
 		function toString(n: number) {
 			if (isNaN(n) || n === Infinity || n === -Infinity) {
@@ -68,24 +85,55 @@ class ProjectileTheoreticalOutcome {
 
 		//Fill the table with the values
 		document.getElementById("simulated-time").textContent =
-			toString(ExtraMath.round(realTime * 0.001, 2)); // * 0.001 -> s to ms
+			toString(ExtraMath.round(experimentalValues.time * 0.001, 2)); // * 0.001 -> s to ms
 		document.getElementById("real-time").textContent =
-			toString(ExtraMath.round(this.time, 2));
+			toString(ExtraMath.round(theoreticalValues.time, 2));
 		document.getElementById("error-time").textContent =
-			toString(ExtraMath.round(ExtraMath.relativeError(realTime * 0.001, this.time) * 100, 2));
+			toString(ExtraMath.round(ExtraMath.relativeError(
+			experimentalValues.time * 0.001, theoreticalValues.time) * 100, 2));
 		
 		document.getElementById("simulated-distance").textContent =
-			toString(ExtraMath.round(bodyDistance, 2));
+			toString(ExtraMath.round(experimentalValues.distance, 2));
 		document.getElementById("real-distance").textContent =
-			toString(ExtraMath.round(this.distance, 2));
+			toString(ExtraMath.round(theoreticalValues.distance, 2));
 		document.getElementById("error-distance").textContent =
-			toString(ExtraMath.round(ExtraMath.relativeError(bodyDistance, this.distance) * 100, 2));
+			toString(ExtraMath.round(ExtraMath.relativeError(
+			experimentalValues.distance, theoreticalValues.distance) * 100, 2));
 
 		document.getElementById("simulated-height").textContent =
-			toString(ExtraMath.round(maxHeight, 2));
+			toString(ExtraMath.round(experimentalValues.maxHeight, 2));
 		document.getElementById("real-height").textContent =
-			toString(ExtraMath.round(this.maxHeight, 2));
+			toString(ExtraMath.round(theoreticalValues.maxHeight, 2));
 		document.getElementById("error-height").textContent =
-			toString(ExtraMath.round(ExtraMath.relativeError(maxHeight, this.maxHeight) * 100, 2));
+			toString(ExtraMath.round(ExtraMath.relativeError(
+			experimentalValues.maxHeight, theoreticalValues.maxHeight) * 100, 2));
+	}
+}
+
+//Responsible for measuring the time of flight, the distance and the maximum height during
+//calculated by the simulation (while the body moves).
+class ProjectileThrowExperienceMeasurer {
+	private results: ProjectileThrowResults;
+
+	//More than creating a new object, this constructor starts counting simulation time.
+	constructor() {
+		this.results = new ProjectileThrowResults();
+		this.results.time = Date.now();
+		this.results.maxHeight = ProjectileThrowSimulation.projectile.r.y;
+	}
+
+	//Must be called whenever the body is updated. Checks if the height has reached a new maximum.
+	step() {
+		if (ProjectileThrowSimulation.projectile.r.y > this.results.maxHeight) {
+			this.results.maxHeight = ProjectileThrowSimulation.projectile.r.y;
+		}
+	}
+
+	//Must be called when the body reaches the ground. Stops counting time and sets the horizontal
+	//distance.
+	stop(): ProjectileThrowResults {
+		this.results.time = Date.now() - this.results.time;
+		this.results.distance = ProjectileThrowSimulation.projectile.r.x;
+		return this.results;
 	}
 }

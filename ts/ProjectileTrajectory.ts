@@ -2,13 +2,15 @@
 class ProjectileTrajectory {
 	public points: Vec2[];
 
-	//Note - this function will run Body.step(). Make sure you feed it a copy of the projectile.
 	constructor(projectile: Body = undefined, settings: ProjectileThrowSettings = undefined) {
 		//new ProjectileTrajectory() returns an empty trajectory
 		if (!projectile && !settings) {
 			this.points = [];
 			return;
 		}
+
+		//Clone the body
+		projectile = Object.create(projectile);
 
 		this.points = [];
 		do {
@@ -29,7 +31,7 @@ class ProjectileTrajectory {
 		} else {
 			//Stop the body when its base reaches the ground (center of mass reaches 1 body
 			//apothem above 0)
-			if (projectile.r.y <= bodyApothem) {
+			if (projectile.r.y <= BODY_APOTHEM) {
 				return true;
 			}
 		}

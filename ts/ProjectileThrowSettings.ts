@@ -1,7 +1,9 @@
+//Whether the projectile's height to ground is measured from its base or from its center of mass
 enum HeightReference {
 	BodyBase, BodyCM
 }
 
+//Responsible for interacting with page UI to set the simulation settings.
 class ProjectileThrowSettings {
 	private _showAxes: boolean;
 	private _showAxesLabels: boolean;
@@ -43,8 +45,9 @@ class ProjectileThrowSettings {
 	public get launchVelocity() { return this._launchVelocity; }
 	public get validVelocity() { return this._validVelocity; }
 
-	//Gets the settings set by the user in the sidebar.
-	static getFromPage(previousSettings: ProjectileThrowSettings): ProjectileThrowSettings {
+	//Gets the settings set by the user in the sidebar. Any unknown setting assumes the value of the
+	//last used setting (this). Not a static function for this reason
+	getFromPage(): ProjectileThrowSettings {
 		let settings: ProjectileThrowSettings = new ProjectileThrowSettings();
 
 		settings._showAxes = (document.getElementById("axes") as HTMLInputElement).checked;
@@ -81,7 +84,7 @@ class ProjectileThrowSettings {
 		let stringHeight = (document.getElementById("height-input") as HTMLInputElement).value;
 		let numberHeight = Number(stringHeight);
 		if (isNaN(numberHeight) || (!isNaN(numberHeight) && numberHeight < 0)) {
-			settings._height = previousSettings._height;
+			settings._height = this._height;
 			settings._validHeight = false;
 		} else {
 			settings._height = numberHeight;
@@ -94,7 +97,7 @@ class ProjectileThrowSettings {
 		let numberVx = Number(stringVx);
 		let numberVy = Number(stringVy);
 		if (isNaN(numberVx) || isNaN(numberVy)) {
-			settings._launchVelocity = previousSettings._launchVelocity;
+			settings._launchVelocity = this._launchVelocity;
 			settings._validVelocity = false;
 		} else {
 			settings._launchVelocity = new Vec2(numberVx, numberVy);
@@ -104,15 +107,14 @@ class ProjectileThrowSettings {
 		return settings;
 	}
 
-	//Updates the simulation and the page (some choices may have to be disabled)
-	updatePage(projectile: Body, axes: AxisSystem, stepper: TimeStepper,
-		trajectory: ProjectileTrajectory): void {
-
-		axes.showAxes = this._showAxes;
-		axes.showAxisLabels = this._showAxesLabels;
-		axes.showUnitLabels = this._showAxesLabels;
-		axes.showArrows = this._showAxes;
-		axes.showGrid = this._showGrid;
+	//Updates the simulation and the page to match the settings (enables / disables some settings
+	//checkboxes, updates the time between simulation steps, shows / hides axis labels, etc.)
+	updatePage(): void {
+		ProjectileThrowSimulation.axes.showAxes = this._showAxes;
+		ProjectileThrowSimulation.axes.showAxisLabels = this._showAxesLabels;
+		ProjectileThrowSimulation.axes.showUnitLabels = this._showAxesLabels;
+		ProjectileThrowSimulation.axes.showArrows = this._showAxes;
+		ProjectileThrowSimulation.axes.showGrid = this._showGrid;
 
 		//Make the "show arrows" checkbox enabled or disabled depending on the state of showAxes
 		let showArrowsCheckbox = (document.getElementById("axes-labels") as HTMLInputElement);
@@ -122,72 +124,77 @@ class ProjectileThrowSettings {
 			showArrowsCheckbox.disabled = true;
 		}
 
-		axes.updateCaches();
+		ProjectileThrowSimulation.axes.updateCaches();
 
 		//Update the simulation quality if the projectile was already launched
-		if (stepper) {
-			stepper.changeTimeout(this._simulationQuality);
+		if (ProjectileThrowSimulation.stepper) {
+			ProjectileThrowSimulation.stepper.changeTimeout(this._simulationQuality);
 		}
 
 		//Update the position of the body it not mid-simulation. If the height is invalid, show a
 		//warning.
-		if ((stepper && !stepper.isRunning) || !stepper) {
+		if (ProjectileThrowSimulation.state === ApplicationState.projectileInLaunchPosition || 
+			ProjectileThrowSimulation.state === ApplicationState.projectileStopped) {
+
 			if (this._heightReference === HeightReference.BodyCM)
-				projectile.r = new Vec2(0, this._height);
+				ProjectileThrowSimulation.projectile.r = new Vec2(0, this._height);
 			else
-				projectile.r = new Vec2(0, this._height + bodyApothem);
+				ProjectileThrowSimulation.projectile.r = new Vec2(0, this._height + BODY_APOTHEM);
 		}
 		if (this._validHeight) {
 			//Hide any invalid height warning
-			document.getElementById("invalid-height").style.removeProperty("display");
+			document.getElementById("invalid-height").classList.add("hidden");
 		} else {
-			document.getElementById("invalid-height").style.display = "flex";
+			document.getElementById("invalid-height").classList.remove("hidden");
 		}
 
 		//Update the velocity of the body it not mid-simulation. If it is invalid, show a warning.
-		if ((stepper && !stepper.isRunning) || !stepper) {
-			projectile.v = this._launchVelocity;
+		if (ProjectileThrowSimulation.state === ApplicationState.projectileInLaunchPosition || 
+			ProjectileThrowSimulation.state === ApplicationState.projectileStopped) {
+
+			ProjectileThrowSimulation.projectile.v = this._launchVelocity;
 		}
 		if (this._validVelocity) {
 			//Hide any invalid velocity warning
-			document.getElementById("invalid-velocity").style.removeProperty("display");
+			document.getElementById("invalid-velocity").classList.add("hidden");
 		} else {
-			document.getElementById("invalid-velocity").style.display = "flex";
+			document.getElementById("invalid-velocity").classList.remove("hidden");
 		}
 
 		//If the change was applied to a non-moving body, recalculate the trajectory
-		if ((stepper && !stepper.isRunning) || !stepper) {
-			//Copy the body first
-			let bodyCopy = new Body(projectile.mass, projectile.geometry, projectile.r);
-			bodyCopy.v = projectile.v;
-			bodyCopy.forces = projectile.forces;
+		if (ProjectileThrowSimulation.state === ApplicationState.projectileInLaunchPosition || 
+			ProjectileThrowSimulation.state === ApplicationState.projectileStopped) {
 
-			trajectory.points = new ProjectileTrajectory(bodyCopy, this).points;
+			ProjectileThrowSimulation.trajectory =
+				new ProjectileTrajectory(ProjectileThrowSimulation.projectile, this);
 		}
 	}
 
-	//Adds events to the UI elements in the page. So, when something is inputted, the page is
-	//updated. setSettings is a function that when called, sets settings to the provided value. The
-	//returned functions must be called whenever the stepper or settings are changed (new objects). 
-	static addEvents(projectile: Body, axes: AxisSystem, stepper: TimeStepper,
-		trajectory: ProjectileTrajectory, settings: ProjectileThrowSettings,
-		setSettings: (s: ProjectileThrowSettings) => any):
+	//Updates the text on the velocity input boxes with a new value. Useful, for example, for
+	//updating while in interactive velocity choosing mode.
+	static updatePageVelocity(velocity: Vec2): void {
+		(document.getElementById("vx-input") as HTMLInputElement).value = velocity.x.toString();
+		(document.getElementById("vy-input") as HTMLInputElement).value = velocity.y.toString();
+	}
 
-		{updateStepper: (s: TimeStepper) => any,
-		updateSettings: (s: ProjectileThrowSettings) => any} {
-
-		//The list of elements that, when changed, require the simulation to be updated.
+	//Adds events to the UI elements in the page. So, when something is inputted, the page and the
+	//settings are updated. 
+	static addEvents(): void {
+		//The list of DOM elements that, when changed, require the simulation to be updated.
 		let settingsElements: string[] = [
 			"axes", "axes-labels", "grid", "trajectory", "simulation-results-checkbox",
 			"simulation-quality", "body-base", "body-cm"
 		];
+
+		//Gets called when a page element is changed
+		function onUpdate() {
+			ProjectileThrowSimulation.settings = ProjectileThrowSimulation.settings.getFromPage();
+			ProjectileThrowSimulation.settings.updatePage();
+		}
+
 		//When an element is changed, call settingsUpdateCallback
 		for (let i: number = 0; i < settingsElements.length; ++i) {
-			document.getElementById(settingsElements[i]).addEventListener("change", () => {
-				settings = ProjectileThrowSettings.getFromPage(settings);
-				setSettings(settings);
-				settings.updatePage(projectile, axes, stepper, trajectory);
-			});
+			document.getElementById(settingsElements[i]).addEventListener("change", onUpdate);
 		}
 
 		//The same as before but with the oninput event, so that the user doesn't need to unfocus a
@@ -196,21 +203,7 @@ class ProjectileThrowSettings {
 			"height-input", "vx-input", "vy-input"
 		];
 		for (let i: number = 0; i < settingsElements.length; ++i) {
-			document.getElementById(settingsElements[i]).addEventListener("input", () => {
-				settings = ProjectileThrowSettings.getFromPage(settings);
-				setSettings(settings);
-				settings.updatePage(projectile, axes, stepper, trajectory);
-			});
-		}
-
-		return {
-			updateStepper: (s: TimeStepper) => {
-				stepper = s;
-			},
-
-			updateSettings: (s: ProjectileThrowSettings) => {
-				settings = s;
-			}
+			document.getElementById(settingsElements[i]).addEventListener("input", onUpdate);
 		}
 	}
 }

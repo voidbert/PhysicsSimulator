@@ -32,7 +32,7 @@ body {
 }
 
 #choose-velocity-instructions {
-	display: none;
+	display: block;
 	position: absolute;
 	left: 50%;
 	top: 1rem;
@@ -42,7 +42,7 @@ body {
 }
 
 #simulation-results {
-	display: none; /*flex when shown*/
+	display: flex;
 	flex-direction: column;
 	position: absolute;
 
@@ -169,8 +169,6 @@ select {
 }
 
 .invalid-input {
-	display: none;
-
 	text-align: center;
 
 	margin-top: 0.5rem;
@@ -209,4 +207,16 @@ select {
 
 .bold {
 	font-weight: bold;
+}
+
+.hidden {
+	display: none !important;
+}
+
+.blur {
+	filter: blur(5px);
+}
+
+.no-interaction {
+	pointer-events: none;
 }
