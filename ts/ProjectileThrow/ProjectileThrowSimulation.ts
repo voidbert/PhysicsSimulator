@@ -175,15 +175,15 @@ class ProjectileThrowSimulation {
 		//Reset the position and velocity of the body when asked to
 		document.getElementById("reset-button").addEventListener("click", () => {
 			if (this.stepper)
-			this.stepper.stopPause();
+				this.stepper.stopPause();
 
 			//Handle the edge case where the user is choosing a velocity and clicks this button
 			if (this.state === ApplicationState.choosingVelocity)
 				this.exitChoosingVelocityMode();
 
 			//Update the settings on the page
-			this.settings.updatePage();
 			this.state = ApplicationState.projectileInLaunchPosition;
+			this.settings.updatePage();
 		});
 
 		//Start the physics simulation when the launch button is pressed
@@ -197,6 +197,7 @@ class ProjectileThrowSimulation {
 				this.exitChoosingVelocityMode();
 
 			//Make sure the body is launched from the right position with the right velocity
+			ProjectileThrowSimulation.state = ApplicationState.projectileInLaunchPosition;
 			this.settings = this.settings.getFromPage();
 			this.settings.updatePage();
 

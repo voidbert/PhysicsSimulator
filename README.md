@@ -17,3 +17,7 @@ In the future, the following will be available:
  - Solar System simulation
  - Coefficient of restitution simulation
  - Elastic collisions that calculate π
+
+## Building
+
+```npm run build``` and open `index.html` in your browser of choice (except IE).
