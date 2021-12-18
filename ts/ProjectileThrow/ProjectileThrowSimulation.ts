@@ -70,14 +70,25 @@ class ProjectileThrowSimulation {
 		//Enter choosing velocity mode (renderer checks for this mode to draw the vector. input
 		//handlers do it too to check for the escape key)
 		this.state = ApplicationState.choosingVelocity;
-		//Show "move the mouse" instructions
-		document.getElementById("choose-velocity-instructions").classList.remove("hidden");
+		//Show "move the mouse" instructions (different depending if the device supports touch or
+		//not)
+		if (ProjectileThrowEvents.isTouchScreenAvailable) {
+			document.getElementById("choose-velocity-instructions-touch").classList.remove("hidden");
+		} else {
+			document.getElementById("choose-velocity-instructions-mouse").classList.remove("hidden");
+		}
 	}
 	
 	static exitChoosingVelocityMode() {
 		this.state = ApplicationState.projectileInLaunchPosition; //Exit mode
+
 		//Hide the velocity choosing instructions
-		document.getElementById("choose-velocity-instructions").classList.add("hidden");
+		if (ProjectileThrowEvents.isTouchScreenAvailable) {
+			document.getElementById("choose-velocity-instructions-touch").classList.add("hidden");
+		} else {
+			document.getElementById("choose-velocity-instructions-mouse").classList.add("hidden");
+		}
+
 		//Update page settings
 		this.settings = this.settings.getFromPage();
 		this.settings.updatePage();
@@ -156,14 +167,6 @@ class ProjectileThrowSimulation {
 			if (this.state === ApplicationState.projectileInLaunchPosition || 
 				this.state === ApplicationState.projectileStopped) {
 				this.enterChoosingVelocityMode();
-			}
-		});
-
-		//If the user clicks on top of the canvas while choosing the body's velocity, stop choosing
-		//the velocity (setting its value to the chosen one)
-		document.getElementById("no-script-div").addEventListener("click", () => {
-			if (this.state === ApplicationState.choosingVelocity) {
-				this.exitChoosingVelocityMode();
 			}
 		});
 
