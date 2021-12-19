@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
 		<title>Lançamento de um projétil</title>
 
 		<script src="compiledJS.js" defer></script>
@@ -10,12 +10,6 @@
 		<link rel="stylesheet" type="text/css" href="./ProjectileThrow.css">
 	</head>
 	<body>
-		<canvas id="canvas">
-			<!--No <canvas> support warning-->
-			Este browser não suporta o elemento HTML &lt;canvas&gt;, necessário para o funcionamento
-			desta aplicação Web.
-		</canvas>
-
 		<div id="ui-div"> <!--Where HTML UI elements are-->
 			<div id="no-script-div">
 				<div id="choose-velocity-instructions-mouse" class="hidden">
@@ -25,6 +19,15 @@
 				<div id="choose-velocity-instructions-touch" class="hidden">
 					Largue para escolher a velocidade<br/>
 				</div>
+				<div id="scroll-down">
+					Arraste para mais opções
+				</div>
+
+				<canvas id="canvas">
+					<!--No <canvas> support warning-->
+					Este browser não suporta o elemento HTML &lt;canvas&gt;, necessário para o
+					funcionamento desta aplicação Web.
+				</canvas>
 
 				<div id="simulation-results" class="hidden">
 					<div>

@@ -17,18 +17,28 @@ enum ApplicationState {
 	showingSimulationResults
 } 
 
-//Check if the size of drawing surface (size of the window minus the size of the sidebar) has
-//changed and update it if needed. Don't use window.onresize, since that doesn't account for the
-//change in size of the sidebar (window.onresize doesn't wait for the elements' size to be
-//calculated).
+//Checks if the display's orientation is portrait
+function isPortrait(): boolean {
+	return window.matchMedia("(orientation: portrait)").matches;
+}
+
+//Check if the size of drawing surface has changed and an update it if needed. Don't use
+//window.onresize, since that doesn't account for the change in size of the sidebar, crucial in
+//landscape displays.
 let lastRenderingSurfaceSize: Vec2 = new Vec2();
 function updateRenderingSurfaceSize(camera: Camera, axes: AxisSystem) {
-	//Size of surface -> all - sidebar
-	let renderingSurfaceSize = new Vec2(
-		(window.innerWidth - document.getElementById("simulation-interaction-div").clientWidth)
-			* window.devicePixelRatio,
-		window.innerHeight * window.devicePixelRatio
-	);
+	let renderingSurfaceSize: Vec2 = new Vec2();
+	if (isPortrait()) {
+		//Canvas takes 1 viewport
+		renderingSurfaceSize = new Vec2(window.innerWidth, window.innerHeight)
+			.scale(window.devicePixelRatio);
+	} else {
+		//Size of surface -> all - sidebar
+		renderingSurfaceSize = new Vec2(
+			(window.innerWidth - document.getElementById("simulation-interaction-div").clientWidth),
+			window.innerHeight
+		).scale(window.devicePixelRatio);
+	}
 
 	//Last size comparison
 	if (renderingSurfaceSize !== lastRenderingSurfaceSize) {
@@ -52,13 +62,15 @@ class ProjectileThrowSimulation {
 	//want to cancel their action.
 	static velocityBeforeChoosing: Vec2 = new Vec2();
 
+	//The scale of #simulation-results, that is adjust so that the element fits the screen
+	private static simulationResultsScale = 1; 
+
 	//Camera and display
-	static camera: Camera = new Camera(new Vec2(), 32);
+	static camera: Camera = new Camera(new Vec2(), 32 * window.devicePixelRatio);
 	static axes: AxisSystem = new AxisSystem(this.camera,
-		true, true, "white",  2,
-		true, "#dddddd", 1, true, true, "16px sans-serif",
-		"black",
-		false
+		true, true, "white",  2 * window.devicePixelRatio,
+		true, "#dddddd", 1 * window.devicePixelRatio, true, true,
+		(16 * window.devicePixelRatio).toString() + "px sans-serif", "black", false
 	);
 	static renderer: Renderer;
 
@@ -67,9 +79,7 @@ class ProjectileThrowSimulation {
 		this.settings.updatePage();
 		//Store the previous velocity in case the user cancels the action 
 		this.velocityBeforeChoosing = this.settings.launchVelocity;
-		//Enter choosing velocity mode (renderer checks for this mode to draw the vector. input
-		//handlers do it too to check for the escape key)
-		this.state = ApplicationState.choosingVelocity;
+
 		//Show "move the mouse" instructions (different depending if the device supports touch or
 		//not)
 		if (ProjectileThrowEvents.isTouchScreenAvailable) {
@@ -77,6 +87,14 @@ class ProjectileThrowSimulation {
 		} else {
 			document.getElementById("choose-velocity-instructions-mouse").classList.remove("hidden");
 		}
+
+		document.body.classList.add("no-scrolling");
+		//Prevent scrolling on touch devices (trying to choose the velocity would move the page)
+		ProjectileThrowEvents.smoothScroll(0, 0, () => {
+			//Enter choosing velocity mode (renderer checks for this mode to draw the vector. Input
+			//handlers do it too to check for the escape key)
+			this.state = ApplicationState.choosingVelocity;
+		});
 	}
 	
 	static exitChoosingVelocityMode() {
@@ -92,9 +110,23 @@ class ProjectileThrowSimulation {
 		//Update page settings
 		this.settings = this.settings.getFromPage();
 		this.settings.updatePage();
+
+		//Re-allow scrolling if disabled
+		document.body.classList.remove("no-scrolling");
 	}
 
 	static showSimulationResults() {
+		//Scale the element. Get its size and make it the maximum possible.
+		let style = window.getComputedStyle(document.getElementById("simulation-results"));
+		let elementWidth = (parseFloat(style.width) + 2 * parseFloat(style.paddingLeft))
+			* window.devicePixelRatio / this.simulationResultsScale;
+		let maxWidth = (this.camera.canvasSize.x - 20 * window.devicePixelRatio);
+		let scale: number = maxWidth / (elementWidth * this.simulationResultsScale);
+		scale = Math.min(scale, 1); //Limit the scale from 0 to 1
+		document.documentElement.style.setProperty("--simulation-results-scale",
+			(scale * 100).toString() + "%");
+		this.simulationResultsScale = scale;
+
 		//Blur the background and show the popup with the results
 		this.renderer.canvas.classList.add("blur");
 		document.getElementById("simulation-interaction-div").classList.add("blur");
@@ -150,13 +182,15 @@ class ProjectileThrowSimulation {
 				this.renderer.renderLines([
 					this.camera.pointToScreenPosition(this.projectile.transformVertex(new Vec2())),
 					ProjectileThrowEvents.mousePosition
-				], "#00ff00", 2);
+				], "#00ff00", 2 * window.devicePixelRatio);
 			}
 
 			//Draw the trajectory if turned on
 			if (this.settings.showTrajectory && this.trajectory) {
 				this.renderer.renderLines(
-					this.camera.polygonToScreenPosition(this.trajectory.points), "white", 2);
+					this.camera.polygonToScreenPosition(this.trajectory.points), "white",
+					2 * window.devicePixelRatio
+				);
 			}
 		});
 		this.renderer.renderLoop();
@@ -204,33 +238,38 @@ class ProjectileThrowSimulation {
 			this.settings = this.settings.getFromPage();
 			this.settings.updatePage();
 
-			//Calculate the theoretical outcome based on initial conditions
-			let theoreticalResults: ProjectileThrowResults =
+			//Before staring the simulation, position the page so that the canvas is visible
+			//(useful for portrait displays)
+			ProjectileThrowEvents.smoothScroll(0, 0, () => {
+				//Calculate the theoretical outcome based on initial conditions
+				let theoreticalResults: ProjectileThrowResults =
 				ProjectileThrowResults.calculateTheoreticalResults();
 
-			//Start measuring what will be compared to theoretical expectations
-			let measurer: ProjectileThrowExperienceMeasurer =
-				new ProjectileThrowExperienceMeasurer();
+				//Start measuring what will be compared to theoretical expectations
+				let measurer: ProjectileThrowExperienceMeasurer =
+					new ProjectileThrowExperienceMeasurer();
 
-			//Start the simulation
-			this.stepper = new TimeStepper((dt: number) => {
-				this.projectile.step(dt);
-				measurer.step();
+				//Start the simulation
+				this.stepper = new TimeStepper((dt: number) => {
+					this.projectile.step(dt);
+					measurer.step();
 
-				if (ProjectileTrajectory.bodyReachedGround(this.projectile, this.settings)) {
-					this.stepper.stopPause();
-					this.state = ApplicationState.projectileStopped;
+					if (ProjectileTrajectory.bodyReachedGround(this.projectile, this.settings)) {
+						this.stepper.stopPause();
+						this.state = ApplicationState.projectileStopped;
 
-					let experimentalResults: ProjectileThrowResults = measurer.stop();
-					ProjectileThrowResults.applyToPage(theoreticalResults, experimentalResults);
+						let experimentalResults: ProjectileThrowResults = measurer.stop();
+						ProjectileThrowResults.applyToPage(theoreticalResults, experimentalResults);
 
-					//Show the menu, blur the background and stop the user from clicking on places
-					if (this.settings.showSimulationResults)
-						this.showSimulationResults();
-				}
-			}, this.settings.simulationQuality);
+						//Show the menu, blur the background and stop the user from clicking on
+						//places
+						if (this.settings.showSimulationResults)
+							this.showSimulationResults();
+					}
+				}, this.settings.simulationQuality);
 
-			this.state = ApplicationState.projectileMoving;
+				this.state = ApplicationState.projectileMoving;
+			});
 		});
 	}
 }

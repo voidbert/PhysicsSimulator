@@ -1,4 +1,4 @@
-const MAX_GRID_SIZE: number = 64;
+const MAX_GRID_SIZE: number = 64 * window.devicePixelRatio;
 
 //A class made to render the x and y axes to the screen.
 class AxisSystem {

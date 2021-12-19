@@ -1,3 +1,7 @@
+html {
+	--simulation-results-scale: 100%;
+}
+
 body {
 	background-color: black;
 	color: white;
@@ -5,27 +9,56 @@ body {
 	font-family: sans-serif;
 }
 
+@media (orientation: portrait) {
+	body {
+		margin: 0px;
+	}
+
+	body.no-scrolling {
+		overflow: hidden;
+	}
+}
+
 #canvas {
-	position: fixed;
-	top: 0px; left: 0px;
 	width: 100%; height: 100%;
+	z-index: -100;
+}
+
+@media (orientation: landscape) {
+	#canvas {
+		position: fixed;
+		top: 0px; left: 0px;
+	}
 }
 
 #ui-div {
-	position: fixed;
 	top: 0px; left: 0px;
-	width: 100%; height: 100%;
+	width: 100%;
+}
 
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	justify-content: space-between;
+@media (orientation: landscape) {
+	#ui-div {
+		position: fixed;
+		height: 100%;
+
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+	}
+}
+
+@media (orientation: portrait) {
+	#ui-div {
+		display: block;
+	}
 }
 
 #no-script-div {
 	position: relative;
 	display: flex;
-	height: 100%;
+	height: 100vh;
+
 	flex-grow: 1000;
 	justify-content: center;
 	align-items: center;
@@ -39,6 +72,28 @@ body {
 	transform: translateX(-50%);
 
 	text-align: center;
+
+	background: black;
+}
+
+#scroll-down {
+	display: block;
+	position: absolute;
+	left: 50%;
+	bottom: 6rem;
+	transform: translateX(-50%);
+
+	text-align: center;
+
+	background: black;
+
+	transition: bottom 1s;
+}
+
+@media (orientation: landscape) {
+	#scroll-down {
+		display: none !important;
+	}
 }
 
 #simulation-results {
@@ -48,7 +103,7 @@ body {
 
 	left: 50%;
 	top: 50%;
-	transform: translate(-50%, -50%);
+	transform: translate(-50%, -50%) scale(var(--simulation-results-scale));
 	z-index: 100;
 
 	align-items: center;
@@ -67,16 +122,8 @@ body {
 table, th, td {
 	white-space: nowrap;
 
-	border: 1px solid black;
-	border-collapse: collapse;
 	font-size: 0.9rem;
 	padding: 1rem;
-}
-
-/*Weird trick to "hide" top-left borders*/
-.table-top-left-corner {
-	border-top: 1px solid white !important;
-	border-left: 1px solid white !important;
 }
 
 #simulation-results-ok-container {
@@ -209,8 +256,13 @@ select {
 	font-weight: bold;
 }
 
-.hidden {
+.hidden:not(#simulation-results) {
 	display: none !important;
+}
+
+#simulation-results.hidden {
+	top:  -100000px;
+	left: -100000px;
 }
 
 .blur {
