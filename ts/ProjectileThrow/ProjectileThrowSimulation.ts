@@ -24,9 +24,9 @@ function isPortrait(): boolean {
 
 //Check if the size of drawing surface has changed and an update it if needed. Don't use
 //window.onresize, since that doesn't account for the change in size of the sidebar, crucial in
-//landscape displays.
+//landscape displays. True is returned if the size of the rendering surface changed.
 let lastRenderingSurfaceSize: Vec2 = new Vec2();
-function updateRenderingSurfaceSize(camera: Camera, axes: AxisSystem) {
+function updateRenderingSurfaceSize(camera: Camera, axes: AxisSystem): boolean {
 	let renderingSurfaceSize: Vec2 = new Vec2();
 	if (isPortrait()) {
 		//Canvas takes 1 viewport
@@ -43,8 +43,11 @@ function updateRenderingSurfaceSize(camera: Camera, axes: AxisSystem) {
 	//Last size comparison
 	if (renderingSurfaceSize !== lastRenderingSurfaceSize) {
 		camera.canvasSize = renderingSurfaceSize;
+		lastRenderingSurfaceSize = renderingSurfaceSize;
+		return true;
 	}
-	lastRenderingSurfaceSize = renderingSurfaceSize;
+	
+	return false;
 }
 
 class ProjectileThrowSimulation {
@@ -115,7 +118,8 @@ class ProjectileThrowSimulation {
 		document.body.classList.remove("no-scrolling");
 	}
 
-	static showSimulationResults() {
+	//Scales the #simulation-results element to fit in the page
+	static scaleSimulationResults() {
 		//Scale the element. Get its size and make it the maximum possible.
 		let style = window.getComputedStyle(document.getElementById("simulation-results"));
 		let elementWidth = (parseFloat(style.width) + 2 * parseFloat(style.paddingLeft))
@@ -123,9 +127,12 @@ class ProjectileThrowSimulation {
 		let maxWidth = (this.camera.canvasSize.x - 20 * window.devicePixelRatio);
 		let scale: number = maxWidth / (elementWidth * this.simulationResultsScale);
 		scale = Math.min(scale, 1); //Limit the scale from 0 to 1
-		document.documentElement.style.setProperty("--simulation-results-scale",
-			(scale * 100).toString() + "%");
+		document.documentElement.style.setProperty("--simulation-results-scale", scale.toString());
 		this.simulationResultsScale = scale;
+	}
+
+	static showSimulationResults() {
+		this.scaleSimulationResults();
 
 		//Blur the background and show the popup with the results
 		this.renderer.canvas.classList.add("blur");
@@ -163,7 +170,9 @@ class ProjectileThrowSimulation {
 		this.renderer = new Renderer(window,
 			document.getElementById("canvas") as HTMLCanvasElement, () => {
 
-			updateRenderingSurfaceSize(this.camera, this.axes);
+			if (updateRenderingSurfaceSize(this.camera, this.axes)) {
+				this.scaleSimulationResults();
+			}
 
 			//Center the body on the camera (move the camera so that the body is on the center of
 			//the screen)

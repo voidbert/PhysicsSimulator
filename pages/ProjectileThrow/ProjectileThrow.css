@@ -104,6 +104,8 @@ body {
 	left: 50%;
 	top: 50%;
 	transform: translate(-50%, -50%) scale(var(--simulation-results-scale));
+	-webkit-transform: translate(-50%, -50%) scale(var(--simulation-results-scale));
+	image-rendering: crisp-edges;
 	z-index: 100;
 
 	align-items: center;
