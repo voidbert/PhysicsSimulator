@@ -165,8 +165,8 @@ class ProjectileThrowSettings {
 		if (ProjectileThrowSimulation.state === ApplicationState.projectileInLaunchPosition || 
 			ProjectileThrowSimulation.state === ApplicationState.projectileStopped) {
 
-			ProjectileThrowSimulation.trajectory =
-				new ProjectileTrajectory(ProjectileThrowSimulation.projectile, this);
+			ProjectileThrowSimulation.trajectory = ProjectileThrowTrajectory
+				.generateLimitedTrajectory(ProjectileThrowSimulation.projectile, this);
 		}
 	}
 

@@ -25,8 +25,8 @@ class ProjectileThrowEvents {
 				let proj: Body = Object.create(ProjectileThrowSimulation.projectile);
 				proj.v = v;
 
-				ProjectileThrowSimulation.trajectory = new ProjectileTrajectory(
-					proj, ProjectileThrowSimulation.settings);
+				ProjectileThrowSimulation.trajectory = ProjectileThrowTrajectory.
+					generateLimitedTrajectory(proj, ProjectileThrowSimulation.settings);
 			}
 		};
 

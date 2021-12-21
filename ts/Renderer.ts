@@ -70,6 +70,32 @@ class Renderer {
 		this.ctx.stroke();
 	}
 
+	//Renders a set of lines to the screen. For example, given the vertices {A, B, C, D}, the
+	//following lines will be drawn: (A, B), (B, C), (C, D), meaning that the last point from a line
+	//is used as the first point for the next one. If the color is left unset, ctx.strokeStyle will
+	//be used to draw the line. If lineWidth is -1, ctx.lineWidth will be used.
+	renderLinesStrip(vertices: Vec2[], color: string = "", lineWidth: number = -1) {
+		if (vertices.length < 2) {
+			return;
+		}
+
+		if (color !== "") {
+			this.ctx.strokeStyle = color;
+		}
+
+		if (lineWidth !== -1) {
+			this.ctx.lineWidth = lineWidth;
+		}
+
+		//Draw the lines
+		this.ctx.beginPath();
+		this.ctx.moveTo(vertices[0].x, vertices[0].y);
+		for (let i: number = 1; i < vertices.length; i++) {
+			this.ctx.lineTo(vertices[i].x, vertices[i].y);
+		}
+		this.ctx.stroke();
+	}
+
 	//Renders (single- or multi-line) text to the canvas using textBaseline = "top". If the color or
 	//the font is left unset, the rendering context's color and font font will be used. The font
 	//size must be provided in px or in rem.

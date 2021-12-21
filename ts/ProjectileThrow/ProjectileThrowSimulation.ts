@@ -55,7 +55,7 @@ class ProjectileThrowSimulation {
 
 	//Physics
 	static stepper: TimeStepper; //Simulation time control
-	static trajectory: ProjectileTrajectory = new ProjectileTrajectory();
+	static trajectory: ProjectileThrowTrajectory = new ProjectileThrowTrajectory();
 	static projectile: Body = new Body(BODY_MASS, BODY_GEOMETRY, new Vec2(0, 0));
 
 	//Simulation settings
@@ -196,7 +196,7 @@ class ProjectileThrowSimulation {
 
 			//Draw the trajectory if turned on
 			if (this.settings.showTrajectory && this.trajectory) {
-				this.renderer.renderLines(
+				this.renderer.renderLinesStrip(
 					this.camera.polygonToScreenPosition(this.trajectory.points), "white",
 					2 * window.devicePixelRatio
 				);
@@ -252,7 +252,8 @@ class ProjectileThrowSimulation {
 			ProjectileThrowEvents.smoothScroll(0, 0, () => {
 				//Calculate the theoretical outcome based on initial conditions
 				let theoreticalResults: ProjectileThrowResults =
-				ProjectileThrowResults.calculateTheoreticalResults();
+					ProjectileThrowResults.calculateTheoreticalResults(this.projectile,
+					this.settings);
 
 				//Start measuring what will be compared to theoretical expectations
 				let measurer: ProjectileThrowExperienceMeasurer =
@@ -263,7 +264,9 @@ class ProjectileThrowSimulation {
 					this.projectile.step(dt);
 					measurer.step();
 
-					if (ProjectileTrajectory.bodyReachedGround(this.projectile, this.settings)) {
+					if (ProjectileThrowTrajectory.bodyReachedGround(this.projectile,
+						this.settings.heightReference)) {
+
 						this.stepper.stopPause();
 						this.state = ApplicationState.projectileStopped;
 

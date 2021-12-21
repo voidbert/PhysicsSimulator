@@ -12,26 +12,28 @@ class ProjectileThrowResults {
 	}
 
 	//Calculates the theoretical results based on data from ProjectileThrowSimulation
-	static calculateTheoreticalResults(): ProjectileThrowResults {
+	static calculateTheoreticalResults(projectile: Body, settings: ProjectileThrowSettings)
+		: ProjectileThrowResults {
+
 		let results = new ProjectileThrowResults(); //Value to be returned
 
 		//Calculate the resultant of the forces and the acceleration
 		let Fr: Vec2 = new Vec2();
-		for (let i: number = 0; i < ProjectileThrowSimulation.projectile.forces.length; ++i) {
-			Fr = Fr.add(ProjectileThrowSimulation.projectile.forces[i]);
+		for (let i: number = 0; i < projectile.forces.length; ++i) {
+			Fr = Fr.add(projectile.forces[i]);
 		}
-		let a = Fr.scale(1 / ProjectileThrowSimulation.projectile.mass);
+		let a = Fr.scale(1 / projectile.mass);
 
 		//y = y0 + vy * t + 0.5 * a * t^2 (y = 0 -> ground reached). y = bodyApothem if the body
 		//base is used as reference.
 		let solutions = undefined;
-		if (ProjectileThrowSimulation.settings.heightReference === HeightReference.BodyCM) {
+		if (settings.heightReference === HeightReference.BodyCM) {
 			solutions = ExtraMath.solveQuadratic(0.5 * a.y,
-				ProjectileThrowSimulation.projectile.v.y, ProjectileThrowSimulation.projectile.r.y);
+				projectile.v.y, projectile.r.y);
 		} else {
 			solutions =
-				ExtraMath.solveQuadratic(0.5 * a.y, ProjectileThrowSimulation.projectile.v.y,
-				ProjectileThrowSimulation.projectile.r.y - BODY_APOTHEM);
+				ExtraMath.solveQuadratic(0.5 * a.y, projectile.v.y,
+				projectile.r.y - BODY_APOTHEM);
 		}
 
 		if (solutions.length === 0) {
@@ -50,19 +52,19 @@ class ProjectileThrowResults {
 
 		//The distance the body reached is the x position when the body touched the ground
 		//x = vx * t
-		results.distance = ProjectileThrowSimulation.projectile.v.x * results.time;
+		results.distance = projectile.v.x * results.time;
 
 		//The body reaches max height when the height derivative (velocity) is 0.
 		//vy = vy0 + a * t => 0 = vy0 + a * t, then y = y0 + vy * t + 0.5 * a * t^2
-		let maxHeightTime = - ProjectileThrowSimulation.projectile.v.y / a.y;
-		if (ProjectileThrowSimulation.projectile.v.y > 0) {
+		let maxHeightTime = - projectile.v.y / a.y;
+		if (projectile.v.y > 0) {
 			results.maxHeight =
-				ProjectileThrowSimulation.projectile.r.y +
-				ProjectileThrowSimulation.projectile.v.y * maxHeightTime +
+				projectile.r.y +
+				projectile.v.y * maxHeightTime +
 				0.5 * a.y * (maxHeightTime * maxHeightTime);
 		} else {
 			//The body was launched down. maxHeight is height at launch
-			results.maxHeight = ProjectileThrowSimulation.projectile.r.y;
+			results.maxHeight = projectile.r.y;
 		}
 
 		return results;
