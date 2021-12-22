@@ -50,6 +50,8 @@ function updateRenderingSurfaceSize(camera: Camera, axes: AxisSystem): boolean {
 	return false;
 }
 
+let parallel; //TODO - remove - this is for DEBUG only
+
 class ProjectileThrowSimulation {
 	static state: ApplicationState = ApplicationState.projectileInLaunchPosition;
 
@@ -250,37 +252,49 @@ class ProjectileThrowSimulation {
 			//Before staring the simulation, position the page so that the canvas is visible
 			//(useful for portrait displays)
 			ProjectileThrowEvents.smoothScroll(0, 0, () => {
-				//Calculate the theoretical outcome based on initial conditions
-				let theoreticalResults: ProjectileThrowResults =
-					ProjectileThrowResults.calculateTheoreticalResults(this.projectile,
-					this.settings);
-
-				//Start measuring what will be compared to theoretical expectations
-				let measurer: ProjectileThrowExperienceMeasurer =
-					new ProjectileThrowExperienceMeasurer();
-
 				//Start the simulation
-				this.stepper = new TimeStepper((dt: number) => {
-					this.projectile.step(dt);
-					measurer.step();
+				let bufferCount = 0;
+				parallel = new WorkerWrapper( //TODO - change
+					"../../js/ProjectileThrow/ProjectileThrowWorker.js",
+					{
+						projectile: ProjectileThrowSimulation.projectile,
+						simulationQuality: ProjectileThrowSimulation.settings.simulationQuality,
+						heightReference: ProjectileThrowSimulation.settings.heightReference
+					},
+					16, /*two numbers (8 bytes each) per Vec2, position of the body*/
+					(w: Worker, data: any) => {
+						//Worker posted a message. If it is the simulation statistics, stop the
+						//worker.
+						let keys = Object.keys(data);
+						if (keys.indexOf("time") !== -1 && keys.indexOf("distance") !== -1 &&
+							keys.indexOf("maxHeight") !== -1 ) {
+			
+							let results = new ProjectileThrowResults();
+							results.time = data.time;
+							results.distance = data.distance;
+							results.maxHeight = data.maxHeight;
 
-					if (ProjectileThrowTrajectory.bodyReachedGround(this.projectile,
-						this.settings.heightReference)) {
+							//Calculate the theoretical outcome based on initial conditions
+							let theoreticalResults: ProjectileThrowResults =
+							ProjectileThrowResults.calculateTheoreticalResults(this.projectile,
+								this.settings);
 
-						this.stepper.stopPause();
-						this.state = ApplicationState.projectileStopped;
-
-						let experimentalResults: ProjectileThrowResults = measurer.stop();
-						ProjectileThrowResults.applyToPage(theoreticalResults, experimentalResults);
-
-						//Show the menu, blur the background and stop the user from clicking on
-						//places
-						if (this.settings.showSimulationResults)
-							this.showSimulationResults();
-					}
-				}, this.settings.simulationQuality);
-
-				this.state = ApplicationState.projectileMoving;
+							ProjectileThrowResults.applyToPage(theoreticalResults, results);
+							if (this.settings.showSimulationResults) {
+								this.showSimulationResults();
+							}
+			
+							console.log(results);
+							w.terminate();
+						} else {
+							//This is a new buffer
+							parallel.addBuffer(new NumberedBuffer(bufferCount, data));
+							console.log("New buffer");
+							bufferCount++;
+						}
+					},
+					512
+				);
 			});
 		});
 	}

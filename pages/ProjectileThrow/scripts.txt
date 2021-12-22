@@ -5,6 +5,7 @@ js/Body.js
 js/Camera.js
 js/Renderer.js
 js/AxisSystem.js
+js/WorkerWrapper.js
 js/ProjectileThrow/ProjectileThrowResults.js
 js/ProjectileThrow/ProjectileThrowTrajectory.js
 js/ProjectileThrow/ProjectileThrowSettings.js

@@ -111,31 +111,3 @@ class ProjectileThrowResults {
 			experimentalValues.maxHeight, theoreticalValues.maxHeight) * 100, 2));
 	}
 }
-
-//Responsible for measuring the time of flight, the distance and the maximum height during
-//calculated by the simulation (while the body moves).
-class ProjectileThrowExperienceMeasurer {
-	private results: ProjectileThrowResults;
-
-	//More than creating a new object, this constructor starts counting simulation time.
-	constructor() {
-		this.results = new ProjectileThrowResults();
-		this.results.time = Date.now();
-		this.results.maxHeight = ProjectileThrowSimulation.projectile.r.y;
-	}
-
-	//Must be called whenever the body is updated. Checks if the height has reached a new maximum.
-	step() {
-		if (ProjectileThrowSimulation.projectile.r.y > this.results.maxHeight) {
-			this.results.maxHeight = ProjectileThrowSimulation.projectile.r.y;
-		}
-	}
-
-	//Must be called when the body reaches the ground. Stops counting time and sets the horizontal
-	//distance.
-	stop(): ProjectileThrowResults {
-		this.results.time = Date.now() - this.results.time;
-		this.results.distance = ProjectileThrowSimulation.projectile.r.x;
-		return this.results;
-	}
-}
