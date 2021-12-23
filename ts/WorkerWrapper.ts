@@ -10,6 +10,23 @@ class NumberedBuffer {
 		this.size = size;
 		this.buffer = buffer;
 	}
+
+	//Gets the nth frame in this buffer. If index is greater than the buffer's number of frames,
+	//this will return null.
+	getFrame(index: number, frameSize: number): ArrayBuffer {
+		if (index * frameSize >= this.size) {
+			return null;
+		}
+
+		let bufferView = new Uint8Array(this.buffer);
+		let ret = new Uint8Array(frameSize);
+
+		for (let i: number = 0; i < frameSize; ++i) {
+			ret[i] = bufferView[index * frameSize + i];
+		}
+
+		return ret.buffer;
+	}
 }
 
 //A wrapper for a web worker for physics simulations. Data must be transferred in buffers of frames,
@@ -26,9 +43,6 @@ class WorkerWrapper {
 
 	//Creates a web worker from a file (url).
 	//
-	//data is posted as a message when the web worker starts. It shouldn't have a bufferSize,
-	//simulationQuality or an allowedBuffers property, as those will be set by this constructor.
-	//
 	//frameSize is the number of bytes in every frame (information transferred per simulator update)
 	//
 	//callback is called when the webworker posts a message (except "TERMINATE").
@@ -42,7 +56,7 @@ class WorkerWrapper {
 	//
 	//For the worker to stop itself, use postMessage("TERMINATE"). Therefore, don't post "TERMINATE"
 	//otherwise.
-	constructor(url: string, data: any, frameSize: number, simulationQuality: SimulationQuality,
+	constructor(url: string, frameSize: number, simulationQuality: SimulationQuality,
 		callback: (w: Worker, data: any) => any, bufferSize: number = 512,
 		bufferLimit: number = 16) {
 
@@ -53,11 +67,6 @@ class WorkerWrapper {
 
 		this.worker = new Worker(url);
 
-		data.bufferSize = Math.max(bufferSize, 1);
-		data.allowedBuffers = bufferLimit;
-		data.simulationQuality = simulationQuality;
-		this.worker.postMessage(data); //Start the worker with the data.
-
 		this.worker.onmessage = (e: MessageEvent) => {
 			if (e.data === "TERMINATE") {
 				this.worker.terminate();
@@ -65,6 +74,18 @@ class WorkerWrapper {
 
 			callback(this.worker, e.data);
 		};
+	}
+
+	//Starts the web worker by sending it a certain message your code is configured to interpret as
+	//a start command. This clears any buffers stored. data shouldn't have a bufferSize,
+	//simulationQuality or an allowedBuffers property, as those will be set by this constructor.
+	start(data: any) {
+		this.buffers = [];
+
+		data.bufferSize = Math.max(this.bufferSize, 1);
+		data.allowedBuffers = this.bufferLimit;
+		data.simulationQuality = this.simulationQuality;
+		this.worker.postMessage(data); //Start the worker with the data.
 	}
 
 	//This method adds a buffer to the list. If there is no free space, an error will be thrown.
@@ -126,42 +147,67 @@ class WorkerWrapper {
 			return [];
 		}
 
-		//Remove all buffers with indices lower than the one on buffer0
+		//Set the index of the frame inside the buffer
+		frameNumber0 -= bufferNumber0 * this.bufferSize;
+		frameNumber1 -= bufferNumber1 * this.bufferSize;
+
+		let frame0: ArrayBuffer = buffer0.getFrame(frameNumber0, this.frameSize);
+		let frame1: ArrayBuffer = buffer1.getFrame(frameNumber1, this.frameSize);
+
+		//Out of bounds check
+		if (frame0 === null || frame1 === null) {
+			return [];
+		}
+
+		//Remove all buffers with indices lower than the one on buffer0.
 		if (autoClear) {
 			let clearCount = 0;
 			for (let i: number = 0; i < this.buffers.length; i++) {
-				if (this.buffers[i] && this.buffers[i].index < buffer0.index) {
-					this.buffers[i] = null;
-					clearCount++;
+				if (bufferNumber0 === bufferNumber1) {
+					if (this.buffers[i] && this.buffers[i].index < buffer0.index) {
+						this.buffers[i] = null;
+						clearCount++;
+					}
+				} else {
+					//The last data point was collected from buffer number 0. All buffers with a
+					//smaller index than buffer 1 can be deleted
+					if (this.buffers[i] && this.buffers[i].index < buffer1.index) {
+						this.buffers[i] = null;
+						clearCount++;
+					}
 				}
+				
 			}
 			if (clearCount !== 0)
 				this.worker.postMessage({ allowedBuffers: clearCount });
 		}
 
-		//Set the index of the frame inside the buffer
-		frameNumber0 -= bufferNumber0 * this.bufferSize;
-		frameNumber1 -= bufferNumber1 * this.bufferSize;
+		return [ frame0, frame1 ];
+	}
 
-		//Frame out of buffer bounds check
-		if (frameNumber0 * this.frameSize > buffer0.size ||
-			frameNumber1 * this.frameSize > buffer1.size) {
+	//Stops the webworker completely (cannot be started again)
+	terminate() {
+		this.worker.terminate();
+	}
 
-			return [];
+	//Gets the last frame sent by the worker
+	getLastFrame(): ArrayBuffer {
+		//Find the latest buffer
+		let maxIndex: number = 0;
+		let bufferIndex: number = -1;
+		for (let i: number = 0; i < this.buffers.length; ++i) {
+			if (this.buffers[i] && this.buffers[i].index >= maxIndex) {
+				maxIndex = this.buffers[i].index;
+				bufferIndex = i;
+			}
 		}
 
-		//Copy the frames to array buffers to be returned
-		let view0 = new Uint8Array(buffer0.buffer);
-		let view1 = new Uint8Array(buffer1.buffer);
-
-		let frame0 = new Uint8Array(this.frameSize);
-		let frame1 = new Uint8Array(this.frameSize);
-		
-		for (let i: number = 0; i < this.frameSize; ++i) {
-			frame0[i] = view0[frameNumber0 * this.frameSize + i];
-			frame1[i] = view1[frameNumber1 * this.frameSize + i];
+		if (bufferIndex === -1) {
+			//No buffers left
+			throw new Error("No buffers stored");
+		} else {
+			let buf = this.buffers[bufferIndex];
+			return buf.getFrame(buf.size / this.frameSize - 1, this.frameSize);
 		}
-
-		return [ frame0.buffer, frame1.buffer ];
 	}
 }

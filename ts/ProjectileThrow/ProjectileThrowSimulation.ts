@@ -5,18 +5,6 @@ const BODY_GEOMETRY = [
 	new Vec2(BODY_APOTHEM, BODY_APOTHEM), new Vec2(-BODY_APOTHEM, BODY_APOTHEM)
 ];
 
-enum ApplicationState {
-	//Choosing the velocity with the interactive mode (mouse moves vector)
-	choosingVelocity,
-	//NOTE - The body can also be in the initial position if the state is choosingVelocity
-	projectileInLaunchPosition,
-	projectileMoving,
-	//Projectile after hitting the ground (simulation results off)
-	projectileStopped,
-	//After the body reaches the ground and the simulation results popup is on
-	showingSimulationResults
-} 
-
 //Checks if the display's orientation is portrait
 function isPortrait(): boolean {
 	return window.matchMedia("(orientation: portrait)").matches;
@@ -55,10 +43,9 @@ class ProjectileThrowSimulation {
 
 	//Tools for running the physics simulation in a different thread.
 	static parallelWorker: WorkerWrapper;
-	static workerStopped: boolean;
+	static workerStopped: boolean = false;
 
 	//Physics
-	static stepper: TimeStepper; //TODO - remove
 	static trajectory: ProjectileThrowTrajectory = new ProjectileThrowTrajectory();
 	static projectile: Body = new Body(BODY_MASS, BODY_GEOMETRY, new Vec2(0, 0));
 
@@ -70,7 +57,7 @@ class ProjectileThrowSimulation {
 	static velocityBeforeChoosing: Vec2 = new Vec2();
 
 	//The scale of #simulation-results, that is adjust so that the element fits the screen
-	private static simulationResultsScale = 1;
+	static simulationResultsScale = 1;
 
 	//Camera and display
 	static camera: Camera = new Camera(new Vec2(), 32 * window.devicePixelRatio);
@@ -81,82 +68,10 @@ class ProjectileThrowSimulation {
 	);
 	static renderer: Renderer;
 
-	static enterChoosingVelocityMode() {
-		//Make sure the body is in its start position
-		this.settings.updatePage();
-		//Store the previous velocity in case the user cancels the action 
-		this.velocityBeforeChoosing = this.settings.launchVelocity;
-
-		//Show "move the mouse" instructions (different depending if the device supports touch or
-		//not)
-		if (ProjectileThrowEvents.isTouchScreenAvailable) {
-			document.getElementById("choose-velocity-instructions-touch").classList.remove("hidden");
-		} else {
-			document.getElementById("choose-velocity-instructions-mouse").classList.remove("hidden");
-		}
-
-		document.body.classList.add("no-scrolling");
-		//Prevent scrolling on touch devices (trying to choose the velocity would move the page)
-		ProjectileThrowEvents.smoothScroll(0, 0, () => {
-			//Enter choosing velocity mode (renderer checks for this mode to draw the vector. Input
-			//handlers do it too to check for the escape key)
-			this.state = ApplicationState.choosingVelocity;
-		});
-	}
-	
-	static exitChoosingVelocityMode() {
-		this.state = ApplicationState.projectileInLaunchPosition; //Exit mode
-
-		//Hide the velocity choosing instructions
-		if (ProjectileThrowEvents.isTouchScreenAvailable) {
-			document.getElementById("choose-velocity-instructions-touch").classList.add("hidden");
-		} else {
-			document.getElementById("choose-velocity-instructions-mouse").classList.add("hidden");
-		}
-
-		//Update page settings
-		this.settings = this.settings.getFromPage();
-		this.settings.updatePage();
-
-		//Re-allow scrolling if disabled
-		document.body.classList.remove("no-scrolling");
-	}
-
-	//Scales the #simulation-results element to fit in the page
-	static scaleSimulationResults() {
-		//Scale the element. Get its size and make it the maximum possible.
-		let style = window.getComputedStyle(document.getElementById("simulation-results"));
-		let elementWidth = (parseFloat(style.width) + 2 * parseFloat(style.paddingLeft))
-			* window.devicePixelRatio / this.simulationResultsScale;
-		let maxWidth = (this.camera.canvasSize.x - 20 * window.devicePixelRatio);
-		let scale: number = maxWidth / (elementWidth * this.simulationResultsScale);
-		scale = Math.min(scale, 1); //Limit the scale from 0 to 1
-		document.documentElement.style.setProperty("--simulation-results-scale", scale.toString());
-		this.simulationResultsScale = scale;
-	}
-
-	static showSimulationResults() {
-		this.scaleSimulationResults();
-
-		//Blur the background and show the popup with the results
-		this.renderer.canvas.classList.add("blur");
-		document.getElementById("simulation-interaction-div").classList.add("blur");
-		document.body.classList.add("no-interaction");
-
-		document.getElementById("simulation-results").classList.remove("hidden");
-
-		this.state = ApplicationState.showingSimulationResults;
-	}
-
-	static hideSimulationResults() {
-		//Un-blur the background and hide the window
-		this.renderer.canvas.classList.remove("blur");
-		document.getElementById("simulation-interaction-div").classList.remove("blur");
-		document.body.classList.remove("no-interaction");
-
-		document.getElementById("simulation-results").classList.add("hidden");
-
-		this.state = ApplicationState.projectileStopped;
+	//Parses a frame from the web worker (gets the position vector in it)
+	static parseFrame(frame: ArrayBuffer): Vec2 {
+		let view = new Float64Array(frame);
+		return new Vec2(view[0], view[1]);
 	}
 
 	static startSimulation() {
@@ -164,6 +79,48 @@ class ProjectileThrowSimulation {
 
 		ProjectileThrowSettings.addEvents();
 		ProjectileThrowEvents.addEvents();
+
+		//Have the web worker ready for when the launch button is clicked
+		let theoreticalResults: ProjectileThrowResults = null;
+		let bufferCount = 0;
+
+		//Creates a new worker. If the old one stopped, there's no need to recreate it. It can be
+		//reused because it will no longer post messages about old simulations.
+		let newWorker = () => {
+			if (!this.workerStopped) {
+				if (this.parallelWorker) {
+					this.parallelWorker.terminate();
+				}
+
+				this.parallelWorker = new WorkerWrapper(
+					"../../js/ProjectileThrow/ProjectileThrowWorker.js",
+					16, /*two numbers (8 bytes each) per Vec2, position of the body*/
+					this.settings.simulationQuality,
+					(w: Worker, data: any) => {
+						//Worker posted a message. If it is the simulation statistics, stop the
+						//worker.
+						let keys = Object.keys(data);
+						if (keys.indexOf("time") !== -1 && keys.indexOf("distance") !== -1 &&
+							keys.indexOf("maxHeight") !== -1 ) {
+			
+							let results = new ProjectileThrowResults();
+							results.time = data.time;
+							results.distance = data.distance;
+							results.maxHeight = data.maxHeight;
+		
+							ProjectileThrowResults.applyToPage(theoreticalResults, results);
+							this.workerStopped = true;
+						} else {
+							this.parallelWorker.addBuffer(
+								new NumberedBuffer(bufferCount, data.size, data.buf));
+							bufferCount++;
+						}
+					},
+					512, 16
+				);
+			}
+		}
+		newWorker();
 
 		//Set the surface size and use the correct settings when the simulation starts.
 		updateRenderingSurfaceSize(this.camera, this.axes);
@@ -178,7 +135,7 @@ class ProjectileThrowSimulation {
 			document.getElementById("canvas") as HTMLCanvasElement, () => {
 
 			if (updateRenderingSurfaceSize(this.camera, this.axes)) {
-				this.scaleSimulationResults();
+				scaleSimulationResults();
 			}
 
 			//Get the position of the body
@@ -187,22 +144,31 @@ class ProjectileThrowSimulation {
 				bodyFrame = this.parallelWorker.getBoundaryBuffers(ellapsedSimulationTime, true);
 
 			if (bodyFrame.length === 0) {
-				//Check if the simulation is done
+				//The simulation can be done or the worker hasn't reached this point
+
 				if (this.workerStopped && this.state === ApplicationState.projectileMoving) {
+					//Simulation done
 					this.state = ApplicationState.projectileStopped;
+					ProjectileThrowSettings.enableSimulationQuality();
+
+					//Make sure the body has the last position (due to frame timing, it may not be
+					//there)
+					this.projectile.r = this.parseFrame(this.parallelWorker.getLastFrame());
 
 					if (this.settings.showSimulationResults) {
-						this.showSimulationResults();
+						showSimulationResults();
 					}
 				}
 
-				//Worker doesn't have the data yet
+				//Worker doesn't have the data yet. Reset the clock.
 				lastRendererTick = Date.now();
 			} else {
-				//TODO - LERP
-				let view = new Float64Array(bodyFrame[0]);
-				this.projectile.r = new Vec2(view[0], view[1]);
+				//The position of the body is known. Apply it.
 
+				//TODO - LERP
+				this.projectile.r = this.parseFrame(bodyFrame[0]);
+
+				//Simulation time has passed
 				ellapsedSimulationTime += Date.now() - lastRendererTick;
 				lastRendererTick = Date.now();
 			}
@@ -242,23 +208,25 @@ class ProjectileThrowSimulation {
 			//Only select a velocity if the body isn't moving
 			if (this.state === ApplicationState.projectileInLaunchPosition || 
 				this.state === ApplicationState.projectileStopped) {
-				this.enterChoosingVelocityMode();
+				enterChoosingVelocityMode();
 			}
 		});
 
 		//When the user clicks the ok button on the simulation results, hide that menu.
 		document.getElementById("simulation-results-ok").addEventListener("click", () => {
-			this.hideSimulationResults();
+			hideSimulationResults();
 		});
 
 		//Reset the position and velocity of the body when asked to
 		document.getElementById("reset-button").addEventListener("click", () => {
-			if (this.stepper)
-				this.stepper.stopPause();
+			if (this.state === ApplicationState.projectileMoving) {
+				newWorker();
+				ProjectileThrowSettings.enableSimulationQuality();
+			}
 
 			//Handle the edge case where the user is choosing a velocity and clicks this button
 			if (this.state === ApplicationState.choosingVelocity)
-				this.exitChoosingVelocityMode();
+				exitChoosingVelocityMode();
 
 			//Update the settings on the page
 			this.state = ApplicationState.projectileInLaunchPosition;
@@ -268,12 +236,13 @@ class ProjectileThrowSimulation {
 		//Start the physics simulation when the launch button is pressed
 		document.getElementById("launch-button").addEventListener("click", () => {
 			//Reset the body's position and velocity
-			if (this.state === ApplicationState.projectileMoving)
-				this.stepper.stopPause();
+			if (this.state === ApplicationState.projectileMoving) {
+				newWorker();
+			}
 
 			//Handle the edge case where the user is choosing a velocity and clicks this button
 			if (this.state === ApplicationState.choosingVelocity)
-				this.exitChoosingVelocityMode();
+				exitChoosingVelocityMode();
 
 			//Make sure the body is launched from the right position with the right velocity
 			ProjectileThrowSimulation.state = ApplicationState.projectileInLaunchPosition;
@@ -287,48 +256,19 @@ class ProjectileThrowSimulation {
 				lastRendererTick = Date.now();
 				this.workerStopped = false;
 
+				//Calculate the theoretical outcome based on initial conditions
+				theoreticalResults = ProjectileThrowResults.calculateTheoreticalResults
+					(this.projectile, this.settings);
+
 				//Start the simulation
-				let bufferCount = 0;
-				this.parallelWorker = new WorkerWrapper( //TODO - change
-					"../../js/ProjectileThrow/ProjectileThrowWorker.js",
-					{
-						projectile: ProjectileThrowSimulation.projectile,
-						heightReference: ProjectileThrowSimulation.settings.heightReference
-					},
-					16, /*two numbers (8 bytes each) per Vec2, position of the body*/
-					this.settings.simulationQuality,
-					(w: Worker, data: any) => {
-						//Worker posted a message. If it is the simulation statistics, stop the
-						//worker.
-						let keys = Object.keys(data);
-						if (keys.indexOf("time") !== -1 && keys.indexOf("distance") !== -1 &&
-							keys.indexOf("maxHeight") !== -1 ) {
-			
-							let results = new ProjectileThrowResults();
-							results.time = data.time;
-							results.distance = data.distance;
-							results.maxHeight = data.maxHeight;
-
-							//Calculate the theoretical outcome based on initial conditions
-							let theoreticalResults: ProjectileThrowResults =
-							ProjectileThrowResults.calculateTheoreticalResults(this.projectile,
-								this.settings);
-
-							ProjectileThrowResults.applyToPage(theoreticalResults, results);
-							this.workerStopped = true;
-			
-							console.log(results);
-							w.terminate();
-						} else {
-							this.parallelWorker.addBuffer(
-								new NumberedBuffer(bufferCount, data.size, data.buf));
-							bufferCount++;
-						}
-					},
-					512
-				);
+				bufferCount = 0; //Parameter to reset first
+				this.parallelWorker.start({
+					projectile: ProjectileThrowSimulation.projectile,
+					heightReference: ProjectileThrowSimulation.settings.heightReference
+				});
 
 				this.state = ApplicationState.projectileMoving;
+				ProjectileThrowSettings.disableSimulationQuality();
 			});
 		});
 	}

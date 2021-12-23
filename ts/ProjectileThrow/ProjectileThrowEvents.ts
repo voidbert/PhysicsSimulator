@@ -41,7 +41,7 @@ class ProjectileThrowEvents {
 		//the velocity (setting its value to the chosen one)
 		document.getElementById("no-script-div").addEventListener("pointerup", () => {
 			if (ProjectileThrowSimulation.state === ApplicationState.choosingVelocity) {
-				ProjectileThrowSimulation.exitChoosingVelocityMode();
+				exitChoosingVelocityMode();
 			}
 		});
 
@@ -55,12 +55,12 @@ class ProjectileThrowEvents {
 					//cancelled
 					ProjectileThrowSettings.updatePageVelocity(
 						ProjectileThrowSimulation.velocityBeforeChoosing);
-					ProjectileThrowSimulation.exitChoosingVelocityMode();
+					exitChoosingVelocityMode();
 
 				} else if (ProjectileThrowSimulation.state ===
 					ApplicationState.showingSimulationResults) {
 
-					ProjectileThrowSimulation.hideSimulationResults();
+					hideSimulationResults();
 				}
 			}
 		});

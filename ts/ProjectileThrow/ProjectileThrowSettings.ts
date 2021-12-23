@@ -126,11 +126,6 @@ class ProjectileThrowSettings {
 
 		ProjectileThrowSimulation.axes.updateCaches();
 
-		//Update the simulation quality if the projectile was already launched
-		if (ProjectileThrowSimulation.stepper) {
-			ProjectileThrowSimulation.stepper.changeTimeout(this._simulationQuality);
-		}
-
 		//Update the position of the body it not mid-simulation. If the height is invalid, show a
 		//warning.
 		if (ProjectileThrowSimulation.state === ApplicationState.projectileInLaunchPosition || 
@@ -205,5 +200,14 @@ class ProjectileThrowSettings {
 		for (let i: number = 0; i < settingsElements.length; ++i) {
 			document.getElementById(settingsElements[i]).addEventListener("input", onUpdate);
 		}
+	}
+
+	static disableSimulationQuality() {
+		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = true;
+	}
+	
+	static enableSimulationQuality() {
+		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = false;
+		
 	}
 }

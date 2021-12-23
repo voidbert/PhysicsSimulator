@@ -25,16 +25,21 @@ function convertBody(body) {
 let projectile;
 let simulationQuality;
 let heightReference;
+let maxHeight = 0; //Keep track of the maximum height of the projectile
+
 let bufferSize;
 let allowedBuffers;
-
-//Keep track of the maximum height of the projectile
-let maxHeight = 0;
+let totalSimulationTicks;
 
 self.addEventListener("message", (e) => {
-	//This is initialization data
-	if (e.data.projectile)
+	//Types of messages:
+	// - Object will all the data (projectile, simulationQuality, etc.)
+	// - Permission to process and send more buffers (only allowedBuffers)
+	if (e.data.projectile) {
 		projectile = convertBody(e.data.projectile);
+		totalSimulationTicks = -1; // -1 not not count t = 0
+		maxHeight = 0;
+	}	
 	if (e.data.simulationQuality)
 		simulationQuality = e.data.simulationQuality;
 	if (e.data.heightReference)
@@ -44,40 +49,47 @@ self.addEventListener("message", (e) => {
 	if (e.data.allowedBuffers)
 		allowedBuffers = e.data.allowedBuffers;
 
+	//Create the buffers with the body positions that will be sent
 	let buffer = new ArrayBuffer(bufferSize * 16); // sizeof(number) = 8 bytes, Vec2 has 2 numbers
 	let view = new Float64Array(buffer);
 	let bufferUsedVec2s = 0; //The number of Vec2s written to the buffer
-	let fullyUsedBuffers = 0; //The number of buffers posted
+	let sessionUsedBuffers = 0; //The number of buffers posted since allowedBuffers was updated
 
-	while (fullyUsedBuffers < allowedBuffers) {
+	while (sessionUsedBuffers < allowedBuffers) { //While not all allowed buffers were sent
+		//Add the current projectile position to the buffer
 		view[bufferUsedVec2s * 2] = projectile.r.x;
 		view[bufferUsedVec2s * 2 + 1] = projectile.r.y;
-
 		bufferUsedVec2s++;
-	
+		totalSimulationTicks++;
+
+		//Check if a new maximum height has been reached
 		if (projectile.r.y > maxHeight) {
 			maxHeight = projectile.r.y;
 		}
 	
 		if (bufferUsedVec2s === bufferSize) {
-			//Buffer is full. Message it and recreate it.
+			//Buffer is full. Message it to the window and recreate it.
 			postMessage({ size: bufferUsedVec2s * 16, buf: buffer }, [buffer]);
+
 			buffer = new ArrayBuffer(bufferSize * 16);
 			view = new Float64Array(buffer);
 			bufferUsedVec2s = 0;
-			fullyUsedBuffers++;
+
+			sessionUsedBuffers++;
 		}
 	
-		if (ProjectileThrowTrajectory.bodyReachedGround(projectile, heightReference)) {
+		if (ProjectileThrowTrajectory.bodyReachedGround(projectile, heightReference) &&
+			totalSimulationTicks !== 0) { //totalSimulationTicks !== 0 -> allow launch height of 0m
+			//The body reached the ground. Stop the simulation and send any data left unsent
 			postMessage({ size: bufferUsedVec2s * 16, buf: buffer }, [buffer]);
+
+			//Send the experimental theoretical results and stop the loop
+			let experimentalResults = new ProjectileThrowResults();
+			experimentalResults.time = (totalSimulationTicks - 1) * simulationQuality;
+			experimentalResults.distance = projectile.r.x;
+			experimentalResults.maxHeight = maxHeight;
 	
-			let results = new ProjectileThrowResults();
-			results.time = //-1 removes the point at t = 0
-				(fullyUsedBuffers * bufferSize + bufferUsedVec2s - 1) * simulationQuality;
-			results.distance = projectile.r.x;
-			results.maxHeight = maxHeight;
-	
-			postMessage(results);
+			postMessage(experimentalResults);
 			break;
 		}
 	
