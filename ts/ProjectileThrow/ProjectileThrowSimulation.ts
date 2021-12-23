@@ -50,13 +50,15 @@ function updateRenderingSurfaceSize(camera: Camera, axes: AxisSystem): boolean {
 	return false;
 }
 
-let parallel; //TODO - remove - this is for DEBUG only
-
 class ProjectileThrowSimulation {
 	static state: ApplicationState = ApplicationState.projectileInLaunchPosition;
 
+	//Tools for running the physics simulation in a different thread.
+	static parallelWorker: WorkerWrapper;
+	static workerStopped: boolean;
+
 	//Physics
-	static stepper: TimeStepper; //Simulation time control
+	static stepper: TimeStepper; //TODO - remove
 	static trajectory: ProjectileThrowTrajectory = new ProjectileThrowTrajectory();
 	static projectile: Body = new Body(BODY_MASS, BODY_GEOMETRY, new Vec2(0, 0));
 
@@ -68,7 +70,7 @@ class ProjectileThrowSimulation {
 	static velocityBeforeChoosing: Vec2 = new Vec2();
 
 	//The scale of #simulation-results, that is adjust so that the element fits the screen
-	private static simulationResultsScale = 1; 
+	private static simulationResultsScale = 1;
 
 	//Camera and display
 	static camera: Camera = new Camera(new Vec2(), 32 * window.devicePixelRatio);
@@ -169,11 +171,40 @@ class ProjectileThrowSimulation {
 		this.settings.updatePage();
 
 		//Start the render loop
+		let ellapsedSimulationTime: number = 0;
+		let lastRendererTick: number = Date.now();
+
 		this.renderer = new Renderer(window,
 			document.getElementById("canvas") as HTMLCanvasElement, () => {
 
 			if (updateRenderingSurfaceSize(this.camera, this.axes)) {
 				this.scaleSimulationResults();
+			}
+
+			//Get the position of the body
+			let bodyFrame: ArrayBuffer[] = [];
+			if (this.state === ApplicationState.projectileMoving)
+				bodyFrame = this.parallelWorker.getBoundaryBuffers(ellapsedSimulationTime, true);
+
+			if (bodyFrame.length === 0) {
+				//Check if the simulation is done
+				if (this.workerStopped && this.state === ApplicationState.projectileMoving) {
+					this.state = ApplicationState.projectileStopped;
+
+					if (this.settings.showSimulationResults) {
+						this.showSimulationResults();
+					}
+				}
+
+				//Worker doesn't have the data yet
+				lastRendererTick = Date.now();
+			} else {
+				//TODO - LERP
+				let view = new Float64Array(bodyFrame[0]);
+				this.projectile.r = new Vec2(view[0], view[1]);
+
+				ellapsedSimulationTime += Date.now() - lastRendererTick;
+				lastRendererTick = Date.now();
 			}
 
 			//Center the body on the camera (move the camera so that the body is on the center of
@@ -252,16 +283,20 @@ class ProjectileThrowSimulation {
 			//Before staring the simulation, position the page so that the canvas is visible
 			//(useful for portrait displays)
 			ProjectileThrowEvents.smoothScroll(0, 0, () => {
+				ellapsedSimulationTime = 0;
+				lastRendererTick = Date.now();
+				this.workerStopped = false;
+
 				//Start the simulation
 				let bufferCount = 0;
-				parallel = new WorkerWrapper( //TODO - change
+				this.parallelWorker = new WorkerWrapper( //TODO - change
 					"../../js/ProjectileThrow/ProjectileThrowWorker.js",
 					{
 						projectile: ProjectileThrowSimulation.projectile,
-						simulationQuality: ProjectileThrowSimulation.settings.simulationQuality,
 						heightReference: ProjectileThrowSimulation.settings.heightReference
 					},
 					16, /*two numbers (8 bytes each) per Vec2, position of the body*/
+					this.settings.simulationQuality,
 					(w: Worker, data: any) => {
 						//Worker posted a message. If it is the simulation statistics, stop the
 						//worker.
@@ -280,21 +315,20 @@ class ProjectileThrowSimulation {
 								this.settings);
 
 							ProjectileThrowResults.applyToPage(theoreticalResults, results);
-							if (this.settings.showSimulationResults) {
-								this.showSimulationResults();
-							}
+							this.workerStopped = true;
 			
 							console.log(results);
 							w.terminate();
 						} else {
-							//This is a new buffer
-							parallel.addBuffer(new NumberedBuffer(bufferCount, data));
-							console.log("New buffer");
+							this.parallelWorker.addBuffer(
+								new NumberedBuffer(bufferCount, data.size, data.buf));
 							bufferCount++;
 						}
 					},
 					512
 				);
+
+				this.state = ApplicationState.projectileMoving;
 			});
 		});
 	}

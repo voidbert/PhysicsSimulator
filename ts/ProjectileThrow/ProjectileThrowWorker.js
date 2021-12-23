@@ -45,13 +45,14 @@ self.addEventListener("message", (e) => {
 		allowedBuffers = e.data.allowedBuffers;
 
 	let buffer = new ArrayBuffer(bufferSize * 16); // sizeof(number) = 8 bytes, Vec2 has 2 numbers
-	let view = new DataView(buffer, 0, bufferSize * 16);
+	let view = new Float64Array(buffer);
 	let bufferUsedVec2s = 0; //The number of Vec2s written to the buffer
 	let fullyUsedBuffers = 0; //The number of buffers posted
 
 	while (fullyUsedBuffers < allowedBuffers) {
-		view.setFloat64(bufferUsedVec2s * 16, projectile.r.x, true);
-		view.setFloat64(bufferUsedVec2s * 16 + 8, projectile.r.y, true);
+		view[bufferUsedVec2s * 2] = projectile.r.x;
+		view[bufferUsedVec2s * 2 + 1] = projectile.r.y;
+
 		bufferUsedVec2s++;
 	
 		if (projectile.r.y > maxHeight) {
@@ -60,15 +61,15 @@ self.addEventListener("message", (e) => {
 	
 		if (bufferUsedVec2s === bufferSize) {
 			//Buffer is full. Message it and recreate it.
-			postMessage(buffer, [buffer]);
+			postMessage({ size: bufferUsedVec2s * 16, buf: buffer }, [buffer]);
 			buffer = new ArrayBuffer(bufferSize * 16);
-			view = new DataView(buffer, 0, bufferSize * 16);
+			view = new Float64Array(buffer);
 			bufferUsedVec2s = 0;
 			fullyUsedBuffers++;
 		}
 	
 		if (ProjectileThrowTrajectory.bodyReachedGround(projectile, heightReference)) {
-			postMessage(buffer, [buffer]);
+			postMessage({ size: bufferUsedVec2s * 16, buf: buffer }, [buffer]);
 	
 			let results = new ProjectileThrowResults();
 			results.time = //-1 removes the point at t = 0
@@ -81,7 +82,5 @@ self.addEventListener("message", (e) => {
 		}
 	
 		projectile.step(simulationQuality);
-
-		//This loop doesn't allow the message to arrive
 	}
 });
