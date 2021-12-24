@@ -1,12 +1,3 @@
-//Simulation quality - the number of milliseconds between calculating the positions of bodies (dt)
-enum SimulationQuality {
-	VeryLow = 50,
-	Low = 30,
-	Medium = 20,
-	High = 10,
-	VeryHigh = 5
-}
-
 //Responsible for the simulation timing, this class will use setInterval depending on the selected
 //simulation quality. Because setInterval timing isn't perfect, it also keeps track of the time
 //since the last setInterval callback.

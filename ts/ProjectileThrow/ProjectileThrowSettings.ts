@@ -202,12 +202,23 @@ class ProjectileThrowSettings {
 		}
 	}
 
-	static disableSimulationQuality() {
+	static disableSettingsElements() {
 		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = true;
+		(document.getElementById("body-base") as HTMLInputElement).disabled = true;
+		(document.getElementById("body-cm") as HTMLInputElement).disabled = true;
+		(document.getElementById("height-input") as HTMLInputElement).disabled = true;
+		(document.getElementById("vx-input") as HTMLInputElement).disabled = true;
+		(document.getElementById("vy-input") as HTMLInputElement).disabled = true;
+		(document.getElementById("choose-screen-velocity") as HTMLButtonElement).disabled = true;
 	}
 	
-	static enableSimulationQuality() {
+	static enableSettingsElements() {
 		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = false;
-		
+		(document.getElementById("body-base") as HTMLInputElement).disabled = false;
+		(document.getElementById("body-cm") as HTMLInputElement).disabled = false;
+		(document.getElementById("height-input") as HTMLInputElement).disabled = false;
+		(document.getElementById("vx-input") as HTMLInputElement).disabled = false;
+		(document.getElementById("vy-input") as HTMLInputElement).disabled = false;
+		(document.getElementById("choose-screen-velocity") as HTMLButtonElement).disabled = false;
 	}
 }

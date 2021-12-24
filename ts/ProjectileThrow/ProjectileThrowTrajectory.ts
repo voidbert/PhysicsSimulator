@@ -18,9 +18,10 @@ class ProjectileThrowTrajectory {
 		projectile = Object.create(projectile);
 
 		this.points = [];
+		this.points.push(projectile.r);
 		do {
-			this.points.push(projectile.r);
 			projectile.step(simulationQuality);
+			this.points.push(projectile.r);		
 		} while (!ProjectileThrowTrajectory.bodyReachedGround(projectile, heightReference));
 	}
 

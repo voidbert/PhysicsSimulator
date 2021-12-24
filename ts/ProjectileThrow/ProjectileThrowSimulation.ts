@@ -149,7 +149,7 @@ class ProjectileThrowSimulation {
 				if (this.workerStopped && this.state === ApplicationState.projectileMoving) {
 					//Simulation done
 					this.state = ApplicationState.projectileStopped;
-					ProjectileThrowSettings.enableSimulationQuality();
+					ProjectileThrowSettings.enableSettingsElements();
 
 					//Make sure the body has the last position (due to frame timing, it may not be
 					//there)
@@ -165,8 +165,11 @@ class ProjectileThrowSimulation {
 			} else {
 				//The position of the body is known. Apply it.
 
-				//TODO - LERP
-				this.projectile.r = this.parseFrame(bodyFrame[0]);
+				//Linear interpolation to know the body's position
+				this.projectile.r = ExtraMath.linearInterpolationVec2(
+					this.parseFrame(bodyFrame[0]), this.parseFrame(bodyFrame[1]),
+					this.settings.simulationQuality,
+					ellapsedSimulationTime % this.settings.simulationQuality);
 
 				//Simulation time has passed
 				ellapsedSimulationTime += Date.now() - lastRendererTick;
@@ -221,7 +224,7 @@ class ProjectileThrowSimulation {
 		document.getElementById("reset-button").addEventListener("click", () => {
 			if (this.state === ApplicationState.projectileMoving) {
 				newWorker();
-				ProjectileThrowSettings.enableSimulationQuality();
+				ProjectileThrowSettings.enableSettingsElements();
 			}
 
 			//Handle the edge case where the user is choosing a velocity and clicks this button
@@ -265,10 +268,10 @@ class ProjectileThrowSimulation {
 				this.parallelWorker.start({
 					projectile: ProjectileThrowSimulation.projectile,
 					heightReference: ProjectileThrowSimulation.settings.heightReference
-				});
+				}, this.settings.simulationQuality);
 
 				this.state = ApplicationState.projectileMoving;
-				ProjectileThrowSettings.disableSimulationQuality();
+				ProjectileThrowSettings.disableSettingsElements();
 			});
 		});
 	}

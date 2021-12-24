@@ -189,6 +189,11 @@ button:hover {
 	background-color: #bbbbbb;
 }
 
+button:disabled {
+	background-color: #eeeeee;
+	cursor: default;
+}
+
 .simulation-interaction-section {
 	padding-bottom: 1rem;
 	margin-bottom: 1rem;

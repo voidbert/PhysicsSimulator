@@ -28,4 +28,21 @@ class ExtraMath {
 	static relativeError(experimental: number, real: number): number {
 		return Math.abs((experimental - real) / real);
 	}
+
+	//Linear interpolation between two numbers dt apart. t is the horizontal distance from a to the
+	//point to be known
+	static linearInterpolation(a: number, b: number, dt: number, t: number) {
+		if (dt === 0) {
+			return (a + b) / 2; //No distance between the points. Average them out to get the result
+		}
+
+		let m = (b - a) / dt; //slope
+		return a + m * t;
+	}
+
+	//See this.linearInterpolation for more info.
+	static linearInterpolationVec2(a: Vec2, b: Vec2, dt: number, t: number) {
+		return new Vec2(this.linearInterpolation(a.x, b.x, dt, t),
+			this.linearInterpolation(a.y, b.y, dt, t));
+	}
 }

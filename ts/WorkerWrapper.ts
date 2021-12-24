@@ -29,6 +29,15 @@ class NumberedBuffer {
 	}
 }
 
+//Simulation quality - the number of milliseconds between calculating the positions of bodies (dt)
+enum SimulationQuality {
+	VeryLow = 50,
+	Low = 30,
+	Medium = 20,
+	High = 10,
+	VeryHigh = 5
+}
+
 //A wrapper for a web worker for physics simulations. Data must be transferred in buffers of frames,
 //a frame being composed by data you send every position update.
 class WorkerWrapper {
@@ -79,8 +88,9 @@ class WorkerWrapper {
 	//Starts the web worker by sending it a certain message your code is configured to interpret as
 	//a start command. This clears any buffers stored. data shouldn't have a bufferSize,
 	//simulationQuality or an allowedBuffers property, as those will be set by this constructor.
-	start(data: any) {
+	start(data: any, simulationQuality: SimulationQuality = this.simulationQuality) {
 		this.buffers = [];
+		this.simulationQuality = simulationQuality;
 
 		data.bufferSize = Math.max(this.bufferSize, 1);
 		data.allowedBuffers = this.bufferLimit;
