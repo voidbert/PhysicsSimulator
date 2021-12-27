@@ -66,6 +66,11 @@ function mergeScripts(list) {
 console.log("\n"); //Formatting
 getSimulationList((file) => {
 	getScriptsList(file, (scripts) => {
+		if (scripts.length === 1 && scripts[0] === "") {
+			//Empty files: don't compile script
+			return;
+		}
+
 		let script = mergeScripts(scripts);
 		let outPath = join(file.substring(0, file.lastIndexOf(sep)), "compiledJS.js");
 
