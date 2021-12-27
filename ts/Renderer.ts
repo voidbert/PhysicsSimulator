@@ -99,8 +99,8 @@ class Renderer {
 	//Renders (single- or multi-line) text to the canvas using textBaseline = "top". If the color or
 	//the font is left unset, the rendering context's color and font font will be used. The font
 	//size must be provided in px or in rem.
-	renderText(text: string, position: Vec2, lineSpacing: number = 1.5,
-		color: string = "", font: string = "") {
+	renderText(text: string, position: Vec2, lineSpacing: number = 1.5, color: string = "",
+		font: string = "") {
 
 		if (color !== "") {
 			this.ctx.fillStyle = color;
@@ -109,9 +109,10 @@ class Renderer {
 		if (font !== "") {
 			this.ctx.font = font;
 		}
+
 		this.ctx.textBaseline = "top";
 
-		let lineHeight = this.fontHeight();
+		let lineHeight = this.fontHeight;
 		let lines: string[] = text.split("\n");
 		for (let i: number = 0; i < lines.length; ++i) {
 			this.ctx.fillText(lines[i], position.x, position.y);
@@ -119,9 +120,40 @@ class Renderer {
 		}
 	}
 
+	//Renders (single-line) text to the canvas using textBaseline = "top" and renderer.ctx.textAlign
+	//= "left". The font size must be provided in px or in rem. Before drawing the text, a rectangle
+	//will be filled behind it. If text measurements aren't provided, they will be calculated.
+	renderTextWithBackground(text: string, position: Vec2, backgroundColor: string,
+		textMeasurements: Vec2 = new Vec2(Infinity, Infinity), color: string = "",
+		font: string = "") {
+
+		this.ctx.textAlign = "left";
+		this.ctx.textBaseline = "top";
+
+		if (color !== "") {
+			this.ctx.fillStyle = color;
+		}
+
+		if (font !== "") {
+			this.ctx.font = font;
+		}
+
+		if (textMeasurements.x === Infinity && textMeasurements.y === Infinity) {
+			textMeasurements = new Vec2(this.ctx.measureText(text).width, this.fontHeight);
+		}
+
+		//Render a rectangle behind the text
+		this.ctx.fillStyle = backgroundColor;
+		this.ctx.fillRect(position.x, position.y, textMeasurements.x, textMeasurements.y);
+
+		//Draw the text
+		this.ctx.fillStyle = color;
+		this.ctx.fillText(text, position.x, position.y);
+	}
+
 	//Measures the height of the canvas font (if it is in px or in rem). The canvas' font will be
 	//set to "10px sans-serif" if the provided font isn't in px or rem.
-	fontHeight() {
+	get fontHeight(): number {
 		//Split the canvas font and find its size (px or rem). Convert from rem to px if needed.
 		let height: number = 0;
 		let fontSplit = this.ctx.font.split(" ");

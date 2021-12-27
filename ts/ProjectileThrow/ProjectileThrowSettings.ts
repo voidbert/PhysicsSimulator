@@ -111,10 +111,20 @@ class ProjectileThrowSettings {
 	//checkboxes, updates the time between simulation steps, shows / hides axis labels, etc.)
 	updatePage(): void {
 		ProjectileThrowSimulation.axes.showAxes = this._showAxes;
-		ProjectileThrowSimulation.axes.showAxisLabels = this._showAxesLabels;
-		ProjectileThrowSimulation.axes.showUnitLabels = this._showAxesLabels;
 		ProjectileThrowSimulation.axes.showArrows = this._showAxes;
-		ProjectileThrowSimulation.axes.showGrid = this._showGrid;
+
+		ProjectileThrowSimulation.axes.showUnitLabelsX = this._showAxesLabels;
+		ProjectileThrowSimulation.axes.showUnitLabelsY = this._showAxesLabels;
+		if (this._showAxesLabels) {
+			ProjectileThrowSimulation.axes.horizontalAxisName = "x";
+			ProjectileThrowSimulation.axes.verticalAxisName   = "y";
+		} else {
+			ProjectileThrowSimulation.axes.horizontalAxisName = "";
+			ProjectileThrowSimulation.axes.verticalAxisName   = "";
+		}
+
+		ProjectileThrowSimulation.axes.showHorizontalGrid = this._showGrid;
+		ProjectileThrowSimulation.axes.showVerticalGrid   = this._showGrid;
 
 		//Make the "show arrows" checkbox enabled or disabled depending on the state of showAxes
 		let showArrowsCheckbox = (document.getElementById("axes-labels") as HTMLInputElement);
@@ -123,8 +133,6 @@ class ProjectileThrowSettings {
 		} else {
 			showArrowsCheckbox.disabled = true;
 		}
-
-		ProjectileThrowSimulation.axes.updateCaches();
 
 		//Update the position of the body it not mid-simulation. If the height is invalid, show a
 		//warning.

@@ -61,11 +61,20 @@ class ProjectileThrowSimulation {
 
 	//Camera and display
 	static camera: Camera = new Camera(new Vec2(), 32 * window.devicePixelRatio);
-	static axes: AxisSystem = new AxisSystem(this.camera,
-		true, true, "white",  2 * window.devicePixelRatio,
-		true, "#dddddd", 1 * window.devicePixelRatio, true, true,
-		(16 * window.devicePixelRatio).toString() + "px sans-serif", "black", false
-	);
+	static axes: AxisSystem = new AxisSystem(
+		this.camera,
+		true, true, false, //Show axes, show arrows, only show positive axes
+		true, true, //Show separation units (X and Y)
+		true, true, //Show unit labels (X and Y)
+		false, false, false, //Show grid (X and Y), only show positive grid areas
+		true, true, //Auto scale (X and Y)
+		64 * window.devicePixelRatio, 64 * window.devicePixelRatio, //Max grid size (X and Y)
+		new Vec2(), //Non-auto scale
+		"x", "y", //Axes' names
+		"white", 2, "1rem sans-serif", //Axes' properties
+		"#555555", 1, //Grid properties
+		"black" //Page background color
+		);
 	static renderer: Renderer;
 
 	//Parses a frame from the web worker (gets the position vector in it)
@@ -181,8 +190,6 @@ class ProjectileThrowSimulation {
 			this.camera.r =
 				this.projectile.r.subtract(this.camera.canvasSize.scale(0.5 / this.camera.scale));
 
-			//TODO - remove updateCaches - the axis system will be rewritten with no caches
-			this.axes.updateCaches();
 			this.axes.drawAxes(this.renderer);
 
 			this.renderer.renderPolygon(

@@ -4,335 +4,377 @@ const MAX_GRID_SIZE: number = 64 * window.devicePixelRatio;
 class AxisSystem {
 	camera: Camera;
 
-	showAxes: boolean;
-	showArrows: boolean;
-	axisColor: string;
-	axisWidth: number;
+	showAxes: boolean; showArrows: boolean; onlyPositiveAxes: boolean;
 
-	showGrid: boolean;
-	gridColor: string;
-	gridWidth: number;
+	showUnitSeparationsX: boolean; showUnitLabelsX: boolean;
+	showUnitSeparationsY: boolean; showUnitLabelsY: boolean;
 
-	showAxisLabels: boolean;
-	showUnitLabels: boolean;
-	labelFont: string;
+	showHorizontalGrid: boolean; showVerticalGrid: boolean; onlyPositiveGrid: boolean;
 
-	pageBackgroundColor: string;
+	autoScaleX: boolean; autoScaleY: boolean;
+	maxGridSizeX: number; maxGridSizeY: number;
+	axesScale: Vec2;
 
-	onlyPositive: boolean;
+	horizontalAxisName: string; verticalAxisName: string;
 
-	//The AxisSystem keeps the coordinates of the lines to be drawn cached, so that these don't have
-	//to be generated every frame. See AxisSystem.updateCaches().
-	private cachedAxesBaseLines: Vec2[] = [];
-	private cachedArrowPolygons: Vec2[][] = [];
-	private cachedAxesScale: { gridWorldSize: number, gridScreenSize: number };
-	private cachedAxesScaleLines: Vec2[] = [];
-	private cachedGridLines: Vec2[] = [];
+	axesColor: string; axesWidth: number; labelFont: string;
+	gridColor: string; gridWidth: number;
+	pageColor: string;
 
-	//margin -> the number of pixels from the end of the axis (positive and negative) and the
-	//borders of the camera's rendering area.
-	//showArrows -> whether or not to draw arrows showing the positive orientation
-	//onlyPositive -> if true, only the positive parts of the axes.
+	// NOTES:
+	// axesWidth is the width of the axis line in pixels
 	//
-	//labelFont MUST BE in px or in rem.
+	// showArrows, showUnitSeparations, showUnitLabels, showAxesLabels and onlyPositiveAxes will
+	// only take effect if showAxes is true. Also, showUnitLabels will only take effect if
+	// showUnitSeparations is true (for X and Y).
 	//
-	//The constructor doesn't generate the axes' caches. Do that when you are sure the camera has a
-	//set canvasSize
-	constructor(camera: Camera,
-		showAxes: boolean = true, showArrows: boolean = true, axisColor: string = "#000000",
-		axisWidth = 2,
-		showGrid: boolean = false, gridColor: string = "#cccccc", gridWidth: number = 1,
-		showAxisLabels: boolean = false, showUnitLabels: boolean = false, labelFont: string,
-		pageBackgroundColor: string = "#ffffff", onlyPositive: boolean = true) {
+	// axesScale will be modified if either autoScaleX or autoScaleY is on. axesScale must be in
+	// world coordinates maxGridSizeX (and Y) will be used to calculate automatic axis scaling
+	// (maximum size of a division).
+	//
+	// pageColor is the background color of the canvas. It is used to fill a rectangle behind axis
+	// and unit labels.
+	constructor(
+		camera: Camera,
+		showAxes: boolean, showArrows: boolean, onlyPositiveAxes: boolean,
+
+		showUnitSeparationsX: boolean, showUnitLabelsX: boolean,
+		showUnitSeparationsY: boolean, showUnitLabelsY: boolean,
+
+		showHorizontalGrid: boolean, showVerticalGrid: boolean, onlyPositiveGrid: boolean,
+
+		autoScaleX: boolean, autoScaleY: boolean,
+		maxGridSizeX: number, maxGridSizeY: number, axesScale: Vec2,
+
+		horizontalAxisName: string, verticalAxisName: string,
+
+		axesColor: string, axesWidth: number, labelFont: string,
+		gridColor: string, gridWidth: number,
+		pageColor: string, ) {
 
 		this.camera = camera;
 
 		this.showAxes = showAxes;
 		this.showArrows = showArrows;
-		this.axisColor = axisColor;
-		this.axisWidth = axisWidth;
+		this.onlyPositiveAxes = onlyPositiveAxes;
 
-		this.showGrid = showGrid;
+		this.showUnitSeparationsX = showUnitSeparationsX; this.showUnitLabelsX = showUnitLabelsX;
+		this.showUnitSeparationsY = showUnitSeparationsY; this.showUnitLabelsY = showUnitLabelsY;
+
+		this.showHorizontalGrid = showHorizontalGrid; this.showVerticalGrid = showVerticalGrid;
+		this.onlyPositiveGrid = onlyPositiveGrid;
+
+		this.autoScaleX = autoScaleX; this.autoScaleY = autoScaleY;
+		this.maxGridSizeX = maxGridSizeX; this.maxGridSizeY = maxGridSizeY;
+		this.axesScale = axesScale;
+
+		this.horizontalAxisName = horizontalAxisName; this.verticalAxisName = verticalAxisName;
+
+		this.axesColor = axesColor;
+		this.axesWidth = axesWidth;
+		this.labelFont = labelFont;
+
 		this.gridColor = gridColor;
 		this.gridWidth = gridWidth;
 
-		this.showAxisLabels = showAxisLabels;
-		this.showUnitLabels = showUnitLabels;
-		this.labelFont = labelFont;
-
-		this.pageBackgroundColor = pageBackgroundColor;
-
-		this.onlyPositive = onlyPositive;
+		this.pageColor = pageColor;
 	}
 
-	//Generates the points to renderer the axes' base lines (without any scaling marks or labeling)
-	private generateAxesBaseLines(): Vec2[] {
-		//Get the points of the lines to be rendered (based on the screen coordinates of the origin)
-		let linePoints: Vec2[] = [];
-		let origin: Vec2 = this.camera.pointToScreenPosition(new Vec2(0, 0));
+	//Gets the surface area (in world coordinates) that will be drawn to.
+	private getBoundingRect(): Rect {
+		return new Rect(
+			this.camera.pointToWorldPosition(new Vec2(0, 0)),
+			this.camera.pointToWorldPosition(this.camera.canvasSize)
+		);
+	}
 
-		if (this.onlyPositive) {
-			linePoints = [
-				/* X */ origin, new Vec2(this.camera.canvasSize.x, origin.y),
-				/* Y */ origin, new Vec2(origin.x, 0)
-			];
+	//True is returned if the line is rendered; false is returned otherwise.
+	private drawXAxisBaseLine(renderer: Renderer, screenOrigin: Vec2): boolean {
+		let minX: number; let maxX: number;
+
+		if (this.onlyPositiveAxes) {
+			minX = Math.max(0, screenOrigin.x); maxX = this.camera.canvasSize.x;
 		} else {
-			linePoints = [
-				/* X */ new Vec2(0, origin.y), new Vec2(this.camera.canvasSize.x, origin.y),
-				/* Y */ new Vec2(origin.x, 0), new Vec2(origin.x, this.camera.canvasSize.y),
-			];
+			minX = 0; maxX = this.camera.canvasSize.x;
 		}
 
-		return linePoints;
+		if (maxX > minX) {
+			renderer.renderLines([ new Vec2(minX, screenOrigin.y), new Vec2(maxX, screenOrigin.y) ],
+				this.axesColor, this.axesWidth);
+			return true;
+		}
+
+		return false;
 	}
 
-	//Returns the ideal scaling for the axes with the current camera settings. The returned object
-	//contains the number of pixels of each axis division (gridScreenSize) and its equivalent in
-	//world size (gridWorldSize).
-	private generateAxesScale(): { gridWorldSize: number, gridScreenSize: number } {
-		//Calculate the grid division (O(1))
-		let maxGridWorldSize = MAX_GRID_SIZE / this.camera.scale;
-		let realGridWorldSize = Math.floor(maxGridWorldSize);
+	//True is returned if the line is rendered; false is returned otherwise.
+	private drawYAxisBaseLine(renderer: Renderer, screenOrigin: Vec2): boolean {
+		let minY: number; let maxY: number;
+
+		if (this.onlyPositiveAxes) {
+			minY = 0; maxY = Math.min(screenOrigin.y, this.camera.canvasSize.y);
+		} else {
+			minY = 0; maxY = this.camera.canvasSize.y;
+		}
+
+		if (maxY > minY) {
+			renderer.renderLines([ new Vec2(screenOrigin.x, minY), new Vec2(screenOrigin.x, maxY) ],
+				this.axesColor, this.axesWidth);
+			return true;
+		}
+
+		return false;
+	}
+
+	private drawXArrow(renderer: Renderer, screenOrigin: Vec2) {
+		renderer.renderPolygon([
+			new Vec2(this.camera.canvasSize.x, screenOrigin.y),
+			new Vec2(
+				this.camera.canvasSize.x - this.axesWidth * 3.5,
+				screenOrigin.y - this.axesWidth * 3.5
+			),
+			new Vec2(
+				this.camera.canvasSize.x - this.axesWidth * 3.5,
+				screenOrigin.y + this.axesWidth * 3.5
+			),
+		], this.axesColor);
+	}
+
+	private drawYArrow(renderer: Renderer, screenOrigin: Vec2) {
+		renderer.renderPolygon([
+			new Vec2(screenOrigin.x, 0),
+			new Vec2(screenOrigin.x - this.axesWidth * 3.5, this.axesWidth * 3.5),
+			new Vec2(screenOrigin.x + this.axesWidth * 3.5, this.axesWidth * 3.5),
+		], this.axesColor);
+	}
+
+	private drawXName(renderer: Renderer, screenOrigin: Vec2) {
+		//Measure the text to place it correctly
+		let measure = new Vec2(
+			renderer.ctx.measureText(this.horizontalAxisName).width,
+			renderer.fontHeight
+		);
+
+		let position = new Vec2(
+			this.camera.canvasSize.x - measure.x - 10, screenOrigin.y + 10 + this.axesWidth * 3.5
+		);
+
+		renderer.renderTextWithBackground(this.horizontalAxisName, position, this.pageColor,
+			measure, this.axesColor, this.labelFont);
+	}
+
+	private drawYName(renderer: Renderer, screenOrigin: Vec2) {
+		//Measure the text to place it correctly
+		let measure = new Vec2(
+			renderer.ctx.measureText(this.verticalAxisName).width, renderer.fontHeight
+		);
+
+		let position = new Vec2(screenOrigin.x - measure.x - 10 - this.axesWidth * 3.5, 10);
+
+		renderer.renderTextWithBackground(this.verticalAxisName, position, this.pageColor, measure,
+			this.axesColor, this.labelFont);
+	}
+
+	//Determines the automatic scaling for an axis (in world coordinates)
+	private autoScale(maxGridSize: number): number {
+		//Calculate the grid division
+		let maxGridWorldSize = maxGridSize / this.camera.scale;
+		let gridWorldSize = Math.floor(maxGridWorldSize);
 
 		//If the scale is less than 1, flooring it would make it 0 and the app would crash. Let the
 		//scale assume values in the sequence 0.5^n.
-		if (realGridWorldSize === 0) {
-			let multiplier = Math.round(Math.log(maxGridWorldSize) / Math.log(0.5));
-			realGridWorldSize = Math.pow(0.5, multiplier);
+		if (gridWorldSize === 0) {
+			let multiplier = Math.round(Math.log(maxGridWorldSize) / Math.log(0.5)); //log base 0.5
+			gridWorldSize = Math.pow(0.5, multiplier);
 
 			//Prevention measure. I think this won't happen but its better to get a wrong axis scale
 			//than a complete program crash.
-			if (realGridWorldSize === 0) {
-				realGridWorldSize = 0.5;
+			if (gridWorldSize === 0) {
+				gridWorldSize = 0.5;
 			}
 		}
 
-		return {
-			gridWorldSize: realGridWorldSize,
-			gridScreenSize: realGridWorldSize * this.camera.scale
-		};
+		return gridWorldSize;
 	}
 
-	//Generates the two triangles at the end of the axes (x and y).
-	private generateArrows(): Vec2[][] {
-		let origin: Vec2 = this.camera.pointToScreenPosition(new Vec2(0, 0));
-
-		let arrows: Vec2[][] = [[
-			//X axis arrow
-			new Vec2(this.camera.canvasSize.x, origin.y),
-			new Vec2(
-				this.camera.canvasSize.x - this.axisWidth * 3.5,
-				origin.y - this.axisWidth * 3.5
-			),
-			new Vec2(
-				this.camera.canvasSize.x - this.axisWidth * 3.5,
-				origin.y + this.axisWidth * 3.5
-			),
-		], [
-			//Y axis arrow
-			new Vec2(origin.x, 0),
-			new Vec2(origin.x - this.axisWidth * 3.5, this.axisWidth * 3.5),
-			new Vec2(origin.x + this.axisWidth * 3.5, this.axisWidth * 3.5),
-		]];
-		return arrows;
-	}
-
-	//Generates where each vertical grid line (or axis split should be).
-	private generateGridAndAxesXSplits(gridScreenSize: number, callback: (x: number) => any) {
-		let origin: Vec2 = this.camera.pointToScreenPosition(new Vec2(0, 0));
-
-		if (!this.onlyPositive) {
-			//Start from the origin and fill the negative parts of the axes
-			for (let x: number = origin.x; x >= 0; x -= gridScreenSize) {
-				callback(x);
-			}
-		}
-		//Start from the origin and determine the positive positions of the splits
-		for (let x: number = origin.x; x <= this.camera.canvasSize.x; x += gridScreenSize) {	
-			callback(x);
+	//Loops through all scale divisions between a range. The callback is called for every scale
+	//division found in world coordinates. scale, start and end should also be provided in world
+	//coordinates.
+	private loopScale(scale: number, start: number, end: number, callback: (point: number) => any) {
+		start -= start % scale; //Find first scale unit
+		for (; start < end; start += scale) {
+			callback(start);
 		}
 	}
 
-	//Generates where each horizontal grid line (or axis split should be).
-	private generateGridAndAxesYSplits(gridScreenSize: number, callback: (y: number) => any) {
-		let origin: Vec2 = this.camera.pointToScreenPosition(new Vec2(0, 0));
+	//point -> result from loopScale, a world coordinate value of x
+	private drawXAxisUnitSeparator(renderer: Renderer, screenOrigin: Vec2, point: number) {
+		let screenX: number = this.camera.pointToScreenPosition(new Vec2(point, 0)).x;
 
-		if (!this.onlyPositive) {
-			//Start from the origin and fill the negative parts of the axes
-			for (let y: number = origin.y; y <= this.camera.canvasSize.y; y += gridScreenSize) {
-				callback(y);
-			}
-		}
-		//Start from the origin and determine the positive positions of the splits
-		for (let y: number = origin.y; y >= 0; y -= gridScreenSize) {	
-			callback(y);
-		}
+		renderer.renderLines([
+			new Vec2(screenX, screenOrigin.y - this.axesWidth),
+			new Vec2(screenX, screenOrigin.y + this.axesWidth),
+		], this.axesColor, this.axesWidth);
 	}
 
-	//Generates the tiny lines that are responsible for showing the scale of the axes.
-	private generateAxesScaleLines(gridScreenSize: number): Vec2[] {
-		//Get the points of the lines to be rendered (based on the screen coordinates of the origin)
-		let linePoints: Vec2[] = [];
-		let origin: Vec2 = this.camera.pointToScreenPosition(new Vec2(0, 0));
+	//point -> result from loopScale, a world coordinate value of y
+	private drawYAxisUnitSeparator(renderer: Renderer, screenOrigin: Vec2, point: number) {
+		let screenY: number = this.camera.pointToScreenPosition(new Vec2(0, point)).y;
 
-		this.generateGridAndAxesXSplits(gridScreenSize, (x: number) => {
-			linePoints.push(
-				new Vec2(x, origin.y - this.axisWidth), 
-				new Vec2(x, origin.y + this.axisWidth)
-			);
-		});
-
-		this.generateGridAndAxesYSplits(gridScreenSize, (y: number) => {
-			linePoints.push(
-				new Vec2(origin.x - this.axisWidth, y), 
-				new Vec2(origin.x + this.axisWidth, y)
-			);
-		});
-
-		return linePoints;
+		renderer.renderLines([
+			new Vec2(screenOrigin.x - this.axesWidth, screenY),
+			new Vec2(screenOrigin.x + this.axesWidth, screenY),
+		], this.axesColor, this.axesWidth);
 	}
 
-	private generateGridLines(gridScreenSize: number): Vec2[] {
-		//Get the points of the lines to be rendered (based on the screen coordinates of the origin)
-		let linePoints: Vec2[] = [];
-		let origin: Vec2 = this.camera.pointToScreenPosition(new Vec2(0, 0));
+	//point -> result from loopScale, a world coordinate value of x
+	private drawXUnitLabels(renderer: Renderer, screenOrigin: Vec2, point: number) {
+		let measure = new Vec2(
+			renderer.ctx.measureText(point.toString()).width, renderer.fontHeight);
 
-		this.generateGridAndAxesXSplits(gridScreenSize, (x: number) => {
-			if (this.onlyPositive) {
-				linePoints.push(
-					new Vec2(x, 0),
-					new Vec2(x, origin.y)
-				);
-			} else {
-				linePoints.push(
-					new Vec2(x, 0),
-					new Vec2(x, this.camera.canvasSize.y)
-				);
-			}
-		});
+		let screenX: number = this.camera.pointToScreenPosition(new Vec2(point, 0)).x;
+		let position = new Vec2(screenX - measure.x / 2, screenOrigin.y + this.axesWidth + 10);
 
-		this.generateGridAndAxesYSplits(gridScreenSize, (y: number) => {
-			if (this.onlyPositive) {
-				linePoints.push(
-					new Vec2(origin.x, y), 
-					new Vec2(this.camera.canvasSize.x, y)
-				);
-			} else {
-				linePoints.push(
-					new Vec2(0, y), 
-					new Vec2(this.camera.canvasSize.x, y)
-				);
-			}
-		});
-
-		return linePoints;
+		renderer.renderTextWithBackground(point.toString(), position, this.pageColor,
+			measure, this.axesColor, this.labelFont);
 	}
 
-	//This class caches the coordinates of the axis. These need to be updated when anything in the
-	//camera is updated (position, scale, canvas size, ...) or when either showGrid, showArrows or
-	//onlyPositive is changed.
-	updateCaches() {
-		this.cachedAxesScale = this.generateAxesScale();
-		this.cachedArrowPolygons = this.generateArrows();
-		this.cachedAxesBaseLines = this.generateAxesBaseLines();
-		this.cachedAxesScaleLines = this.generateAxesScaleLines(this.cachedAxesScale.gridScreenSize);
-		this.cachedGridLines = this.generateGridLines(this.cachedAxesScale.gridScreenSize);
+	//point -> result from loopScale, a world coordinate value of y
+	private drawYUnitLabels(renderer: Renderer, screenOrigin: Vec2, point: number) {
+		let measure = new Vec2(
+			renderer.ctx.measureText(point.toString()).width, renderer.fontHeight);
+
+		let screenY: number = this.camera.pointToScreenPosition(new Vec2(0, point)).y;
+		let position = new Vec2(
+			screenOrigin.x - this.axesWidth - measure.x - 10, screenY - measure.y / 2
+		);
+
+		renderer.renderTextWithBackground(point.toString(), position, this.pageColor,
+			measure, this.axesColor, this.labelFont);
 	}
 
 	drawAxes(renderer: Renderer) {
-		//Draw the grid
-		if (this.showGrid) {
-			renderer.renderLines(this.cachedGridLines, this.gridColor, this.gridWidth);
+		//Text rendering parameters
+		renderer.ctx.font = this.labelFont;
+
+		//Not to draw out unnecessarily out of the canvas (boundingRect)
+		let boundingRect: Rect = this.getBoundingRect();
+		let screenOrigin: Vec2 = this.camera.pointToScreenPosition(new Vec2(0, 0));
+
+		//Axes' auto scale if requested
+		if (this.autoScaleX) {
+			this.axesScale.x = this.autoScale(this.maxGridSizeX);
+		}
+		if (this.autoScaleY) {
+			this.axesScale.y = this.autoScale(this.maxGridSizeY);
 		}
 
-		//Draw the axis lines (base and unit separators)
+		//Draw grid
+		if (this.showHorizontalGrid &&
+			!(this.onlyPositiveGrid && screenOrigin.y < 0)) {
+
+			let bottom = boundingRect.bottom;
+			let left = 0;
+			if (this.onlyPositiveGrid) {
+				bottom = Math.max(bottom, 0);
+				left = screenOrigin.x;
+			}
+
+			this.loopScale(this.axesScale.y, bottom, boundingRect.top, (point) => {
+				let screenY: number = this.camera.pointToScreenPosition(new Vec2(0, point)).y;
+
+				//Draw a horizontal grid line
+				renderer.renderLines(
+					[new Vec2(left, screenY), new Vec2(this.camera.canvasSize.x, screenY)],
+					this.gridColor, this.gridWidth
+				);
+			});
+		}
+
+		if (this.showVerticalGrid &&
+			!(this.onlyPositiveGrid && screenOrigin.x > this.camera.canvasSize.x)) {
+
+			let left = boundingRect.left;
+			let bottom = this.camera.canvasSize.y;
+			if (this.onlyPositiveGrid) {
+				left = Math.max(left, 0);
+				bottom = Math.min(bottom, screenOrigin.y);
+			}
+
+			//Don't draw grid lines if they're out of the screen
+			this.loopScale(this.axesScale.x, left, boundingRect.right, (point) => {
+				let screenX: number = this.camera.pointToScreenPosition(new Vec2(point, 0)).x;
+
+				//Draw a vertical grid line
+				renderer.renderLines(
+					[new Vec2(screenX, 0), new Vec2(screenX, bottom)],
+					this.gridColor, this.gridWidth
+				);
+			});		
+		}
+
+		//Draw axes
 		if (this.showAxes) {
-			renderer.renderLines(this.cachedAxesBaseLines, this.axisColor, this.axisWidth);
-			renderer.renderLines(this.cachedAxesScaleLines, this.axisColor, this.axisWidth);
-		}
+			//Only draw the X axis if it isn't out of the screen
+			if (screenOrigin.y >= 0 && screenOrigin.y <= this.camera.canvasSize.y) {
+				let canRenderArrow: boolean = this.drawXAxisBaseLine(renderer, screenOrigin);
 
-		//Draw the arrows
-		if (this.showArrows) {
-			for (let i: number = 0; i < this.cachedArrowPolygons.length; ++i) {
-				renderer.renderPolygon(this.cachedArrowPolygons[i], this.axisColor);
+				if (this.showUnitSeparationsX) {
+					//Determine the first division to be drawn. Ignore negative ones if
+					//onlyPositiveAxes is true
+					let left = boundingRect.left;
+					if (this.onlyPositiveAxes) {
+						left = Math.max(left, 0);
+					}
+
+					this.loopScale(this.axesScale.x, left, boundingRect.right, (point) => {
+						if (point != 0) //Don't draw at the origin
+						{
+							this.drawXAxisUnitSeparator(renderer, screenOrigin, point);
+
+							if (this.showUnitLabelsX)
+								this.drawXUnitLabels(renderer, screenOrigin, point);
+						}
+					});
+				}
+
+				if (canRenderArrow) {
+					this.drawXName(renderer, screenOrigin);
+					if (this.showArrows)
+						this.drawXArrow(renderer, screenOrigin);
+				}
+			}
+
+			//Only draw the Y axis if it isn't out of the screen
+			if (screenOrigin.x >= 0 && screenOrigin.x <= this.camera.canvasSize.x) {
+
+				let canRenderArrow: boolean = this.drawYAxisBaseLine(renderer, screenOrigin);
+
+				if (this.showUnitSeparationsY) {
+					//Determine the first division to be drawn. Ignore negative ones if
+					//onlyPositiveAxes is true
+					let bottom = boundingRect.bottom;
+					if (this.onlyPositiveAxes) {
+						bottom = Math.max(bottom, 0);
+					}
+
+					this.loopScale(this.axesScale.y, bottom, boundingRect.top, (point) => {
+						if (point != 0) //Don't draw at the origin
+						{
+							this.drawYAxisUnitSeparator(renderer, screenOrigin, point);
+
+							if (this.showUnitLabelsY)
+								this.drawYUnitLabels(renderer, screenOrigin, point);
+						}
+					});
+				}
+
+				if (canRenderArrow) {
+					this.drawYName(renderer, screenOrigin);
+					if (this.showArrows)
+						this.drawYArrow(renderer, screenOrigin);
+				}
 			}
 		}
-
-		let origin: Vec2 = this.camera.pointToScreenPosition(new Vec2(0, 0));
-
-		//Unit labels
-		if (this.showUnitLabels) {
-			renderer.ctx.fillStyle = this.axisColor;
-
-			//x axis labels
-			renderer.ctx.textAlign = "center";
-			renderer.ctx.textBaseline = "top";
-			this.generateGridAndAxesXSplits(this.cachedAxesScale.gridScreenSize, (x: number) => {
-				if (x === origin.x) //Don't draw 0 in the origin
-					return;
-
-				//Round the number to 2 decimal places (toFixed(2)) and don't have excess 0s
-				//(conversion to Number and back to string).
-				let text: string = Number((
-					((x - origin.x) * this.cachedAxesScale.gridWorldSize) /
-					this.cachedAxesScale.gridScreenSize
-				).toFixed(2)).toString();
-
-				renderer.ctx.fillText(text, x, origin.y + 10);
-			});
-
-			//y axis labels
-			renderer.ctx.textAlign = "right";
-			renderer.ctx.textBaseline = "middle";
-			this.generateGridAndAxesYSplits(this.cachedAxesScale.gridScreenSize, (y: number) => {
-				if (y === origin.y) //Don't draw 0 in the origin
-					return;
-
-				//Round the number to 2 decimal places (toFixed(2)) and don't have excess 0s
-				//(conversion to Number and back to string).
-				let text: string = Number((
-					((origin.y - y) * this.cachedAxesScale.gridWorldSize) /
-					this.cachedAxesScale.gridScreenSize
-				).toFixed(2)).toString();
-
-				renderer.ctx.fillText(text, origin.x - 10, y);
-			});
-		}
-
-		//Axis labels
-		if (this.showAxisLabels) {
-			renderer.ctx.textAlign = "right";
-			renderer.ctx.textBaseline = "top";
-			renderer.ctx.font = this.labelFont;
-
-			//Render squares behind the text so that it is visible.
-			renderer.ctx.fillStyle = this.pageBackgroundColor;
-
-			//x
-			let measure = renderer.ctx.measureText("x").width;
-			renderer.ctx.fillRect(
-				this.camera.canvasSize.x - 10 - measure, origin.y + this.axisWidth * 3.5 + 5,
-				measure, renderer.fontHeight()
-			);
-
-			//y
-			measure = renderer.ctx.measureText("y").width;
-			renderer.ctx.fillRect(
-				origin.x - this.axisWidth * 3.5 - 5 - measure, 10,
-				measure, renderer.fontHeight()
-			);
-
-			//It isn't expected for there to be text under the origin of the axis system. Therefore,
-			//don't draw the rectangle.
-
-			//Render the text
-			renderer.ctx.fillStyle = this.axisColor;
-			renderer.ctx.fillText(
-				"x", this.camera.canvasSize.x - 10,
-				origin.y + this.axisWidth * 3.5 + 5
-			);
-			renderer.ctx.fillText("y", origin.x - this.axisWidth * 3.5 - 5, 10);
-			renderer.ctx.fillText("O", origin.x - 10, origin.y + 10);
-		}	
 	}
 }

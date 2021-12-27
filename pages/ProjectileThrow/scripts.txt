@@ -1,5 +1,6 @@
 js/ExtraMath.js
 js/Vec2.js
+js/Rect.js
 js/TimeStepper.js
 js/Body.js
 js/Camera.js
