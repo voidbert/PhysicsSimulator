@@ -10,34 +10,6 @@ function isPortrait(): boolean {
 	return window.matchMedia("(orientation: portrait)").matches;
 }
 
-//Check if the size of drawing surface has changed and an update it if needed. Don't use
-//window.onresize, since that doesn't account for the change in size of the sidebar, crucial in
-//landscape displays. True is returned if the size of the rendering surface changed.
-let lastRenderingSurfaceSize: Vec2 = new Vec2();
-function updateRenderingSurfaceSize(camera: Camera, axes: AxisSystem): boolean {
-	let renderingSurfaceSize: Vec2 = new Vec2();
-	if (isPortrait()) {
-		//Canvas takes 1 viewport
-		renderingSurfaceSize = new Vec2(window.innerWidth, window.innerHeight)
-			.scale(window.devicePixelRatio);
-	} else {
-		//Size of surface -> all - sidebar
-		renderingSurfaceSize = new Vec2(
-			(window.innerWidth - document.getElementById("simulation-interaction-div").clientWidth),
-			window.innerHeight
-		).scale(window.devicePixelRatio);
-	}
-
-	//Last size comparison
-	if (renderingSurfaceSize !== lastRenderingSurfaceSize) {
-		camera.canvasSize = renderingSurfaceSize;
-		lastRenderingSurfaceSize = renderingSurfaceSize;
-		return true;
-	}
-	
-	return false;
-}
-
 class ProjectileThrowSimulation {
 	static state: ApplicationState = ApplicationState.projectileInLaunchPosition;
 
@@ -60,7 +32,7 @@ class ProjectileThrowSimulation {
 	static simulationResultsScale = 1;
 
 	//Camera and display
-	static camera: Camera = new Camera(new Vec2(), 32 * window.devicePixelRatio);
+	static camera: Camera = new Camera(new Vec2(), 32);
 	static axes: AxisSystem = new AxisSystem(
 		this.camera,
 		true, true, false, //Show axes, show arrows, only show positive axes
@@ -68,7 +40,7 @@ class ProjectileThrowSimulation {
 		true, true, //Show unit labels (X and Y)
 		false, false, false, //Show grid (X and Y), only show positive grid areas
 		true, true, //Auto scale (X and Y)
-		64 * window.devicePixelRatio, 64 * window.devicePixelRatio, //Max grid size (X and Y)
+		64, 64, //Max grid size (X and Y)
 		new Vec2(), //Non-auto scale
 		"x", "y", //Axes' names
 		"white", 2, "1rem sans-serif", //Axes' properties
@@ -131,26 +103,21 @@ class ProjectileThrowSimulation {
 		}
 		newWorker();
 
-		//Set the surface size and use the correct settings when the simulation starts.
-		updateRenderingSurfaceSize(this.camera, this.axes);
+		//Set the correct settings when the simulation starts.
 		this.settings = this.settings.getFromPage();
 		this.settings.updatePage();
 
 		//Start the render loop
-		let ellapsedSimulationTime: number = 0;
+		let elapsedSimulationTime: number = 0;
 		let lastRendererTick: number = Date.now();
 
 		this.renderer = new Renderer(window,
 			document.getElementById("canvas") as HTMLCanvasElement, () => {
 
-			if (updateRenderingSurfaceSize(this.camera, this.axes)) {
-				scaleSimulationResults();
-			}
-
 			//Get the position of the body
 			let bodyFrame: ArrayBuffer[] = [];
 			if (this.state === ApplicationState.projectileMoving)
-				bodyFrame = this.parallelWorker.getBoundaryBuffers(ellapsedSimulationTime, true);
+				bodyFrame = this.parallelWorker.getBoundaryBuffers(elapsedSimulationTime, true);
 
 			if (bodyFrame.length === 0) {
 				//The simulation can be done or the worker hasn't reached this point
@@ -178,10 +145,10 @@ class ProjectileThrowSimulation {
 				this.projectile.r = ExtraMath.linearInterpolationVec2(
 					this.parseFrame(bodyFrame[0]), this.parseFrame(bodyFrame[1]),
 					this.settings.simulationQuality,
-					ellapsedSimulationTime % this.settings.simulationQuality);
+					elapsedSimulationTime % this.settings.simulationQuality);
 
 				//Simulation time has passed
-				ellapsedSimulationTime += Date.now() - lastRendererTick;
+				elapsedSimulationTime += Date.now() - lastRendererTick;
 				lastRendererTick = Date.now();
 			}
 
@@ -200,16 +167,36 @@ class ProjectileThrowSimulation {
 				this.renderer.renderLines([
 					this.camera.pointToScreenPosition(this.projectile.transformVertex(new Vec2())),
 					ProjectileThrowEvents.mousePosition
-				], "#00ff00", 2 * window.devicePixelRatio);
+				], "#00ff00", 2);
 			}
 
 			//Draw the trajectory if turned on
 			if (this.settings.showTrajectory && this.trajectory) {
 				this.renderer.renderLinesStrip(
 					this.camera.polygonToScreenPosition(this.trajectory.points), "white",
-					2 * window.devicePixelRatio
+					2
 				);
 			}
+		}, () => {
+			this.renderer.canvas.width  = window.innerWidth  * window.devicePixelRatio;
+			this.renderer.canvas.height = window.innerHeight * window.devicePixelRatio;
+
+			//Calculate the size of the drawing surface (might not be all of the canvas)
+			let renderingSurfaceSize: Vec2 = new Vec2();
+			if (isPortrait()) {
+				//Canvas takes 1 viewport
+				renderingSurfaceSize = new Vec2(window.innerWidth, window.innerHeight)
+					.scale(window.devicePixelRatio);
+			} else {
+				//Size of surface -> all - sidebar
+				renderingSurfaceSize = new Vec2(window.innerWidth -
+					document.getElementById("simulation-interaction-div").clientWidth,
+					window.innerHeight
+				).scale(window.devicePixelRatio);
+			}
+
+			this.camera.canvasSize = renderingSurfaceSize;
+			scaleSimulationResults();
 		});
 		this.renderer.renderLoop();
 
@@ -262,7 +249,7 @@ class ProjectileThrowSimulation {
 			//Before staring the simulation, position the page so that the canvas is visible
 			//(useful for portrait displays)
 			ProjectileThrowEvents.smoothScroll(0, 0, () => {
-				ellapsedSimulationTime = 0;
+				elapsedSimulationTime = 0;
 				lastRendererTick = Date.now();
 				this.workerStopped = false;
 

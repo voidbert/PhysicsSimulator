@@ -6,6 +6,10 @@ class ParachuteSimulation {
 			() => {
 
 			ParachuteSettings.adjustUI();
+		}, () => {
+			let rect = this.renderer.canvas.getBoundingClientRect();
+			this.renderer.canvas.width = rect.width * window.devicePixelRatio;
+			this.renderer.canvas.height = rect.height * window.devicePixelRatio;
 		});
 		this.renderer.renderLoop();
 	}

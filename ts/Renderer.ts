@@ -2,22 +2,26 @@ class Renderer {
 	readonly canvas: HTMLCanvasElement;
 	readonly ctx: CanvasRenderingContext2D;
 	private renderCallback: (renderer: Renderer) => any;
+	private resizeCallback: (renderer: Renderer) => any;
+	
+	private lastDevicePixelRatio: number; //Keep track of this 
 
-	//This constructor should only be called after the window loaded. The provided <canvas> will be
-	//resized to fill the window whenever it is resized.
+	//This constructor should only be called after the window is loaded. resizeCallback will be
+	//called on window.onresize and when the window is zoomed in / out (devicePixelRatio changes) if
+	//the render loop is running.
 	constructor(window: Window, canvas: HTMLCanvasElement,
-		renderCallback: (renderer: Renderer) => any) {
+		renderCallback: (renderer: Renderer) => any, resizeCallback: (renderer: Renderer) => any) {
 
 		this.canvas = canvas;
 		this.ctx = canvas.getContext("2d");
 		this.renderCallback = renderCallback;
+		this.resizeCallback = resizeCallback;
 
-		canvas.width  = window.innerWidth * window.devicePixelRatio;
-		canvas.height = window.innerHeight * window.devicePixelRatio;
-		window.addEventListener("resize", function() {
-			canvas.width  = window.innerWidth * window.devicePixelRatio;
-			canvas.height = window.innerHeight * window.devicePixelRatio;
+		window.addEventListener("resize", () => {
+			resizeCallback(this);
 		});
+
+		this.lastDevicePixelRatio = window.devicePixelRatio;
 	}
 
 	//A helper function that renders a polygon (set of vertices) to the canvas. If the color is left
@@ -177,8 +181,11 @@ class Renderer {
 		return height;
 	}
 
-	//Starts the rendering loop.
+	//Starts the rendering loop (calls renderCallback). resizeCallback is also called in the
+	//beginning.
 	renderLoop(): void {
+		this.resizeCallback(this);
+
 		//Weird trick to avoid stack overflows (requestAnimationFrame and wait until the frame is
 		//rendered).
 		let canRenderFrame: boolean = true;
@@ -187,6 +194,12 @@ class Renderer {
 			if (canRenderFrame) {
 				canRenderFrame = false;
 				requestAnimationFrame(() => {
+					//Zoom handling
+					if (window.devicePixelRatio !== this.lastDevicePixelRatio) {
+						this.lastDevicePixelRatio = window.devicePixelRatio;
+						this.resizeCallback(this);
+					}
+
 					this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 					this.renderCallback(this);
 					canRenderFrame = true;
