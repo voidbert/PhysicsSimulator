@@ -5,11 +5,6 @@ const BODY_GEOMETRY = [
 	new Vec2(BODY_APOTHEM, BODY_APOTHEM), new Vec2(-BODY_APOTHEM, BODY_APOTHEM)
 ];
 
-//Checks if the display's orientation is portrait
-function isPortrait(): boolean {
-	return window.matchMedia("(orientation: portrait)").matches;
-}
-
 class ProjectileThrowSimulation {
 	static state: ApplicationState = ApplicationState.projectileInLaunchPosition;
 
@@ -248,7 +243,7 @@ class ProjectileThrowSimulation {
 
 			//Before staring the simulation, position the page so that the canvas is visible
 			//(useful for portrait displays)
-			ProjectileThrowEvents.smoothScroll(0, 0, () => {
+			smoothScroll(0, 0, () => {
 				elapsedSimulationTime = 0;
 				lastRendererTick = Date.now();
 				this.workerStopped = false;

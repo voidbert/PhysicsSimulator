@@ -29,7 +29,7 @@ function enterChoosingVelocityMode() {
 
 	document.body.classList.add("no-scrolling");
 	//Prevent scrolling on touch devices (trying to choose the velocity would move the page)
-	ProjectileThrowEvents.smoothScroll(0, 0, () => {
+	smoothScroll(0, 0, () => {
 		//Enter choosing velocity mode (renderer checks for this mode to draw the vector. Input
 		//handlers do it too to check for the escape key)
 		ProjectileThrowSimulation.state = ApplicationState.choosingVelocity;

@@ -29,15 +29,6 @@ class NumberedBuffer {
 	}
 }
 
-//Simulation quality - the number of milliseconds between calculating the positions of bodies (dt)
-enum SimulationQuality {
-	VeryLow = 50,
-	Low = 30,
-	Medium = 20,
-	High = 10,
-	VeryHigh = 5
-}
-
 //A wrapper for a web worker for physics simulations. Data must be transferred in buffers of frames,
 //a frame being composed by data you send every position update.
 class WorkerWrapper {
@@ -48,7 +39,7 @@ class WorkerWrapper {
 	private bufferLimit: number;
 
 	private frameSize: number
-	private simulationQuality: SimulationQuality;
+	private simulationQuality: number;
 
 	//Creates a web worker from a file (url).
 	//
@@ -65,7 +56,7 @@ class WorkerWrapper {
 	//
 	//For the worker to stop itself, use postMessage("TERMINATE"). Therefore, don't post "TERMINATE"
 	//otherwise.
-	constructor(url: string, frameSize: number, simulationQuality: SimulationQuality,
+	constructor(url: string, frameSize: number, simulationQuality: number,
 		callback: (w: Worker, data: any) => any, bufferSize: number = 512,
 		bufferLimit: number = 16) {
 
@@ -88,7 +79,7 @@ class WorkerWrapper {
 	//Starts the web worker by sending it a certain message your code is configured to interpret as
 	//a start command. This clears any buffers stored. data shouldn't have a bufferSize,
 	//simulationQuality or an allowedBuffers property, as those will be set by this constructor.
-	start(data: any, simulationQuality: SimulationQuality = this.simulationQuality) {
+	start(data: any, simulationQuality: number = this.simulationQuality) {
 		this.buffers = [];
 		this.simulationQuality = simulationQuality;
 

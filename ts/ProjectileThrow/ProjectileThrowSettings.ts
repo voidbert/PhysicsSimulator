@@ -1,3 +1,13 @@
+//Simulation quality - the number of milliseconds between calculating the positions of bodies (dt)
+enum ProjectileThrowSimulationQuality {
+	VeryLow = 50,
+	Low = 30,
+	Medium = 20,
+	High = 10,
+	VeryHigh = 5
+}
+
+
 //Whether the projectile's height to ground is measured from its base or from its center of mass
 enum HeightReference {
 	BodyBase, BodyCM
@@ -11,7 +21,7 @@ class ProjectileThrowSettings {
 	private _showTrajectory: boolean;
 	private _showSimulationResults: boolean;
 
-	private _simulationQuality: SimulationQuality;
+	private _simulationQuality: ProjectileThrowSimulationQuality;
 
 	private _heightReference: HeightReference;
 
@@ -26,7 +36,7 @@ class ProjectileThrowSettings {
 		this._showAxesLabels = true;
 		this._showGrid = false;
 		this._showTrajectory = true;
-		this._simulationQuality = SimulationQuality.VeryHigh;
+		this._simulationQuality = ProjectileThrowSimulationQuality.VeryHigh;
 		this._heightReference = HeightReference.BodyBase;
 		this._height = 0;
 		this._validHeight = true;
@@ -67,11 +77,11 @@ class ProjectileThrowSettings {
 			(document.getElementById("simulation-results-checkbox") as HTMLInputElement).checked;
 
 		settings._simulationQuality = {
-			"vl": SimulationQuality.VeryLow,
-			"l": SimulationQuality.Low,
-			"m": SimulationQuality.Medium,
-			"h": SimulationQuality.High,
-			"vh": SimulationQuality.VeryHigh
+			"vl": ProjectileThrowSimulationQuality.VeryLow,
+			"l": ProjectileThrowSimulationQuality.Low,
+			"m": ProjectileThrowSimulationQuality.Medium,
+			"h": ProjectileThrowSimulationQuality.High,
+			"vh": ProjectileThrowSimulationQuality.VeryHigh
 		}[(document.getElementById("simulation-quality") as HTMLSelectElement).value];
 
 		if ((document.getElementById("body-base") as HTMLInputElement).checked) {
