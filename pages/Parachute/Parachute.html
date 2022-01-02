@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
+		<title>Movimento do paraquedista</title>
+
+		<script src="compiledJS.js" defer></script>
+
+		<link rel="stylesheet" type="text/css" href="./Parachute.css">
+	</head>
+	<body>
+		<div id="settings-grid">
+			<div class="settings-grid-item settings-grid-item-border">
+				<div class="settings-grid-item-title">Paraquedista</div>
+				<div class="settings-grid-item-content">
+
+					<div class="settings-grid-item-subcontent">
+						<div>Massa:</div>
+						<div class="input-unit-container">
+							<input type="text" inputmode="numeric" /> <div class="unit-div">kg</div>
+						</div>
+					</div>
+
+					<div class="settings-grid-item-subcontent">
+						Altura inicial:
+						<div class="input-unit-container">
+							<input type="text" inputmode="numeric" /> <div class="unit-div">kg</div>
+						</div>
+					</div>
+
+					<div class="double-line-text-input">
+						Altura de abertura do paraquedas:
+						<div class="second-line-text-input">
+							<input type="text" inputmode="numeric" /> <div class="unit-div">m</div>
+						</div>
+					</div>
+
+				</div>
+			</div>
+
+			<div class="settings-grid-item settings-grid-item-border">
+				<div class="settings-grid-item-title">Resistência do ar</div>
+				<div class="settings-grid-item-content">
+
+					<div class="double-line-text-input">
+						Antes da abertura do paraquedas:
+						<div class="second-line-text-double-input">
+							<div class="double-input-container">
+								C<span class="subscript">d</span> :
+								<input type="text" inputmode="numeric" /> m
+								<span class="superscript"></span> <!--For vertical alignment-->
+							</div>
+							<div class="double-input-container">
+								A : <input type="text" inputmode="numeric" />
+								<div class="unit-div-smaller">m<span class="superscript">2</span></div>
+							</div>
+						</div>
+					</div>
+
+					<div class="double-line-text-input">
+						Depois da abertura do paraquedas:
+						<div class="second-line-text-double-input">
+							<div class="double-input-container">
+								C<span class="subscript">d</span> :
+								<input type="text" inputmode="numeric" /> m
+								<span class="superscript"></span> <!--For vertical alignment-->
+							</div>
+							<div class="double-input-container">
+								A : <input type="text" inputmode="numeric" />
+								<div class="unit-div-smaller">m<span class="superscript">2</span></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="settings-grid-item settings-grid-item-border">
+				<div class="settings-grid-item-title">Simulação</div>
+				<div class="settings-grid-item-content">
+
+					<div class="settings-grid-item-subcontent">
+						<div>Qualidade:</div>
+						<select id="simulation-quality">
+							<option value="vl">Muito baixa</option>
+							<option value="l">Baixa</option>
+							<option value="m">Média</option>
+							<option value="h">Alta</option>
+							<option value="vh" selected="selected">Muito alta</option>
+						</select>
+					</div>
+
+					<div class="settings-grid-item-subcontent">
+						<div>Grandeza no gráfico:</div>
+						<select id="graph-property">
+							<option value="y">y (m)</option>
+							<option value="r">|r| (m)</option>
+							<option value="v" selected="selected">v (m s&#x207B;&#xB9;)</option>
+							<option value="Rar">R ar (N)</option>
+							<option value="Fr">Fr (N)</option>
+							<option value="a">a (m s&#x207B;&#xB2;)</option>
+						</select>
+					</div>
+
+					<div class="settings-grid-item-subcontent-checkbox">
+						<input type="checkbox" name="simulation-results-checkbox" checked></input>
+						<label for="simulation-results-checkbox">Resultados da simulação</label>
+					</div>
+
+					<div class="settings-grid-item-subcontent-checkbox">
+						<input type="checkbox" name="generate-csv-checkbox" checked></input>
+						<label for="simulation-results-checkbox">Gerar CSV</label>
+					</div>
+				</div>
+			</div>
+
+			<div id="buttons-centerer"></div>
+
+			<div class="settings-grid-item">
+				<button>Download do gráfico</button>
+				<button>Reset</button>
+				<button>Iniciar</button>
+			</div>
+		</div>
+
+		<div id="graph-container">
+			<canvas id="graph">
+				Este browser não suporta o elemento HTML &lt;canvas&gt;, necessário para o
+				funcionamento desta aplicação Web.	
+			</canvas>
+			<div id="noscript">
+				<noscript>
+					Por favor, ative o JavaScript.
+				</noscript>
+			</div>
+		</div>
+	</body>
+</html>
