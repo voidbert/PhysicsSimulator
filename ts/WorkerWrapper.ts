@@ -191,6 +191,22 @@ class WorkerWrapper {
 		this.worker.terminate();
 	}
 
+	//Gets a frame from its index in the list of all frames sent. null will be returned if the
+	//buffer that contains the frame isn't found (has been discarded or not sent yet).
+	getFrame(index: number) {
+		let buffer = Math.floor(index / this.bufferSize);
+		let frame = index - buffer * this.bufferSize;
+
+		//Find the buffer in the stored array
+		for (let i: number = 0; i < this.buffers.length; ++i) {
+			if (this.buffers[i] && this.buffers[i].index === buffer) {
+				return this.buffers[i].getFrame(frame, this.frameSize);
+			}
+		}
+
+		return null; //Buffer not found
+	}
+
 	//Gets the last frame sent by the worker
 	getLastFrame(): ArrayBuffer {
 		//Find the latest buffer

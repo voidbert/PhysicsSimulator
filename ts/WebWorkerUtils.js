@@ -1,8 +1,7 @@
 //Utilities needed for web workers (they should import this script)
 
-//Declare a window object (to avoid problems) and import the other script
+//Declare a window object (to avoid problems) and to allow the importation of other scripts
 window = { addEventListener: () => {}, devicePixelRatio: 1 };
-importScripts("../../pages/ProjectileThrow/compiledJS.js");
 
 //Objects coming from message events don't contain methods. Create objects with the needed function
 //from the values in the original objects.

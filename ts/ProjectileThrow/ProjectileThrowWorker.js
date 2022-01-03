@@ -1,4 +1,5 @@
 importScripts("../WebWorkerUtils.js");
+importScripts("../../pages/ProjectileThrow/compiledJS.js");
 
 let projectile;
 let simulationQuality;
