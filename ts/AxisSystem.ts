@@ -174,9 +174,9 @@ class AxisSystem {
 	}
 
 	//Determines the automatic scaling for an axis (in world coordinates)
-	private autoScale(maxGridSize: number): number {
+	private autoScale(maxGridSize: number, axis: "x" | "y"): number {
 		//Calculate the grid division
-		let maxGridWorldSize = maxGridSize / this.camera.scale;
+		let maxGridWorldSize = maxGridSize / this.camera.scale[axis];
 		let gridWorldSize = Math.floor(maxGridWorldSize);
 
 		//If the scale is less than 1, flooring it would make it 0 and the app would crash. Let the
@@ -261,10 +261,10 @@ class AxisSystem {
 
 		//Axes' auto scale if requested
 		if (this.autoScaleX) {
-			this.axesScale.x = this.autoScale(this.maxGridSizeX);
+			this.axesScale.x = this.autoScale(this.maxGridSizeX, "x");
 		}
 		if (this.autoScaleY) {
-			this.axesScale.y = this.autoScale(this.maxGridSizeY);
+			this.axesScale.y = this.autoScale(this.maxGridSizeY, "y");
 		}
 
 		//Draw grid

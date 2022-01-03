@@ -1,9 +1,9 @@
 class Camera {
 	public r: Vec2; //The position vector of the camera (in world coordinates)
-	public scale: number;
+	public scale: Vec2;
 	public canvasSize: Vec2;
 
-	constructor(position: Vec2 = new Vec2(0, 0), scale: number = 1) {
+	constructor(position: Vec2 = new Vec2(0, 0), scale: Vec2 = new Vec2(1, 1)) {
 		this.r = position;
 		this.scale = scale;
 	}
@@ -12,7 +12,7 @@ class Camera {
 	pointToScreenPosition(worldPosition: Vec2): Vec2 {
 		return worldPosition
 			.subtract(this.r)
-			.scale(this.scale)
+			.scale2(this.scale)
 			.scale2(new Vec2(1, -1))
 			.add(new Vec2(0, this.canvasSize.y));
 	}
@@ -23,7 +23,7 @@ class Camera {
 		return screenPosition
 			.subtract(new Vec2(0, this.canvasSize.y))
 			.scale2(new Vec2(1, -1))
-			.scale(1 / this.scale)
+			.scale2(this.scale.invert())
 			.add(this.r);
 	}
 

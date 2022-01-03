@@ -1,6 +1,6 @@
 class ParachuteGraph {
 
-	public camera: Camera = new Camera(new Vec2(-1, -1), 32);
+	public camera: Camera = new Camera(new Vec2(-1, -1), new Vec2(32, 32));
 	public axes: AxisSystem = new AxisSystem(
 		this.camera,
 		true, true, false, //Show axes, show arrows, only show positive axes

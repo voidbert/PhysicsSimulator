@@ -27,7 +27,7 @@ class ProjectileThrowSimulation {
 	static simulationResultsScale = 1;
 
 	//Camera and display
-	static camera: Camera = new Camera(new Vec2(), 32);
+	static camera: Camera = new Camera(new Vec2(), new Vec2(32, 32));
 	static axes: AxisSystem = new AxisSystem(
 		this.camera,
 		true, true, false, //Show axes, show arrows, only show positive axes
@@ -150,7 +150,11 @@ class ProjectileThrowSimulation {
 			//Center the body on the camera (move the camera so that the body is on the center of
 			//the screen)
 			this.camera.r =
-				this.projectile.r.subtract(this.camera.canvasSize.scale(0.5 / this.camera.scale));
+				this.projectile.r.subtract(
+				this.camera.canvasSize.scale2(
+				this.camera.scale.invert()
+				.scale(0.5)
+			));
 
 			this.axes.drawAxes(this.renderer);
 
