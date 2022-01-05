@@ -149,12 +149,7 @@ class ProjectileThrowSimulation {
 
 			//Center the body on the camera (move the camera so that the body is on the center of
 			//the screen)
-			this.camera.r =
-				this.projectile.r.subtract(
-				this.camera.canvasSize.scale2(
-				this.camera.scale.invert()
-				.scale(0.5)
-			));
+			this.camera.forcePosition(this.projectile.r, this.camera.canvasSize.scale(0.5))
 
 			this.axes.drawAxes(this.renderer);
 

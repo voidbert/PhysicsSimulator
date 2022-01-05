@@ -14,10 +14,10 @@ enum GraphProperty {
 
 class ParachuteSettings {
 	private _mass: number = 80;
-	private _h0: number = 1000; //Initial height
+	private _h0: number = 2000; //Initial height
 	private _hopening: number = 500; //The height at which the parachute is opened
 
-	private _cd0: number = 0.2; private _A0: number = 0.5;
+	private _cd0: number = 0.4; private _A0: number = 0.5;
 	private _cd1: number = 1.6; private _A1: number = 10;
 
 	private _simulationQuality: ParachuteSimulationQuality = ParachuteSimulationQuality.VeryHigh;

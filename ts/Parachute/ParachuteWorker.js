@@ -29,7 +29,7 @@ self.addEventListener("message", (e) => {
 
 	while (sessionUsedBuffers < allowedBuffers) { //While not all allowed buffers were sent
 		//Add the current body property to the buffer (property added depends on the settings)
-		view[bufferUsedFloats] = body.r.y; //TODO
+		view[bufferUsedFloats] = -body.v.y; //TODO
 		bufferUsedFloats++;
 		totalSimulationTicks++;
 
@@ -41,6 +41,24 @@ self.addEventListener("message", (e) => {
 			view = new Float64Array(buffer);
 			bufferUsedFloats = 0;
 			sessionUsedBuffers++;
+		}
+
+		if (body.r.y <= 0) {
+			//Reached the ground. Send the remaining data.
+			postMessage({ size: bufferUsedFloats * 8, buf: buffer }, [buffer]);
+			break;
+		}
+
+		body.forces = [ new Vec2(0, -settings._mass * 9.8), new Vec2() ];
+
+		if (body.r.y >= settings._hopening) {
+			//After the parachute is opened (1.225 -> air density)
+			body.forces[1] =
+				new Vec2(0, 0.5 * settings._cd0 * 1.225 * settings._A0 * body.v.y * body.v.y);
+		} else {
+			//Before the parachute is opened
+			body.forces[1] =
+				new Vec2(0, 0.5 * settings._cd1 * 1.225 * settings._A1 * body.v.y * body.v.y);
 		}
 
 		body.step(simulationQuality);
