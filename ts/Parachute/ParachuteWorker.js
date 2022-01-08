@@ -10,7 +10,7 @@ let allowedBuffers;
 let totalSimulationTicks;
 
 self.addEventListener("message", (e) => {
-	if ("body" in e.data)
+	if ("body" in e.data) 
 		body = convertBody(e.data.body);
 	if ("settings" in e.data)
 		settings = e.data.settings;
@@ -28,8 +28,38 @@ self.addEventListener("message", (e) => {
 	let sessionUsedBuffers = 0; //The number of buffers posted since allowedBuffers was updated
 
 	while (sessionUsedBuffers < allowedBuffers) { //While not all allowed buffers were sent
+
+		if (body.forces.length === 0) {
+			body.forces = [ new Vec2(0, -settings._mass * 9.8), new Vec2() ];
+		}
+
 		//Add the current body property to the buffer (property added depends on the settings)
-		view[bufferUsedFloats] = -body.v.y; //TODO
+		switch (settings._graphProperty) {
+			case GraphProperty.Y:
+				view[bufferUsedFloats] = body.r.y;
+				break;
+
+			case GraphProperty.R:
+				view[bufferUsedFloats] = settings._h0 - body.r.y;
+				break;
+
+			case GraphProperty.Velocity:
+				view[bufferUsedFloats] = -body.v.y;
+				break;
+
+			case GraphProperty.AirResistance:
+				view[bufferUsedFloats] = body.forces[1].y;
+				break;
+
+			case GraphProperty.ResultantForce:
+				view[bufferUsedFloats] = Math.abs(settings._mass * 9.8 - body.forces[1].y);
+				break;
+
+			case GraphProperty.Acceleration:
+				view[bufferUsedFloats] = Math.abs(settings._mass * 9.8 - body.forces[1].y)
+					/ body.mass;
+				break;
+		}	
 		bufferUsedFloats++;
 		totalSimulationTicks++;
 
@@ -56,7 +86,7 @@ self.addEventListener("message", (e) => {
 			body.forces[1] =
 				new Vec2(0, 0.5 * settings._cd0 * 1.225 * settings._A0 * body.v.y * body.v.y);
 		} else {
-			//Before the parachute is opened
+			//Before the parachute is opened (1.225 -> air density)
 			body.forces[1] =
 				new Vec2(0, 0.5 * settings._cd1 * 1.225 * settings._A1 * body.v.y * body.v.y);
 		}

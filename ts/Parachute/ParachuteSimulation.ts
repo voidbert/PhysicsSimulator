@@ -36,7 +36,7 @@ class ParachuteSimulation {
 							this.bufferCount++;
 						}
 					},
-					512, 1000 //No buffer limit to allow CSV exportation
+					1024, 100000 //Very high buffer limit to allow CSV exportation
 				);
 			}
 		}

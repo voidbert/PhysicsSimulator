@@ -18,7 +18,7 @@ class ParachuteSettings {
 	private _hopening: number = 500; //The height at which the parachute is opened
 
 	private _cd0: number = 0.4; private _A0: number = 0.5;
-	private _cd1: number = 1.6; private _A1: number = 10;
+	private _cd1: number = 1.6; private _A1: number = 3;
 
 	private _simulationQuality: ParachuteSimulationQuality = ParachuteSimulationQuality.VeryHigh;
 	private _graphProperty: GraphProperty = GraphProperty.Velocity;
