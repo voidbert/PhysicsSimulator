@@ -89,6 +89,7 @@ class ParachuteGraph {
 
 					//Simulation done
 					ParachuteSimulation.state = ParachuteState.ReachedGround;
+					ParachuteSettings.enableSettingsElements();
 				}
 
 				//Worker doesn't have the data yet. Reset the clock.

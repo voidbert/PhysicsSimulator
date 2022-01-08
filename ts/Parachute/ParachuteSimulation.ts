@@ -48,6 +48,7 @@ class ParachuteSimulation {
 			}
 
 			this.state = ParachuteState.BeforeRelease;
+			ParachuteSettings.enableSettingsElements();
 		});
 
 		//Start the simulation when the user clicks the button
@@ -61,6 +62,8 @@ class ParachuteSimulation {
 				this.bufferCount = 0;
 				this.state = ParachuteState.Released;
 			});
+
+			ParachuteSettings.disableSettingsElements();
 		});
 	}
 }

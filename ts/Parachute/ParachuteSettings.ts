@@ -64,4 +64,42 @@ class ParachuteSettings {
 			document.getElementById("buttons-centerer").style.display = "none";
 		}
 	}
+
+	static disableSettingsElements() {
+		(document.getElementById("mass") as HTMLInputElement).disabled = true;
+		(document.getElementById("h0") as HTMLInputElement).disabled = true;
+		(document.getElementById("hopening") as HTMLInputElement).disabled = true;
+
+		(document.getElementById("cd0") as HTMLInputElement).disabled = true;
+		(document.getElementById("A0") as HTMLInputElement).disabled = true;
+		(document.getElementById("cd1") as HTMLInputElement).disabled = true;
+		(document.getElementById("A1") as HTMLInputElement).disabled = true;
+
+		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = true;
+		(document.getElementById("graph-property") as HTMLSelectElement).disabled = true;
+
+		(document.getElementById("simulation-results") as HTMLInputElement).disabled = true;
+		(document.getElementById("generate-csv") as HTMLInputElement).disabled = true;
+
+		(document.getElementById("download-button") as HTMLButtonElement).disabled = true;
+	}
+
+	static enableSettingsElements() {
+		(document.getElementById("mass") as HTMLInputElement).disabled = false;
+		(document.getElementById("h0") as HTMLInputElement).disabled = false;
+		(document.getElementById("hopening") as HTMLInputElement).disabled = false;
+
+		(document.getElementById("cd0") as HTMLInputElement).disabled = false;
+		(document.getElementById("A0") as HTMLInputElement).disabled = false;
+		(document.getElementById("cd1") as HTMLInputElement).disabled = false;
+		(document.getElementById("A1") as HTMLInputElement).disabled = false;
+
+		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = false;
+		(document.getElementById("graph-property") as HTMLSelectElement).disabled = false;
+
+		(document.getElementById("simulation-results") as HTMLInputElement).disabled = false;
+		(document.getElementById("generate-csv") as HTMLInputElement).disabled = false;
+
+		(document.getElementById("download-button") as HTMLButtonElement).disabled = false;
+	}
 }
