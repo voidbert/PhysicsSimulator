@@ -13,6 +13,10 @@ class ParachuteSimulation {
 	static startSimulation() {
 		this.graph = new ParachuteGraph();
 
+		ParachuteSettings.addEvents();
+		this.settings = this.settings.getFromPage();
+		this.settings.updatePage();
+
 		//Creates a new worker. If the old one stopped, there's no need to recreate it. It can be
 		//reused because it will no longer post messages about old simulations.
 		let newWorker = () => {
@@ -53,6 +57,8 @@ class ParachuteSimulation {
 
 		//Start the simulation when the user clicks the button
 		document.getElementById("start-button").addEventListener("click", () => {
+			this.settings.updatePage(); //Make sure the settings are up to date before starting
+
 			//Scroll to the canvas
 			let y = this.graph.renderer.canvas.getBoundingClientRect().top + window.scrollY;
 			smoothScroll(0, y, () => {

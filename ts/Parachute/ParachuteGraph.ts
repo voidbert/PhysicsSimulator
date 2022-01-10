@@ -1,3 +1,6 @@
+//The web worker only sends one tenth of the points processed to the window context.
+const PARACHUTE_SIMULATION_SKIPPED_FACTOR = 10;
+
 class ParachuteGraph {
 	public renderer: Renderer;
 	public camera: Camera = new Camera(new Vec2(-2, -1), new Vec2(32, 32));
@@ -10,8 +13,8 @@ class ParachuteGraph {
 		true, true, //Auto scale (X and Y)
 		64, 64, //Max grid size (X and Y)
 		new Vec2(), //Non-auto scale
-		"t", "y", //Axes' names
-		"black", 2, "1rem sans-serif", //Axes' properties
+		"t", "y (m)", //Axes' names
+		"black", 2, "0.9rem sans-serif", //Axes' properties
 		"#555555", 1, //Grid properties
 		"white" //Page background color
 	);
@@ -19,7 +22,7 @@ class ParachuteGraph {
 	public maxY: number;
 
 	constructor() {
-		let elapsedSimulationTime: number = 0;
+		let elapsedSimulationTime: number = 0; //in milliseconds
 		let lastRendererTick: number = Date.now();
 
 		this.renderer = new Renderer(window, document.getElementById("graph") as HTMLCanvasElement,
@@ -36,7 +39,7 @@ class ParachuteGraph {
 				//Reset the camera scale
 				this.camera.scale = new Vec2(32, 32);
 				this.camera.forcePosition(new Vec2(0, 0),
-					new Vec2(64, this.renderer.canvas.height - 32));
+					new Vec2(96, this.renderer.canvas.height - 32));
 
 				this.axes.drawAxes(this.renderer);
 				return;
@@ -58,7 +61,8 @@ class ParachuteGraph {
 					this.camera.pointToScreenPosition(new Vec2(0, new Float64Array(frame)[0]));
 
 				//Draw all points until the current simulation time
-				let maxi = elapsedSimulationTime / ParachuteSimulation.settings.simulationQuality;
+				let maxi = elapsedSimulationTime / (ParachuteSimulation.settings.simulationQuality *
+					PARACHUTE_SIMULATION_SKIPPED_FACTOR);
 				for (let i: number = 1; i < maxi; i++) {
 
 					frame = ParachuteSimulation.parallelWorker.getFrame(i);
@@ -69,7 +73,8 @@ class ParachuteGraph {
 
 					let y = new Float64Array(frame)[0];
 					let point = this.camera.pointToScreenPosition(
-						new Vec2(i * ParachuteSimulation.settings.simulationQuality * 0.001, y));
+						new Vec2(i * ParachuteSimulation.settings.simulationQuality *
+						PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001, y));
 
 					if (y > this.maxY) {
 						this.maxY = y;
@@ -124,6 +129,6 @@ class ParachuteGraph {
 		this.camera.scale.y = Math.min(this.camera.scale.y, 32);
 
 		//Make sure the numbers in the axes' labels are visible
-		this.camera.forcePosition(new Vec2(0, 0), new Vec2(64, this.renderer.canvas.height - 32));
+		this.camera.forcePosition(new Vec2(0, 0), new Vec2(96, this.renderer.canvas.height - 32));
 	}
 }

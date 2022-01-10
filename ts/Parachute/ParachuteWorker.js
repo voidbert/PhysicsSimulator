@@ -10,8 +10,10 @@ let allowedBuffers;
 let totalSimulationTicks;
 
 self.addEventListener("message", (e) => {
-	if ("body" in e.data) 
+	if ("body" in e.data) {
 		body = convertBody(e.data.body);
+		totalSimulationTicks = 0;
+	}
 	if ("settings" in e.data)
 		settings = e.data.settings;
 	if ("simulationQuality" in e.data)
@@ -33,35 +35,39 @@ self.addEventListener("message", (e) => {
 			body.forces = [ new Vec2(0, -settings._mass * 9.8), new Vec2() ];
 		}
 
-		//Add the current body property to the buffer (property added depends on the settings)
-		switch (settings._graphProperty) {
-			case GraphProperty.Y:
-				view[bufferUsedFloats] = body.r.y;
-				break;
+		//Only send one tenth of the points to the page (window context)
+		if (totalSimulationTicks % PARACHUTE_SIMULATION_SKIPPED_FACTOR === 0) {
 
-			case GraphProperty.R:
-				view[bufferUsedFloats] = settings._h0 - body.r.y;
-				break;
+			//Add the current body property to the buffer (property added depends on the settings)
+			switch (settings._graphProperty) {
+				case GraphProperty.Y:
+					view[bufferUsedFloats] = body.r.y;
+					break;
 
-			case GraphProperty.Velocity:
-				view[bufferUsedFloats] = -body.v.y;
-				break;
+				case GraphProperty.R:
+					view[bufferUsedFloats] = settings._h0 - body.r.y;
+					break;
 
-			case GraphProperty.AirResistance:
-				view[bufferUsedFloats] = body.forces[1].y;
-				break;
+				case GraphProperty.Velocity:
+					view[bufferUsedFloats] = -body.v.y;
+					break;
 
-			case GraphProperty.ResultantForce:
-				view[bufferUsedFloats] = Math.abs(settings._mass * 9.8 - body.forces[1].y);
-				break;
+				case GraphProperty.AirResistance:
+					view[bufferUsedFloats] = body.forces[1].y;
+					break;
 
-			case GraphProperty.Acceleration:
-				view[bufferUsedFloats] = Math.abs(settings._mass * 9.8 - body.forces[1].y)
-					/ body.mass;
-				break;
-		}	
-		bufferUsedFloats++;
-		totalSimulationTicks++;
+				case GraphProperty.ResultantForce:
+					view[bufferUsedFloats] = Math.abs(settings._mass * 9.8 - body.forces[1].y);
+					break;
+
+				case GraphProperty.Acceleration:
+					view[bufferUsedFloats] = Math.abs(settings._mass * 9.8 - body.forces[1].y)
+						/ body.mass;
+					break;
+			}
+	
+			bufferUsedFloats++;
+		}
 
 		if (bufferUsedFloats === bufferSize) {
 			//Buffer is full. Message it to the window and recreate it.
@@ -92,6 +98,7 @@ self.addEventListener("message", (e) => {
 		}
 
 		body.step(simulationQuality);
+		totalSimulationTicks++;
 	}
 
 	postMessage("DONE");
