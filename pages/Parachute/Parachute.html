@@ -18,21 +18,24 @@
 					<div class="settings-grid-item-subcontent">
 						<div>Massa:</div>
 						<div class="input-unit-container">
-							<input type="text" id="mass" inputmode="numeric" /> <div class="unit-div">kg</div>
+							<input type="text" id="mass" inputmode="numeric" value="80" />
+							<div class="unit-div">kg</div>
 						</div>
 					</div>
 
 					<div class="settings-grid-item-subcontent">
 						Altura inicial:
 						<div class="input-unit-container">
-							<input type="text" id="h0" inputmode="numeric" /> <div class="unit-div">m</div>
+							<input type="text" id="h0" inputmode="numeric" value="2000" />
+							<div class="unit-div">m</div>
 						</div>
 					</div>
 
 					<div class="double-line-text-input">
 						Altura de abertura do paraquedas:
 						<div class="second-line-text-input">
-							<input type="text" id="hopening" inputmode="numeric" /> <div class="unit-div">m</div>
+							<input type="text" id="hopening" inputmode="numeric" value="500" />
+							<div class="unit-div">m</div>
 						</div>
 					</div>
 
@@ -48,11 +51,11 @@
 						<div class="second-line-text-double-input">
 							<div class="double-input-container">
 								C<span class="subscript">d</span> :
-								<input type="text" id="cd0" inputmode="numeric" /> m
+								<input type="text" id="cd0" inputmode="numeric" value="0.4" /> m
 								<span class="superscript"></span> <!--For vertical alignment-->
 							</div>
 							<div class="double-input-container">
-								A : <input type="text" id="A0" inputmode="numeric" />
+								A : <input type="text" id="A0" inputmode="numeric" value="0.5" />
 								<div class="unit-div-smaller">m<span class="superscript">2</span></div>
 							</div>
 						</div>
@@ -63,11 +66,11 @@
 						<div class="second-line-text-double-input">
 							<div class="double-input-container">
 								C<span class="subscript">d</span> :
-								<input type="text" id="cd1" inputmode="numeric" /> m
+								<input type="text" id="cd1" inputmode="numeric" value="1.6" /> m
 								<span class="superscript"></span> <!--For vertical alignment-->
 							</div>
 							<div class="double-input-container">
-								A : <input type="text" id="A1" inputmode="numeric" />
+								A : <input type="text" id="A1" inputmode="numeric" value="5" />
 								<div class="unit-div-smaller">m<span class="superscript">2</span></div>
 							</div>
 						</div>
@@ -94,7 +97,7 @@
 						<div>Grandeza no gráfico:</div>
 						<select id="graph-property">
 							<option value="y">y (m)</option>
-							<option value="r">|r| (m)</option>
+							<option value="r">r (m)</option>
 							<option value="v" selected="selected">v (m s&#x207B;&#xB9;)</option>
 							<option value="Rar">R ar (N)</option>
 							<option value="Fr">Fr (N)</option>

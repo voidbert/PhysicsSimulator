@@ -40,27 +40,27 @@ self.addEventListener("message", (e) => {
 
 			//Add the current body property to the buffer (property added depends on the settings)
 			switch (settings._graphProperty) {
-				case GraphProperty.Y:
+				case ParachuteGraphProperty.Y:
 					view[bufferUsedFloats] = body.r.y;
 					break;
 
-				case GraphProperty.R:
+				case ParachuteGraphProperty.R:
 					view[bufferUsedFloats] = settings._h0 - body.r.y;
 					break;
 
-				case GraphProperty.Velocity:
+				case ParachuteGraphProperty.Velocity:
 					view[bufferUsedFloats] = -body.v.y;
 					break;
 
-				case GraphProperty.AirResistance:
+				case ParachuteGraphProperty.AirResistance:
 					view[bufferUsedFloats] = body.forces[1].y;
 					break;
 
-				case GraphProperty.ResultantForce:
+				case ParachuteGraphProperty.ResultantForce:
 					view[bufferUsedFloats] = Math.abs(settings._mass * 9.8 - body.forces[1].y);
 					break;
 
-				case GraphProperty.Acceleration:
+				case ParachuteGraphProperty.Acceleration:
 					view[bufferUsedFloats] = Math.abs(settings._mass * 9.8 - body.forces[1].y)
 						/ body.mass;
 					break;

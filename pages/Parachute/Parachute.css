@@ -162,3 +162,7 @@ input[type="checkbox"] {
 	vertical-align: super;
 	font-size: smaller;
 }
+
+.red {
+	color: red;
+}

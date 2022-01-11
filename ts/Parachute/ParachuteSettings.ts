@@ -1,14 +1,16 @@
 //Simulation quality - the number of milliseconds between calculating the positions of bodies (dt)
 enum ParachuteSimulationQuality {
-	VeryLow = 100,
-	Low = 50,
-	Medium = 20,
-	High = 10,
-	VeryHigh = 5
+	//Very high numbers because low dts can send things like the resultant force to infinity,
+	//breaking the graph
+	VeryLow = 10,
+	Low = 5,
+	Medium = 2,
+	High = 1,
+	VeryHigh = 0.5
 }
 
 //What is represented in the y axis of the graph
-enum GraphProperty {
+enum ParachuteGraphProperty {
 	Y, R, Velocity, AirResistance, ResultantForce, Acceleration
 }
 
@@ -18,10 +20,15 @@ class ParachuteSettings {
 	private _hopening: number = 500; //The height at which the parachute is opened
 
 	private _cd0: number = 0.4; private _A0: number = 0.5;
-	private _cd1: number = 1.6; private _A1: number = 3;
+	private _cd1: number = 1.6; private _A1: number = 5;
+
+	//Whether the inputted values are valid numbers
+	private _validMass: boolean; private _validH0: boolean; private _validHopening;
+	private _validCd0: boolean; private _validA0: boolean;
+	private _validCd1: boolean; private _validA1: boolean;
 
 	private _simulationQuality: ParachuteSimulationQuality = ParachuteSimulationQuality.VeryHigh;
-	private _graphProperty: GraphProperty = GraphProperty.Velocity;
+	private _graphProperty: ParachuteGraphProperty = ParachuteGraphProperty.Velocity;
 	private _simulationResults: boolean = true;
 
 	get mass() { return this._mass; }
@@ -50,16 +57,41 @@ class ParachuteSettings {
 		}[(document.getElementById("simulation-quality") as HTMLSelectElement).value];
 
 		settings._graphProperty = {
-			"y": GraphProperty.Y,
-			"r": GraphProperty.R,
-			"v": GraphProperty.Velocity,
-			"Rar": GraphProperty.AirResistance,
-			"Fr": GraphProperty.ResultantForce,
-			"a": GraphProperty.Acceleration
+			"y": ParachuteGraphProperty.Y,
+			"r": ParachuteGraphProperty.R,
+			"v": ParachuteGraphProperty.Velocity,
+			"Rar": ParachuteGraphProperty.AirResistance,
+			"Fr": ParachuteGraphProperty.ResultantForce,
+			"a": ParachuteGraphProperty.Acceleration
 		}[(document.getElementById("graph-property") as HTMLSelectElement).value];
 
 		settings._simulationResults =
 			(document.getElementById("simulation-results") as HTMLInputElement).checked;
+
+		//Parses a number from an input element (id) and sets a property in "this" to the number in
+		//that input. Whether the number is valid or not is a boolean that is assigned to
+		//validProperty. A number out of the [min, max] range will be considered invalid.
+		function parseWithSettingsUpdate(id: string, property: string,
+			validProperty: string, min: number, max: number = Infinity) {
+
+			settings[property] = parseInputNumber(id, min, max);
+			if (isNaN(settings[property])) {
+				settings[validProperty] = false;
+				settings[property] = this[property]; //Use last valid value
+			} else {
+				settings[validProperty] = true;
+			}
+		}
+
+		//Parse text fields, converting the text to numbers
+		parseWithSettingsUpdate("mass", "_mass", "_validMass", 0);
+		parseWithSettingsUpdate("h0", "_h0", "_validH0", 0);
+		parseWithSettingsUpdate("hopening", "_hopening", "_validHopening", 0, settings._h0);
+
+		parseWithSettingsUpdate("cd0", "_cd0", "_validCd0", 0);
+		parseWithSettingsUpdate("A0", "_A0", "_validA0", 0);
+		parseWithSettingsUpdate("cd1", "_cd1", "_validCd1", 0);
+		parseWithSettingsUpdate("A1", "_A1", "_validA1", 0);
 
 		return settings;
 	}
@@ -69,30 +101,60 @@ class ParachuteSettings {
 		ParachuteSimulation.state = ParachuteState.BeforeRelease;
 
 		switch (this._graphProperty) {
-			case GraphProperty.Y:
+			case ParachuteGraphProperty.Y:
 				ParachuteSimulation.graph.axes.verticalAxisName = "y (m)";
 				break;
 
-			case GraphProperty.R:
+			case ParachuteGraphProperty.R:
 				ParachuteSimulation.graph.axes.verticalAxisName = "r (m)";
 				break;
 
-			case GraphProperty.Velocity:
+			case ParachuteGraphProperty.Velocity:
 				ParachuteSimulation.graph.axes.verticalAxisName = "v (m s⁻¹)";
 				break;
 
-			case GraphProperty.AirResistance:
+			case ParachuteGraphProperty.AirResistance:
 				ParachuteSimulation.graph.axes.verticalAxisName = "Rar (N)";
 				break;
 
-			case GraphProperty.ResultantForce:
+			case ParachuteGraphProperty.ResultantForce:
 				ParachuteSimulation.graph.axes.verticalAxisName = "Fr (N)";
 				break;
 
-			case GraphProperty.Acceleration:
+			case ParachuteGraphProperty.Acceleration:
 				ParachuteSimulation.graph.axes.verticalAxisName = "a (m s⁻²)";
 				break;
 		}
+
+		//Given an input element, it will add "red" to its nth parent class list if the error
+		//boolean is true. Otherwise "red" will be removed from that class list. 
+		function adjustColor(error: boolean, id: string, n: number /* parent */) {
+			//Get the nth parent
+			let element: HTMLElement = document.getElementById(id);
+			for (; n > 0; n--) {
+				element = element.parentElement;
+			}
+
+			if (error) {
+				element.classList.remove("red");
+			} else {
+				element.classList.add("red");
+			}
+		}
+
+		//Make elements red to show a typing error in a number
+		adjustColor(this._validMass, "mass", 2);
+		adjustColor(this._validH0, "h0", 2);
+		adjustColor(this._validHopening, "hopening", 2);
+
+		adjustColor(this._validCd0, "cd0", 1);
+		adjustColor(this._validA0, "A0", 1);
+		adjustColor(this._validCd1, "cd1", 1);
+		adjustColor(this._validA1, "A1", 1);
+
+		//Update simulation properties
+		ParachuteSimulation.body.mass = this._mass;
+		ParachuteSimulation.body.r = new Vec2(0, this._h0);
 	}
 
 	//Adds events to the UI elements in the page. So, when something is inputted, the page and the

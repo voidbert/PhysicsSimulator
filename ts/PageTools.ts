@@ -1,5 +1,18 @@
 //Some useful functions for controlling / analyzing page aspects.
 
+//Gets a number from an input element identified by its id. The number should be between min and max
+//(inclusive) or NaN will be returned. NaN is also returned when the number is invalid.
+function parseInputNumber(id: string, min: number = Infinity, max: number = Infinity): number {
+	let text: string = (document.getElementById(id) as HTMLInputElement).value;
+	let number: number = Number(text);
+
+	if (isNaN(number) || (!isNaN(number) && min <= number && number <= max)) {
+		return number;
+	}
+
+	return NaN;
+}
+
 //Checks if the display's orientation is portrait
 function isPortrait(): boolean {
 	return window.matchMedia("(orientation: portrait)").matches;

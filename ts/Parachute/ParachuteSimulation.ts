@@ -62,11 +62,13 @@ class ParachuteSimulation {
 			//Scroll to the canvas
 			let y = this.graph.renderer.canvas.getBoundingClientRect().top + window.scrollY;
 			smoothScroll(0, y, () => {
-				this.parallelWorker.start(
-					{body: this.body, settings: this.settings},
-					this.settings.simulationQuality);
+				this.workerStopped = false;
 				this.bufferCount = 0;
 				this.state = ParachuteState.Released;
+
+				this.parallelWorker.start(
+					{body: this.body, settings: this.settings},
+					this.settings.simulationQuality);	
 			});
 
 			ParachuteSettings.disableSettingsElements();
