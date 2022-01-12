@@ -8,6 +8,7 @@ js/Renderer.js
 js/AxisSystem.js
 js/WorkerWrapper.js
 js/PageTools.js
+js/CSVTable.js
 js/Parachute/ParachuteStateManager.js
 js/Parachute/ParachuteGraph.js
 js/Parachute/ParachuteSettings.js

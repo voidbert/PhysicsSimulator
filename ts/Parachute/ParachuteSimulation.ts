@@ -32,6 +32,28 @@ class ParachuteSimulation {
 					(w: Worker, data: any) => {
 						//Worker posted a message. Stop the worker if it is done.
 						if (data === "DONE") {
+							let downloadButton: HTMLButtonElement =
+								document.getElementById("download-button") as HTMLButtonElement;
+
+							downloadButton.disabled = false;
+							downloadButton.onclick = () => {
+								let csv = new CSVTable(this.parallelWorker,
+									this.settings.simulationQuality * PARACHUTE_SIMULATION_SKIPPED_FACTOR,
+									(buf: ArrayBuffer) => {
+										return new Float64Array(buf)[0];
+									}, parachuteGraphPropertyToString(this.settings.graphProperty));
+
+								//Download the CSV file
+								let a: HTMLAnchorElement = document.createElement("a");
+								a.href = window.URL.createObjectURL(csv.toBlob());
+								a.download = "Gráfico.csv";
+								a.click();
+
+								setTimeout(() => {
+									window.URL.revokeObjectURL(a.href);
+								}, 10000); //Delete the blob after some time	
+							}
+
 							console.log(data);
 							this.workerStopped = true;
 						} else {
@@ -53,6 +75,7 @@ class ParachuteSimulation {
 
 			this.state = ParachuteState.BeforeRelease;
 			ParachuteSettings.enableSettingsElements();
+			(document.getElementById("download-button") as HTMLButtonElement).disabled = true;
 		});
 
 		//Start the simulation when the user clicks the button

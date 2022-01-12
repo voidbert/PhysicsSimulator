@@ -14,6 +14,28 @@ enum ParachuteGraphProperty {
 	Y, R, Velocity, AirResistance, ResultantForce, Acceleration
 }
 
+function parachuteGraphPropertyToString(property: ParachuteGraphProperty): string {
+	switch (property) {
+		case ParachuteGraphProperty.Y:
+			return "y (m)";
+
+		case ParachuteGraphProperty.R:
+			return "r (m)";
+
+		case ParachuteGraphProperty.Velocity:
+			return "v (m s⁻¹)";
+
+		case ParachuteGraphProperty.AirResistance:
+			return "Rar (N)";
+
+		case ParachuteGraphProperty.ResultantForce:
+			return "Fr (N)";
+
+		case ParachuteGraphProperty.Acceleration:
+			return "a (m s⁻²)";
+	}
+}
+
 class ParachuteSettings {
 	private _mass: number = 80;
 	private _h0: number = 2000; //Initial height
@@ -100,31 +122,8 @@ class ParachuteSettings {
 		//When the settings change, don't draw the graph.
 		ParachuteSimulation.state = ParachuteState.BeforeRelease;
 
-		switch (this._graphProperty) {
-			case ParachuteGraphProperty.Y:
-				ParachuteSimulation.graph.axes.verticalAxisName = "y (m)";
-				break;
-
-			case ParachuteGraphProperty.R:
-				ParachuteSimulation.graph.axes.verticalAxisName = "r (m)";
-				break;
-
-			case ParachuteGraphProperty.Velocity:
-				ParachuteSimulation.graph.axes.verticalAxisName = "v (m s⁻¹)";
-				break;
-
-			case ParachuteGraphProperty.AirResistance:
-				ParachuteSimulation.graph.axes.verticalAxisName = "Rar (N)";
-				break;
-
-			case ParachuteGraphProperty.ResultantForce:
-				ParachuteSimulation.graph.axes.verticalAxisName = "Fr (N)";
-				break;
-
-			case ParachuteGraphProperty.Acceleration:
-				ParachuteSimulation.graph.axes.verticalAxisName = "a (m s⁻²)";
-				break;
-		}
+		ParachuteSimulation.graph.axes.verticalAxisName =
+			parachuteGraphPropertyToString(this._graphProperty);
 
 		//Given an input element, it will add "red" to its nth parent class list if the error
 		//boolean is true. Otherwise "red" will be removed from that class list. 
@@ -155,6 +154,10 @@ class ParachuteSettings {
 		//Update simulation properties
 		ParachuteSimulation.body.mass = this._mass;
 		ParachuteSimulation.body.r = new Vec2(0, this._h0);
+
+		//Disable the download button it the settings are changed (not to cause invalid graphs when
+		//the simulation quality is changed, for example).
+		(document.getElementById("download-button") as HTMLButtonElement).disabled = true;
 	}
 
 	//Adds events to the UI elements in the page. So, when something is inputted, the page and the
@@ -242,6 +245,6 @@ class ParachuteSettings {
 		(document.getElementById("graph-property") as HTMLSelectElement).disabled = false;
 		(document.getElementById("simulation-results") as HTMLInputElement).disabled = false;
 
-		(document.getElementById("download-button") as HTMLButtonElement).disabled = false;
+		//Don't enable the download button (it is enabled when the worker finishes the simulation)
 	}
 }
