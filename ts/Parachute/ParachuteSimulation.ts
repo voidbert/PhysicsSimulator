@@ -1,11 +1,12 @@
 class ParachuteSimulation {
-	static body = new Body(80, [], new Vec2(0, 2000)); //TODO - remove hardcoded value 
+	static body = new Body(80, [], new Vec2()); 
 
 	static parallelWorker: WorkerWrapper;
 	static workerStopped: boolean = false;
 	static bufferCount: number = 0;
 
 	static graph: ParachuteGraph;
+	static theoreticalResults: ParachuteResults;
 
 	static settings: ParachuteSettings = new ParachuteSettings();
 	static state: ParachuteState = ParachuteState.BeforeRelease;
@@ -81,6 +82,8 @@ class ParachuteSimulation {
 		//Start the simulation when the user clicks the button
 		document.getElementById("start-button").addEventListener("click", () => {
 			this.settings.updatePage(); //Make sure the settings are up to date before starting
+
+			this.theoreticalResults = ParachuteResults.calculateTheoreticalResults(this.settings);
 
 			//Scroll to the canvas
 			let y = this.graph.renderer.canvas.getBoundingClientRect().top + window.scrollY;

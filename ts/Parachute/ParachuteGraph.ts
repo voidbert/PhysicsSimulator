@@ -28,6 +28,25 @@ class ParachuteGraph {
 		this.renderer = new Renderer(window, document.getElementById("graph") as HTMLCanvasElement,
 			() => {
 
+			//Based on the current settings, returns the point to be displayed in the graph for
+			//theoretical values (chooses between y(t), v(t), etc.).
+			function getTheoreticalPoint(time: number): number {
+				switch (ParachuteSimulation.settings.graphProperty) {
+					case ParachuteGraphProperty.Y:
+						return ParachuteSimulation.theoreticalResults.y(time);
+					case ParachuteGraphProperty.R:
+						return ParachuteSimulation.theoreticalResults.r(time);
+					case ParachuteGraphProperty.Velocity:
+						return ParachuteSimulation.theoreticalResults.v(time);
+					case ParachuteGraphProperty.AirResistance:
+						return ParachuteSimulation.theoreticalResults.Rair(time);
+					case ParachuteGraphProperty.ResultantForce:
+						return ParachuteSimulation.theoreticalResults.Fr(time);
+					case ParachuteGraphProperty.Acceleration:
+						return ParachuteSimulation.theoreticalResults.a(time);
+				}
+			}
+
 			ParachuteSettings.adjustUI();	
 
 			//Don't draw the graph unless the sky diver has been released
@@ -60,6 +79,9 @@ class ParachuteGraph {
 				let lastPoint =
 					this.camera.pointToScreenPosition(new Vec2(0, new Float64Array(frame)[0]));
 
+				let lastTheoreticalPoint =
+					this.camera.pointToScreenPosition(new Vec2(0, getTheoreticalPoint(0)));
+
 				//Draw all points until the current simulation time
 				let maxi = elapsedSimulationTime / (ParachuteSimulation.settings.simulationQuality *
 					PARACHUTE_SIMULATION_SKIPPED_FACTOR);
@@ -81,6 +103,16 @@ class ParachuteGraph {
 					}
 
 					this.renderer.renderLines([lastPoint, point], "#00ff00", 2);
+
+					let time = i * ParachuteSimulation.settings.simulationQuality *
+						PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001;
+					if (time <= ParachuteSimulation.theoreticalResults.timeParachuteOpens) {
+						let theoreticalPoint = this.camera.pointToScreenPosition(
+							new Vec2(time, getTheoreticalPoint(time)));
+						this.renderer.renderLines(
+							[lastTheoreticalPoint, theoreticalPoint], "#ff0000", 2);
+						lastTheoreticalPoint = theoreticalPoint;
+					}
 
 					lastPoint = point;
 				}
