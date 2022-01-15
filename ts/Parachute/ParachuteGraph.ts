@@ -104,14 +104,16 @@ class ParachuteGraph {
 
 					this.renderer.renderLines([lastPoint, point], "#00ff00", 2);
 
-					let time = i * ParachuteSimulation.settings.simulationQuality *
-						PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001;
-					if (time <= ParachuteSimulation.theoreticalResults.timeParachuteOpens) {
-						let theoreticalPoint = this.camera.pointToScreenPosition(
-							new Vec2(time, getTheoreticalPoint(time)));
-						this.renderer.renderLines(
-							[lastTheoreticalPoint, theoreticalPoint], "#ff0000", 2);
-						lastTheoreticalPoint = theoreticalPoint;
+					if (ParachuteSimulation.settings.seeTheoretical) {
+						let time = i * ParachuteSimulation.settings.simulationQuality *
+							PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001;
+						if (time <= ParachuteSimulation.theoreticalResults.timeParachuteOpens) {
+							let theoreticalPoint = this.camera.pointToScreenPosition(
+								new Vec2(time, getTheoreticalPoint(time)));
+							this.renderer.renderLines(
+								[lastTheoreticalPoint, theoreticalPoint], "#ff0000", 2);
+							lastTheoreticalPoint = theoreticalPoint;
+						}
 					}
 
 					lastPoint = point;

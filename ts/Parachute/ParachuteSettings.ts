@@ -51,6 +51,7 @@ class ParachuteSettings {
 
 	private _simulationQuality: ParachuteSimulationQuality = ParachuteSimulationQuality.VeryHigh;
 	private _graphProperty: ParachuteGraphProperty = ParachuteGraphProperty.Velocity;
+	private _seeTheoretical: boolean = true;
 	private _simulationResults: boolean = true;
 
 	get mass() { return this._mass; }
@@ -62,6 +63,7 @@ class ParachuteSettings {
 
 	get simulationQuality() { return this._simulationQuality; }
 	get graphProperty() { return this._graphProperty; }
+	get seeTheoretical() { return this._seeTheoretical; }
 	get simulationResults() { return this._simulationResults; }
 
 	constructor() {}
@@ -86,6 +88,9 @@ class ParachuteSettings {
 			"Fr": ParachuteGraphProperty.ResultantForce,
 			"a": ParachuteGraphProperty.Acceleration
 		}[(document.getElementById("graph-property") as HTMLSelectElement).value];
+
+		ParachuteSimulation.settings._seeTheoretical =
+			(document.getElementById("see-theoretical") as HTMLInputElement).checked;
 
 		settings._simulationResults =
 			(document.getElementById("simulation-results") as HTMLInputElement).checked;
@@ -163,16 +168,16 @@ class ParachuteSettings {
 	//Adds events to the UI elements in the page. So, when something is inputted, the page and the
 	//settings are updated.
 	static addEvents(): void {
-		//The list of DOM elements that, when changed, require the simulation to be updated.
-		let settingsElements: string[] = [
-			"simulation-quality", "graph-property", "simulation-results"
-		];
-
 		//Gets called when a page element is changed
 		function onUpdate() {
 			ParachuteSimulation.settings = ParachuteSimulation.settings.getFromPage();
 			ParachuteSimulation.settings.updatePage();
 		}
+
+		//The list of DOM elements that, when changed, require the simulation to be updated.
+		let settingsElements: string[] = [
+			"simulation-quality", "graph-property", "simulation-results"
+		];
 
 		for (let i: number = 0; i < settingsElements.length; ++i) {
 			document.getElementById(settingsElements[i]).addEventListener("change", onUpdate);
@@ -186,6 +191,13 @@ class ParachuteSettings {
 		for (let i: number = 0; i < settingsElements.length; ++i) {
 			document.getElementById(settingsElements[i]).addEventListener("input", onUpdate);
 		}
+
+		//The "see theoretical graph" option is independent of the others because it can be changed
+		//while the sky diver is falling.
+		let seeTheoreticalCheckbox = document.getElementById("see-theoretical") as HTMLInputElement;
+		seeTheoreticalCheckbox.addEventListener("change", () => {
+			ParachuteSimulation.settings._seeTheoretical = seeTheoreticalCheckbox.checked;
+		});
 	}
 
 	//Centers the buttons in case the grid is 3 elements wide. This could be achieved with a media
