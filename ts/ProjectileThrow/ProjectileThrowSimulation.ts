@@ -51,7 +51,7 @@ class ProjectileThrowSimulation {
 	}
 
 	static startSimulation() {
-		this.projectile.forces = [ new Vec2(0, -9.8 * BODY_MASS) ]; //Projectile gravity
+		this.projectile.forces = [ new Vec2(0, -GRAVITY * BODY_MASS) ]; //Projectile gravity
 
 		ProjectileThrowSettings.addEvents();
 		ProjectileThrowEvents.addEvents();

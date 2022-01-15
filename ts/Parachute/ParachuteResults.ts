@@ -33,9 +33,10 @@ class ParachuteResults {
 		//a(t) = g * sech^2(t * sqrt((g * rho * A * Cd) / 2m))
 
 		function rIntegral(t: number): number {
-			return ((2 * settings.mass) / (1.225 * settings.A0 * settings.cd0)) *
+			return ((2 * settings.mass) / (AIR_DENSITY * settings.A0 * settings.cd0)) *
 				Math.log(Math.abs(2 * Math.cosh(
-				Math.sqrt(9.8 * 1.225 * settings.A0 * settings.cd0 / (2 * settings.mass)) * t)));
+				Math.sqrt(GRAVITY * AIR_DENSITY * settings.A0 * settings.cd0 /
+				(2 * settings.mass)) * t)));
 		}
 
 		ret.r = (t: number): number => {
@@ -47,15 +48,15 @@ class ParachuteResults {
 		}
 
 		ret.v = (t: number): number => {
-			return Math.sqrt((2 * settings.mass * 9.8) / (1.225 * settings.A0 * settings.cd0)) *
-				Math.tanh(
-				Math.sqrt((9.8 * 1.225 * settings.A0 * settings.cd0) / (2 * settings.mass)) * t);
+			return Math.sqrt((2 * settings.mass * GRAVITY) /
+				(AIR_DENSITY * settings.A0 * settings.cd0)) * Math.tanh(Math.sqrt(
+				(GRAVITY * AIR_DENSITY * settings.A0 * settings.cd0) / (2 * settings.mass)) * t);
 		};
 
 		ret.a = (t: number): number => {
-			return 9.8 / Math.pow(Math.cosh(
-				Math.sqrt((9.8 * 1.225 * settings.A0 * settings.cd0) / (2 * settings.mass)) * t),
-				2);
+			return GRAVITY / Math.pow(Math.cosh(
+				Math.sqrt((GRAVITY * AIR_DENSITY * settings.A0 * settings.cd0) /
+				(2 * settings.mass)) * t), 2);
 		}
 
 		ret.Fr = (t: number): number => {
@@ -64,15 +65,15 @@ class ParachuteResults {
 
 		ret.Rair = (t: number): number => {
 			let v = ret.v(t);
-			return 0.5 * settings.cd0 * 1.225 * settings.A0 * v * v;
+			return 0.5 * settings.cd0 * AIR_DENSITY * settings.A0 * v * v;
 		}
 
 		//Know when the sky diver opens the parachute (from that point onwards these functions are
 		//invalid)
 		ret.timeParachuteOpens = Math.acosh(0.5 * Math.exp(
-			((settings.h0 - settings.hopening + rIntegral(0)) * 1.225 * settings.A0 * settings.cd0)
-			/ (2 * settings.mass))) / Math.sqrt((9.8 * 1.225 * settings.A0 * settings.cd0) /
-			(2 * settings.mass));
+			((settings.h0 - settings.hopening + rIntegral(0)) * AIR_DENSITY * settings.A0 *
+			settings.cd0) / (2 * settings.mass))) / Math.sqrt((GRAVITY * AIR_DENSITY * settings.A0 *
+			settings.cd0) / (2 * settings.mass));
 
 		return ret;
 	}

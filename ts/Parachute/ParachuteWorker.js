@@ -32,7 +32,7 @@ self.addEventListener("message", (e) => {
 	while (sessionUsedBuffers < allowedBuffers) { //While not all allowed buffers were sent
 
 		if (body.forces.length === 0) {
-			body.forces = [ new Vec2(0, -settings._mass * 9.8), new Vec2() ];
+			body.forces = [ new Vec2(0, -settings._mass * GRAVITY), new Vec2() ];
 		}
 
 		//Only send one tenth of the points to the page (window context)
@@ -57,11 +57,11 @@ self.addEventListener("message", (e) => {
 					break;
 
 				case ParachuteGraphProperty.ResultantForce:
-					view[bufferUsedFloats] = Math.abs(settings._mass * 9.8 - body.forces[1].y);
+					view[bufferUsedFloats] = Math.abs(settings._mass * GRAVITY - body.forces[1].y);
 					break;
 
 				case ParachuteGraphProperty.Acceleration:
-					view[bufferUsedFloats] = Math.abs(settings._mass * 9.8 - body.forces[1].y)
+					view[bufferUsedFloats] = Math.abs(settings._mass * GRAVITY - body.forces[1].y)
 						/ body.mass;
 					break;
 			}
@@ -85,16 +85,16 @@ self.addEventListener("message", (e) => {
 			break;
 		}
 
-		body.forces = [ new Vec2(0, -settings._mass * 9.8), new Vec2() ];
+		body.forces = [ new Vec2(0, -settings._mass * GRAVITY), new Vec2() ];
 
 		if (body.r.y >= settings._hopening) {
-			//After the parachute is opened (1.225 -> air density)
+			//After the parachute is opened
 			body.forces[1] =
-				new Vec2(0, 0.5 * settings._cd0 * 1.225 * settings._A0 * body.v.y * body.v.y);
+				new Vec2(0, 0.5 * settings._cd0 * AIR_DENSITY * settings._A0 * body.v.y * body.v.y);
 		} else {
-			//Before the parachute is opened (1.225 -> air density)
+			//Before the parachute is opened
 			body.forces[1] =
-				new Vec2(0, 0.5 * settings._cd1 * 1.225 * settings._A1 * body.v.y * body.v.y);
+				new Vec2(0, 0.5 * settings._cd1 * AIR_DENSITY * settings._A1 * body.v.y * body.v.y);
 		}
 
 		body.step(simulationQuality);

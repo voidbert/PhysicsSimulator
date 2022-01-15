@@ -1,3 +1,6 @@
+const GRAVITY = 9.8;
+const AIR_DENSITY = 1.225;
+
 class Body {
 	public mass: number; //The mass of the body
 	public r: Vec2; //The position of the body
