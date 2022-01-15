@@ -4,18 +4,46 @@ importScripts("../../pages/Parachute/compiledJS.js");
 let body;
 let settings;
 
+let theoreticalResults;
+let errorAvg;
+let parachuteOpenedInstant = -1; //In seconds
+
 let simulationQuality;
 let bufferSize;
 let allowedBuffers;
 let totalSimulationTicks;
 
+//Creates a settings object with data from the window. Not all properties will be copied
+//(only physics related ones).
+function convertParachuteSettings(settings) {
+	//Creating the object in the worker allows access to getters and setters
+	let converted = new ParachuteSettings();
+	
+	converted._mass = settings._mass;
+	converted._h0   = settings._h0;
+	converted._hopening = settings._hopening;
+
+	converted._cd0 = settings._cd0; converted._A0 = settings._A0;
+	converted._cd1 = settings._cd1; converted._A1 = settings._A1;
+
+	converted._simulationQuality = settings._simulationQuality;
+	converted._graphProperty = settings._graphProperty;
+
+	return converted;
+}
+
 self.addEventListener("message", (e) => {
 	if ("body" in e.data) {
 		body = convertBody(e.data.body);
 		totalSimulationTicks = 0;
+		errorAvg = 0;
+		parachuteOpenedInstant = -1;
 	}
-	if ("settings" in e.data)
-		settings = e.data.settings;
+	if ("settings" in e.data) {
+		settings = convertParachuteSettings(e.data.settings);
+		theoreticalResults = ParachuteResults.calculateTheoreticalResults(settings);
+	}
+		
 	if ("simulationQuality" in e.data)
 		simulationQuality = e.data.simulationQuality;
 	if ("bufferSize" in e.data)
@@ -35,37 +63,50 @@ self.addEventListener("message", (e) => {
 			body.forces = [ new Vec2(0, -settings._mass * GRAVITY), new Vec2() ];
 		}
 
+		let experimentalPoint, theoreticalPoint;
+
+		switch (settings._graphProperty) {
+			case ParachuteGraphProperty.Y:
+				experimentalPoint = body.r.y;
+				theoreticalPoint =
+					theoreticalResults.y(totalSimulationTicks * simulationQuality * 0.001);
+				break;
+
+			case ParachuteGraphProperty.R:
+				experimentalPoint = settings._h0 - body.r.y;
+				theoreticalPoint =
+					theoreticalResults.r(totalSimulationTicks * simulationQuality * 0.001);
+				break;
+
+			case ParachuteGraphProperty.Velocity:
+				experimentalPoint = -body.v.y;
+				theoreticalPoint =
+					theoreticalResults.v(totalSimulationTicks * simulationQuality * 0.001);
+				break;
+
+			case ParachuteGraphProperty.AirResistance:
+				experimentalPoint = body.forces[1].y;
+				theoreticalPoint =
+					theoreticalResults.Rair(totalSimulationTicks * simulationQuality * 0.001);
+				break;
+
+			case ParachuteGraphProperty.ResultantForce:
+				experimentalPoint = Math.abs(settings._mass * GRAVITY - body.forces[1].y);
+				theoreticalPoint =
+					theoreticalResults.Fr(totalSimulationTicks * simulationQuality * 0.001);
+				break;
+
+			case ParachuteGraphProperty.Acceleration:
+				experimentalPoint = Math.abs(settings._mass * GRAVITY - body.forces[1].y) / body.mass;
+				theoreticalPoint =
+					theoreticalResults.a(totalSimulationTicks * simulationQuality * 0.001);
+				break;
+		}
+
 		//Only send one tenth of the points to the page (window context)
 		if (totalSimulationTicks % PARACHUTE_SIMULATION_SKIPPED_FACTOR === 0) {
-
-			//Add the current body property to the buffer (property added depends on the settings)
-			switch (settings._graphProperty) {
-				case ParachuteGraphProperty.Y:
-					view[bufferUsedFloats] = body.r.y;
-					break;
-
-				case ParachuteGraphProperty.R:
-					view[bufferUsedFloats] = settings._h0 - body.r.y;
-					break;
-
-				case ParachuteGraphProperty.Velocity:
-					view[bufferUsedFloats] = -body.v.y;
-					break;
-
-				case ParachuteGraphProperty.AirResistance:
-					view[bufferUsedFloats] = body.forces[1].y;
-					break;
-
-				case ParachuteGraphProperty.ResultantForce:
-					view[bufferUsedFloats] = Math.abs(settings._mass * GRAVITY - body.forces[1].y);
-					break;
-
-				case ParachuteGraphProperty.Acceleration:
-					view[bufferUsedFloats] = Math.abs(settings._mass * GRAVITY - body.forces[1].y)
-						/ body.mass;
-					break;
-			}
-	
+			//Add the current body property to the buffer
+			view[bufferUsedFloats] = experimentalPoint;
 			bufferUsedFloats++;
 		}
 
@@ -88,11 +129,25 @@ self.addEventListener("message", (e) => {
 		body.forces = [ new Vec2(0, -settings._mass * GRAVITY), new Vec2() ];
 
 		if (body.r.y >= settings._hopening) {
-			//After the parachute is opened
+			//Before the parachute is opened
 			body.forces[1] =
 				new Vec2(0, 0.5 * settings._cd0 * AIR_DENSITY * settings._A0 * body.v.y * body.v.y);
+
+			//The theoretical results are only applicable before the parachute is opened
+
+			//Compare the real and theoretical value for this point, calculating the error
+			let error = ExtraMath.relativeError(experimentalPoint, theoreticalPoint);
+			//0 / 0 -> consider the error to be 0
+			if (isNaN(error))
+				error = 0;
+			errorAvg = (errorAvg * totalSimulationTicks + error) / (totalSimulationTicks + 1);
 		} else {
-			//Before the parachute is opened
+			//Register this instant if it is the first when the parachute's opened
+			if (parachuteOpenedInstant === -1) {
+				parachuteOpenedInstant = totalSimulationTicks * simulationQuality * 0.001;
+			}
+
+			//After the parachute is opened
 			body.forces[1] =
 				new Vec2(0, 0.5 * settings._cd1 * AIR_DENSITY * settings._A1 * body.v.y * body.v.y);
 		}
@@ -101,5 +156,6 @@ self.addEventListener("message", (e) => {
 		totalSimulationTicks++;
 	}
 
-	postMessage("DONE");
+	//Post the simulation results
+	postMessage({ errorAvg: errorAvg * 100 /*percentage*/, openedInstant: parachuteOpenedInstant });
 });

@@ -93,7 +93,7 @@ class ParachuteSettings {
 			(document.getElementById("see-theoretical") as HTMLInputElement).checked;
 
 		settings._simulationResults =
-			(document.getElementById("simulation-results") as HTMLInputElement).checked;
+			(document.getElementById("simulation-results-check") as HTMLInputElement).checked;
 
 		//Parses a number from an input element (id) and sets a property in "this" to the number in
 		//that input. Whether the number is valid or not is a boolean that is assigned to
@@ -176,7 +176,7 @@ class ParachuteSettings {
 
 		//The list of DOM elements that, when changed, require the simulation to be updated.
 		let settingsElements: string[] = [
-			"simulation-quality", "graph-property", "simulation-results"
+			"simulation-quality", "graph-property", "simulation-results-check"
 		];
 
 		for (let i: number = 0; i < settingsElements.length; ++i) {
@@ -238,7 +238,7 @@ class ParachuteSettings {
 
 		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = true;
 		(document.getElementById("graph-property") as HTMLSelectElement).disabled = true;
-		(document.getElementById("simulation-results") as HTMLInputElement).disabled = true;
+		(document.getElementById("simulation-results-check") as HTMLInputElement).disabled = true;
 
 		(document.getElementById("download-button") as HTMLButtonElement).disabled = true;
 	}
@@ -255,7 +255,7 @@ class ParachuteSettings {
 
 		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = false;
 		(document.getElementById("graph-property") as HTMLSelectElement).disabled = false;
-		(document.getElementById("simulation-results") as HTMLInputElement).disabled = false;
+		(document.getElementById("simulation-results-check") as HTMLInputElement).disabled = false;
 
 		//Don't enable the download button (it is enabled when the worker finishes the simulation)
 	}

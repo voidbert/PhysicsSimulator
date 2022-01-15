@@ -113,7 +113,7 @@
 
 
 					<div class="settings-grid-item-subcontent-checkbox">
-						<input type="checkbox" name="simulation-results-checkbox" id="simulation-results" checked>
+						<input type="checkbox" name="simulation-results-checkbox" id="simulation-results-check" checked>
 						</input>
 						<label for="simulation-results-checkbox">Resultados da simulação</label>
 					</div>
@@ -138,6 +138,38 @@
 				<noscript>
 					Por favor, ative o JavaScript.
 				</noscript>
+			</div>
+		</div>
+
+		<div id="simulation-results" class="hidden">
+			<div>
+				<table>
+					<thead>
+						<tr>
+							<th class="table-top-left-corner"></th>
+							<th>Simulador</th>
+							<th>Valor teórico</th>
+							<th>Erro relativo (%)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Gráfico</td>
+							<td>&ndash;</td>
+							<td>&ndash;</td>
+							<td id="error-graph">0.00</td>
+						</tr>
+						<tr>
+							<td>Instante de abertura</td>
+							<td id="simulated-opened">0.00</td>
+							<td id="real-opened">0.00</td>
+							<td id="error-opened">0.00</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div id="simulation-results-ok-container">
+				<button id="simulation-results-ok">OK</button>
 			</div>
 		</div>
 	</body>

@@ -127,7 +127,12 @@ class ParachuteGraph {
 					ParachuteSimulation.state === ParachuteState.Released) {
 
 					//Simulation done
-					ParachuteSimulation.state = ParachuteState.ReachedGround;
+					if (ParachuteSimulation.settings.simulationResults) {
+						ParachuteStateManager.showSimulationResults();
+					} else {
+						ParachuteSimulation.state = ParachuteState.ReachedGround;
+					}
+					
 					ParachuteSettings.enableSettingsElements();
 				}
 
@@ -150,6 +155,8 @@ class ParachuteGraph {
 			if (ParachuteSimulation.state === ParachuteState.BeforeRelease) {
 				this.maxY = this.camera.pointToWorldPosition(new Vec2(0, 0)).y;
 			}
+
+			ParachuteStateManager.scaleSimulationResults();
 		});
 		this.renderer.renderLoop();
 	}

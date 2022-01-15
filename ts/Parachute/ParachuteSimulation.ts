@@ -32,10 +32,10 @@ class ParachuteSimulation {
 					this.settings.simulationQuality,
 					(w: Worker, data: any) => {
 						//Worker posted a message. Stop the worker if it is done.
-						if (data === "DONE") {
+						if ("errorAvg" in data && "openedInstant" in data) {
+							//Prepare the download button
 							let downloadButton: HTMLButtonElement =
 								document.getElementById("download-button") as HTMLButtonElement;
-
 							downloadButton.disabled = false;
 							downloadButton.onclick = () => {
 								let csv = new CSVTable(this.parallelWorker,
@@ -54,8 +54,11 @@ class ParachuteSimulation {
 									window.URL.revokeObjectURL(a.href);
 								}, 10000); //Delete the blob after some time	
 							}
+							
+							//Prepare simulation results
+							ParachuteResults.applyToPage(this.theoreticalResults, data.errorAvg,
+								data.openedInstant);
 
-							console.log(data);
 							this.workerStopped = true;
 						} else {
 							this.parallelWorker.addBuffer(
@@ -98,6 +101,11 @@ class ParachuteSimulation {
 			});
 
 			ParachuteSettings.disableSettingsElements();
+		});
+
+		//When the user clicks the ok button on the simulation results, hide that menu.
+		document.getElementById("simulation-results-ok").addEventListener("click", () => {
+			ParachuteStateManager.hideSimulationResults();
 		});
 	}
 }

@@ -77,4 +77,19 @@ class ParachuteResults {
 
 		return ret;
 	}
+
+	//Puts the simulation results in the page document. errorAvg and openedInstant are returned from
+	//the web worker
+	static applyToPage(theoreticalResults: ParachuteResults, errorAvg: number,
+		openedInstant: number) {
+
+		document.getElementById("error-graph").textContent = errorAvg.toString();
+
+		document.getElementById("simulated-opened").textContent = openedInstant.toString();
+		document.getElementById("real-opened").textContent =
+			theoreticalResults.timeParachuteOpens.toString();
+		document.getElementById("error-opened").textContent =
+			(ExtraMath.relativeError(openedInstant, theoreticalResults.timeParachuteOpens) * 100)
+			.toString();
+	}
 }
