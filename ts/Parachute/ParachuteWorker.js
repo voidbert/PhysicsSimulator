@@ -137,8 +137,8 @@ self.addEventListener("message", (e) => {
 
 			//Compare the real and theoretical value for this point, calculating the error
 			let error = ExtraMath.relativeError(experimentalPoint, theoreticalPoint);
-			//0 / 0 -> consider the error to be 0
-			if (isNaN(error))
+			/// 0 -> consider the error to be 0
+			if (theoreticalPoint === 0)
 				error = 0;
 			errorAvg = (errorAvg * totalSimulationTicks + error) / (totalSimulationTicks + 1);
 		} else {

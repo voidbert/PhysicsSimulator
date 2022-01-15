@@ -83,13 +83,46 @@ class ParachuteResults {
 	static applyToPage(theoreticalResults: ParachuteResults, errorAvg: number,
 		openedInstant: number) {
 
-		document.getElementById("error-graph").textContent = errorAvg.toString();
+		//Transforms a number into a string with a reasonable length in scientific notation
+		function strigify(n: number): string {
+			let parts = n.toExponential().split("e");
+			parts[0] = Number(parts[0]).toFixed(2);
 
-		document.getElementById("simulated-opened").textContent = openedInstant.toString();
+			let superscript = "";
+			for (let i: number = 0; i < parts[1].length; ++i) {
+				switch (parts[1][i]) {
+					case "-":
+						superscript += "⁻";
+						break;
+					case "2":
+						superscript += "²";
+						break;
+					case "3":
+						superscript += "³";
+						break;
+					default:
+						superscript += String.fromCodePoint(0x2074 + parts[1].codePointAt(i) - 51);
+						break;
+				}
+			}
+
+			return parts[0] + " x 10" + superscript;
+		}
+
+		document.getElementById("error-graph").textContent = strigify(errorAvg);
+
+		document.getElementById("simulated-opened").textContent = openedInstant.toFixed(2);
 		document.getElementById("real-opened").textContent =
-			theoreticalResults.timeParachuteOpens.toString();
-		document.getElementById("error-opened").textContent =
-			(ExtraMath.relativeError(openedInstant, theoreticalResults.timeParachuteOpens) * 100)
-			.toString();
+			theoreticalResults.timeParachuteOpens.toFixed(2);
+
+		
+		if (theoreticalResults.timeParachuteOpens === 0) {
+			//Division by 0
+			document.getElementById("error-opened").textContent = "Divisão por 0";
+		} else {
+			let error =
+				ExtraMath.relativeError(openedInstant, theoreticalResults.timeParachuteOpens) * 100;
+			document.getElementById("error-opened").textContent = strigify(error);
+		}
 	}
 }
