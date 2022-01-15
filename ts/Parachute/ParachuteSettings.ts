@@ -111,14 +111,15 @@ class ParachuteSettings {
 		}
 
 		//Parse text fields, converting the text to numbers
-		parseWithSettingsUpdate("mass", "_mass", "_validMass", 0);
-		parseWithSettingsUpdate("h0", "_h0", "_validH0", 0);
-		parseWithSettingsUpdate("hopening", "_hopening", "_validHopening", 0, settings._h0);
+		parseWithSettingsUpdate("mass", "_mass", "_validMass", Number.MIN_VALUE);
+		parseWithSettingsUpdate("h0", "_h0", "_validH0", Number.MIN_VALUE);
+		parseWithSettingsUpdate("hopening", "_hopening", "_validHopening", Number.MIN_VALUE,
+			settings._h0);
 
-		parseWithSettingsUpdate("cd0", "_cd0", "_validCd0", 0);
-		parseWithSettingsUpdate("A0", "_A0", "_validA0", 0);
-		parseWithSettingsUpdate("cd1", "_cd1", "_validCd1", 0);
-		parseWithSettingsUpdate("A1", "_A1", "_validA1", 0);
+		parseWithSettingsUpdate("cd0", "_cd0", "_validCd0", Number.MIN_VALUE);
+		parseWithSettingsUpdate("A0", "_A0", "_validA0", Number.MIN_VALUE);
+		parseWithSettingsUpdate("cd1", "_cd1", "_validCd1", Number.MIN_VALUE);
+		parseWithSettingsUpdate("A1", "_A1", "_validA1", Number.MIN_VALUE);
 
 		return settings;
 	}
