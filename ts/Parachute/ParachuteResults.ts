@@ -94,6 +94,8 @@ class ParachuteResults {
 					case "-":
 						superscript += "⁻";
 						break;
+					case "1":
+						superscript += "¹";
 					case "2":
 						superscript += "²";
 						break;
@@ -101,7 +103,7 @@ class ParachuteResults {
 						superscript += "³";
 						break;
 					default:
-						superscript += String.fromCodePoint(0x2074 + parts[1].codePointAt(i) - 51);
+						superscript += String.fromCodePoint(0x2074 + parts[1].codePointAt(i) - 52);
 						break;
 				}
 			}
