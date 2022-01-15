@@ -89,7 +89,7 @@ class ParachuteSettings {
 			"a": ParachuteGraphProperty.Acceleration
 		}[(document.getElementById("graph-property") as HTMLSelectElement).value];
 
-		ParachuteSimulation.settings._seeTheoretical =
+		settings._seeTheoretical =
 			(document.getElementById("see-theoretical") as HTMLInputElement).checked;
 
 		settings._simulationResults =
@@ -176,7 +176,7 @@ class ParachuteSettings {
 
 		//The list of DOM elements that, when changed, require the simulation to be updated.
 		let settingsElements: string[] = [
-			"simulation-quality", "graph-property", "simulation-results-check"
+			"simulation-quality", "graph-property", 
 		];
 
 		for (let i: number = 0; i < settingsElements.length; ++i) {
@@ -192,11 +192,17 @@ class ParachuteSettings {
 			document.getElementById(settingsElements[i]).addEventListener("input", onUpdate);
 		}
 
-		//The "see theoretical graph" option is independent of the others because it can be changed
-		//while the sky diver is falling.
+		//The "see theoretical graph" and "simulation results" options are independent of the others
+		//because they can be changed while the sky diver is falling.
 		let seeTheoreticalCheckbox = document.getElementById("see-theoretical") as HTMLInputElement;
 		seeTheoreticalCheckbox.addEventListener("change", () => {
 			ParachuteSimulation.settings._seeTheoretical = seeTheoreticalCheckbox.checked;
+		});
+
+		let simulationResults = document.getElementById("simulation-results-check") as
+			HTMLInputElement;
+		simulationResults.addEventListener("change", () => {
+			ParachuteSimulation.settings._simulationResults = simulationResults.checked;
 		});
 	}
 
@@ -238,7 +244,6 @@ class ParachuteSettings {
 
 		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = true;
 		(document.getElementById("graph-property") as HTMLSelectElement).disabled = true;
-		(document.getElementById("simulation-results-check") as HTMLInputElement).disabled = true;
 
 		(document.getElementById("download-button") as HTMLButtonElement).disabled = true;
 	}
@@ -255,7 +260,6 @@ class ParachuteSettings {
 
 		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = false;
 		(document.getElementById("graph-property") as HTMLSelectElement).disabled = false;
-		(document.getElementById("simulation-results-check") as HTMLInputElement).disabled = false;
 
 		//Don't enable the download button (it is enabled when the worker finishes the simulation)
 	}
