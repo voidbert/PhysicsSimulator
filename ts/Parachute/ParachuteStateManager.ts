@@ -11,7 +11,7 @@ class ParachuteStateManager {
 		let elementWidth = (parseFloat(style.width) + 2 * parseFloat(style.paddingLeft))
 			* window.devicePixelRatio / this.simulationResultsScale;
 
-		let maxWidth = (window.innerWidth - 20 * window.devicePixelRatio);
+		let maxWidth = (window.innerWidth - 20) * window.devicePixelRatio;
 		let scale: number = maxWidth / (elementWidth * this.simulationResultsScale);
 		scale = Math.min(scale, 1); //Limit the scale from 0 to 1
 

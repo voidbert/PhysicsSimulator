@@ -79,17 +79,20 @@ class ParachuteGraph {
 				let lastPoint =
 					this.camera.pointToScreenPosition(new Vec2(0, new Float64Array(frame)[0]));
 
-				let lastTheoreticalPoint =
-					this.camera.pointToScreenPosition(new Vec2(0, getTheoreticalPoint(0)));
+				this.renderer.ctx.strokeStyle = "#00ff00";
+				this.renderer.ctx.lineWidth = 2;
+				this.renderer.ctx.beginPath();
+				this.renderer.ctx.moveTo(lastPoint.x, lastPoint.y);
 
 				//Draw all points until the current simulation time
 				let maxi = elapsedSimulationTime / (ParachuteSimulation.settings.simulationQuality *
 					PARACHUTE_SIMULATION_SKIPPED_FACTOR);
+				let reachedi = -1;
 				for (let i: number = 1; i < maxi; i++) {
-
 					frame = ParachuteSimulation.parallelWorker.getFrame(i);
 					if (frame === null) {
 						lackOfData = true; //Data not ready yet
+						reachedi = i;
 						break; 
 					}
 
@@ -102,22 +105,40 @@ class ParachuteGraph {
 						this.maxY = y;
 					}
 
-					this.renderer.renderLines([lastPoint, point], "#00ff00", 2);
-
-					if (ParachuteSimulation.settings.seeTheoretical) {
-						let time = i * ParachuteSimulation.settings.simulationQuality *
-							PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001;
-						if (time <= ParachuteSimulation.theoreticalResults.timeParachuteOpens) {
-							let theoreticalPoint = this.camera.pointToScreenPosition(
-								new Vec2(time, getTheoreticalPoint(time)));
-							this.renderer.renderLines(
-								[lastTheoreticalPoint, theoreticalPoint], "#ff0000", 2);
-							lastTheoreticalPoint = theoreticalPoint;
-						}
-					}
-
+					this.renderer.ctx.lineTo(point.x, point.y);
 					lastPoint = point;
 				}
+				this.renderer.ctx.stroke();
+
+				if (reachedi === -1) {
+					reachedi = maxi; //Drew all points possible
+				}
+
+				let lastTheoreticalPoint =
+					this.camera.pointToScreenPosition(new Vec2(0, getTheoreticalPoint(0)));
+
+				if (ParachuteSimulation.settings.seeTheoretical) {
+					
+					this.renderer.ctx.beginPath();
+					this.renderer.ctx.strokeStyle = "#ff0000aa";
+					this.renderer.ctx.lineWidth = 2;
+					this.renderer.ctx.moveTo(lastTheoreticalPoint.x, lastTheoreticalPoint.y);
+
+					maxi = Math.min(reachedi,
+						ParachuteSimulation.theoreticalResults.timeParachuteOpens /
+						(ParachuteSimulation.settings.simulationQuality * PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001));
+
+					for (let i: number = 1; i < maxi; i++) {
+						let time = i * ParachuteSimulation.settings.simulationQuality *
+							PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001;
+						let theoreticalPoint = this.camera.pointToScreenPosition(
+							new Vec2(time, getTheoreticalPoint(time)));
+
+						this.renderer.ctx.lineTo(theoreticalPoint.x, theoreticalPoint.y);
+						lastTheoreticalPoint = theoreticalPoint;
+					}
+				}
+				this.renderer.ctx.stroke();
 			}
 
 			if (lackOfData) {
