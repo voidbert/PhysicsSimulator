@@ -6,7 +6,7 @@ const BODY_GEOMETRY = [
 ];
 
 class ProjectileThrowSimulation {
-	static state: ApplicationState = ApplicationState.projectileInLaunchPosition;
+	static state: ProjectileThrowState = ProjectileThrowState.projectileInLaunchPosition;
 
 	//Tools for running the physics simulation in a different thread.
 	static parallelWorker: WorkerWrapper;
@@ -22,9 +22,6 @@ class ProjectileThrowSimulation {
 	//Keep track of the velocity before the user starting choosing another velocity in case they
 	//want to cancel their action.
 	static velocityBeforeChoosing: Vec2 = new Vec2();
-
-	//The scale of #simulation-results, that is adjust so that the element fits the screen
-	static simulationResultsScale = 1;
 
 	//Camera and display
 	static camera: Camera = new Camera(new Vec2(), new Vec2(32, 32));
@@ -111,15 +108,15 @@ class ProjectileThrowSimulation {
 
 			//Get the position of the body
 			let bodyFrame: ArrayBuffer[] = [];
-			if (this.state === ApplicationState.projectileMoving)
+			if (this.state === ProjectileThrowState.projectileMoving)
 				bodyFrame = this.parallelWorker.getBoundaryBuffers(elapsedSimulationTime, true);
 
 			if (bodyFrame.length === 0) {
 				//The simulation can be done or the worker hasn't reached this point
 
-				if (this.workerStopped && this.state === ApplicationState.projectileMoving) {
+				if (this.workerStopped && this.state === ProjectileThrowState.projectileMoving) {
 					//Simulation done
-					this.state = ApplicationState.projectileStopped;
+					this.state = ProjectileThrowState.projectileStopped;
 					ProjectileThrowSettings.enableSettingsElements();
 
 					//Make sure the body has the last position (due to frame timing, it may not be
@@ -127,7 +124,7 @@ class ProjectileThrowSimulation {
 					this.projectile.r = this.parseFrame(this.parallelWorker.getLastFrame());
 
 					if (this.settings.showSimulationResults) {
-						showSimulationResults();
+						ProjectileThrowStateManager.showSimulationResults();
 					}
 				}
 
@@ -157,7 +154,7 @@ class ProjectileThrowSimulation {
 				this.camera.polygonToScreenPosition(this.projectile.transformGeometry()), "red");
 
 			//Draw the velocity vector if the user is choosing it interactively
-			if (this.state === ApplicationState.choosingVelocity) {
+			if (this.state === ProjectileThrowState.choosingVelocity) {
 				this.renderer.renderLines([
 					this.camera.pointToScreenPosition(this.projectile.transformVertex(new Vec2())),
 					ProjectileThrowEvents.mousePosition
@@ -190,53 +187,53 @@ class ProjectileThrowSimulation {
 			}
 
 			this.camera.canvasSize = renderingSurfaceSize;
-			scaleSimulationResults();
+			ProjectileThrowStateManager.scaleSimulationResults();
 		});
 		this.renderer.renderLoop();
 
 		//Enter velocity choosing mode when the user clicks on the button
 		document.getElementById("choose-screen-velocity").addEventListener("click", () => {
 			//Only select a velocity if the body isn't moving
-			if (this.state === ApplicationState.projectileInLaunchPosition || 
-				this.state === ApplicationState.projectileStopped) {
-				enterChoosingVelocityMode();
+			if (this.state === ProjectileThrowState.projectileInLaunchPosition || 
+				this.state === ProjectileThrowState.projectileStopped) {
+				ProjectileThrowStateManager.enterChoosingVelocityMode();
 			}
 		});
 
 		//When the user clicks the ok button on the simulation results, hide that menu.
 		document.getElementById("simulation-results-ok").addEventListener("click", () => {
-			hideSimulationResults();
+			ProjectileThrowStateManager.hideSimulationResults();
 		});
 
 		//Reset the position and velocity of the body when asked to
 		document.getElementById("reset-button").addEventListener("click", () => {
-			if (this.state === ApplicationState.projectileMoving) {
+			if (this.state === ProjectileThrowState.projectileMoving) {
 				newWorker();
 				ProjectileThrowSettings.enableSettingsElements();
 			}
 
 			//Handle the edge case where the user is choosing a velocity and clicks this button
-			if (this.state === ApplicationState.choosingVelocity)
-				exitChoosingVelocityMode();
+			if (this.state === ProjectileThrowState.choosingVelocity)
+				ProjectileThrowStateManager.exitChoosingVelocityMode();
 
 			//Update the settings on the page
-			this.state = ApplicationState.projectileInLaunchPosition;
+			this.state = ProjectileThrowState.projectileInLaunchPosition;
 			this.settings.updatePage();
 		});
 
 		//Start the physics simulation when the launch button is pressed
 		document.getElementById("launch-button").addEventListener("click", () => {
 			//Reset the body's position and velocity
-			if (this.state === ApplicationState.projectileMoving) {
+			if (this.state === ProjectileThrowState.projectileMoving) {
 				newWorker();
 			}
 
 			//Handle the edge case where the user is choosing a velocity and clicks this button
-			if (this.state === ApplicationState.choosingVelocity)
-				exitChoosingVelocityMode();
+			if (this.state === ProjectileThrowState.choosingVelocity)
+				ProjectileThrowStateManager.exitChoosingVelocityMode();
 
 			//Make sure the body is launched from the right position with the right velocity
-			ProjectileThrowSimulation.state = ApplicationState.projectileInLaunchPosition;
+			ProjectileThrowSimulation.state = ProjectileThrowState.projectileInLaunchPosition;
 			this.settings = this.settings.getFromPage();
 			this.settings.updatePage();
 
@@ -258,7 +255,7 @@ class ProjectileThrowSimulation {
 					heightReference: ProjectileThrowSimulation.settings.heightReference
 				}, this.settings.simulationQuality);
 
-				this.state = ApplicationState.projectileMoving;
+				this.state = ProjectileThrowState.projectileMoving;
 				ProjectileThrowSettings.disableSettingsElements();
 			});
 		});

@@ -3,7 +3,6 @@ class ProjectileThrowEvents {
 	//mousePosition needs to be public for things like rendering the velocity vector while it's
 	//being chosen.
 	static mousePosition: Vec2 = new Vec2(0, 0);
-	static isTouchScreenAvailable = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
 	static addEvents() {
 		let moveCallback: (x: number, y: number) => void = (x: number, y: number) => {
@@ -12,7 +11,7 @@ class ProjectileThrowEvents {
 			);
 
 			//If the user is choosing the velocity, update the velocity inputs
-			if (ProjectileThrowSimulation.state === ApplicationState.choosingVelocity) {
+			if (ProjectileThrowSimulation.state === ProjectileThrowState.choosingVelocity) {
 				let v: Vec2 =
 					ProjectileThrowSimulation.camera.pointToWorldPosition(this.mousePosition)
 					.subtract(ProjectileThrowSimulation.projectile.r)
@@ -40,8 +39,8 @@ class ProjectileThrowEvents {
 		//If the user clicks on top of the canvas while choosing the body's velocity, stop choosing
 		//the velocity (setting its value to the chosen one)
 		document.getElementById("no-script-div").addEventListener("pointerup", () => {
-			if (ProjectileThrowSimulation.state === ApplicationState.choosingVelocity) {
-				exitChoosingVelocityMode();
+			if (ProjectileThrowSimulation.state === ProjectileThrowState.choosingVelocity) {
+				ProjectileThrowStateManager.exitChoosingVelocityMode();
 			}
 		});
 
@@ -49,18 +48,18 @@ class ProjectileThrowEvents {
 		//state)
 		window.addEventListener("keydown", (e: KeyboardEvent) => {
 			if (e.key === "Escape") {
-				if (ProjectileThrowSimulation.state === ApplicationState.choosingVelocity) {
+				if (ProjectileThrowSimulation.state === ProjectileThrowState.choosingVelocity) {
 					
 					//Update the velocity input boxes to have the values before the action was
 					//cancelled
 					ProjectileThrowSettings.updatePageVelocity(
 						ProjectileThrowSimulation.velocityBeforeChoosing);
-					exitChoosingVelocityMode();
+					ProjectileThrowStateManager.exitChoosingVelocityMode();
 
 				} else if (ProjectileThrowSimulation.state ===
-					ApplicationState.showingSimulationResults) {
+					ProjectileThrowState.showingSimulationResults) {
 
-					hideSimulationResults();
+					ProjectileThrowStateManager.hideSimulationResults();
 				}
 			}
 		});

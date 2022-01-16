@@ -146,8 +146,8 @@ class ProjectileThrowSettings {
 
 		//Update the position of the body it not mid-simulation. If the height is invalid, show a
 		//warning.
-		if (ProjectileThrowSimulation.state === ApplicationState.projectileInLaunchPosition || 
-			ProjectileThrowSimulation.state === ApplicationState.projectileStopped) {
+		if (ProjectileThrowSimulation.state === ProjectileThrowState.projectileInLaunchPosition || 
+			ProjectileThrowSimulation.state === ProjectileThrowState.projectileStopped) {
 
 			if (this._heightReference === HeightReference.BodyCM)
 				ProjectileThrowSimulation.projectile.r = new Vec2(0, this._height);
@@ -162,8 +162,8 @@ class ProjectileThrowSettings {
 		}
 
 		//Update the velocity of the body it not mid-simulation. If it is invalid, show a warning.
-		if (ProjectileThrowSimulation.state === ApplicationState.projectileInLaunchPosition || 
-			ProjectileThrowSimulation.state === ApplicationState.projectileStopped) {
+		if (ProjectileThrowSimulation.state === ProjectileThrowState.projectileInLaunchPosition || 
+			ProjectileThrowSimulation.state === ProjectileThrowState.projectileStopped) {
 
 			ProjectileThrowSimulation.projectile.v = this._launchVelocity;
 		}
@@ -175,8 +175,8 @@ class ProjectileThrowSettings {
 		}
 
 		//If the change was applied to a non-moving body, recalculate the trajectory
-		if (ProjectileThrowSimulation.state === ApplicationState.projectileInLaunchPosition || 
-			ProjectileThrowSimulation.state === ApplicationState.projectileStopped) {
+		if (ProjectileThrowSimulation.state === ProjectileThrowState.projectileInLaunchPosition || 
+			ProjectileThrowSimulation.state === ProjectileThrowState.projectileStopped) {
 
 			ProjectileThrowSimulation.trajectory = ProjectileThrowTrajectory
 				.generateLimitedTrajectory(ProjectileThrowSimulation.projectile, this);
