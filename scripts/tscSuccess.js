@@ -7,6 +7,32 @@ const fs = require("fs");
 const { join, sep } = require("path");
 const { exit } = require("process");
 
+function readdirRecursively(dirpath, callback) {
+	try {
+		let contents = fs.readdirSync(dirpath);
+		for (let i = 0; i < contents.length; ++i) {
+			let path = join(dirpath, contents[i]);
+
+			let isDirectory = false; //Assume a file if statSync fails
+			try {
+				isDirectory = fs.statSync(path).isDirectory();
+			} catch (err) {
+				console.error("fs.statSync error in \"" + path + "\": " + err);
+				exit(1);
+			}
+
+			if (isDirectory) {
+				readdirRecursively(path, callback);
+			} else {
+				callback(path);
+			}
+		}
+	} catch (err) {
+		console.error("fs.readdirSync error in \"" + dirpath + "\": " + err);
+		exit(1);
+	}
+}
+
 //Gets an ordered javascript file list from a text file file (splits it by lines). callback is
 //called with the first argument being the list of files.
 function getScriptsList(filePath, callback) {
@@ -81,4 +107,24 @@ getSimulationList((file) => {
 			}
 		});
 	});
+});
+
+//Copy javascript files. "allowJs" is not used in tsconfig.json because JS files from web workers
+//are considered part of the window context.
+readdirRecursively("./ts", (filepath) => {
+	if (filepath.endsWith(".js")) {
+		//Get the copy destination path for the JS file (remove ./ts)
+		let index = filepath.indexOf("ts/") + 3;
+		if (filepath.indexOf("ts/") === -1) {
+			index = 0; //Failed to get the index. This will likely error while copying
+		}
+		let destination = join("js", filepath.substring(index));
+
+		fs.copyFile(filepath, destination, (err) => {
+			if (err) {
+				console.error("fs.copyFile error in \"" + filepath + "\": " + err);
+				exit(1);
+			}
+		});
+	}
 });

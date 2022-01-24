@@ -4,7 +4,6 @@
 		"outDir": "js",
 		"watch": true,
 		"removeComments": true,
-		"allowJs": true,
 		"lib": ["DOM", "es2017"]
 	},
 	"include": [ "ts/**/*" ],
