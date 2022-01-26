@@ -1,9 +1,6 @@
-const BODY_APOTHEM = 0.5;
+const BODY_RADIUS = 0.5;
 const BODY_MASS = 1;
-const BODY_GEOMETRY = [
-	new Vec2(-BODY_APOTHEM, -BODY_APOTHEM), new Vec2(BODY_APOTHEM, -BODY_APOTHEM),
-	new Vec2(BODY_APOTHEM, BODY_APOTHEM), new Vec2(-BODY_APOTHEM, BODY_APOTHEM)
-];
+const BODY_GEOMETRY = ExtraMath.generatePolygon(20, BODY_RADIUS);
 
 class ProjectileThrowSimulation {
 	static state: ProjectileThrowState = ProjectileThrowState.projectileInLaunchPosition;

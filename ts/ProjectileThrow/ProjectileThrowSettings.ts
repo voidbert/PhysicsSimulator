@@ -152,7 +152,7 @@ class ProjectileThrowSettings {
 			if (this._heightReference === HeightReference.BodyCM)
 				ProjectileThrowSimulation.projectile.r = new Vec2(0, this._height);
 			else
-				ProjectileThrowSimulation.projectile.r = new Vec2(0, this._height + BODY_APOTHEM);
+				ProjectileThrowSimulation.projectile.r = new Vec2(0, this._height + BODY_RADIUS);
 		}
 		if (this._validHeight) {
 			//Hide any invalid height warning

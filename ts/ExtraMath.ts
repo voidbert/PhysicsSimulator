@@ -45,4 +45,19 @@ class ExtraMath {
 		return new Vec2(this.linearInterpolation(a.x, b.x, dt, t),
 			this.linearInterpolation(a.y, b.y, dt, t));
 	}
+
+	//Generates a polygon with n sides.
+	static generatePolygon(n: number, radius: number, startAngle: number = 0): Vec2[] {
+		let points: Vec2[] = [];
+		let internalAngle = (2 * Math.PI) / n;
+
+		for (let i = 0; i < n; ++i) {
+			points.push(new Vec2(
+				Math.cos(internalAngle * i + startAngle) * radius,
+				Math.sin(internalAngle * i + startAngle) * radius
+			));
+		}
+
+		return points;
+	}
 }

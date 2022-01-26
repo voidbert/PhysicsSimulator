@@ -17,7 +17,7 @@ class ProjectileThrowEvents {
 					.subtract(ProjectileThrowSimulation.projectile.r)
 					.scale(3);
 				//Max of 2 decimal places in the velocity inputs
-				v = new Vec2(ExtraMath.round(v.x, 2),　ExtraMath.round(v.y, 2));
+				v = new Vec2(ExtraMath.round(v.x, 2), ExtraMath.round(v.y, 2));
 				ProjectileThrowSettings.updatePageVelocity(v);
 
 				//Update the trajectory. Create a copy of the body with the new initial velocity

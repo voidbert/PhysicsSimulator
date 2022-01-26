@@ -36,7 +36,7 @@ class ProjectileThrowTrajectory {
 		} else {
 			//Stop the body when its base reaches the ground (center of mass reaches 1 body
 			//apothem above 0)
-			if (projectile.r.y <= BODY_APOTHEM) {
+			if (projectile.r.y <= BODY_RADIUS) {
 				return true;
 			}
 		}
