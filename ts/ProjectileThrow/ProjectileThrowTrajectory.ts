@@ -5,11 +5,13 @@ class ProjectileThrowTrajectory {
 	public points: Vec2[];
 
 	//Creates a new trajectory
-	constructor(projectile: Body = undefined, simulationQuality: number = 0,
+	constructor(projectile: Body = undefined, simulationQuality: number = 0, bodyRadius: number = 0,
 		heightReference: HeightReference = HeightReference.BodyCM) {
 
 		//new ProjectileTrajectory() returns an empty trajectory
-		if (!projectile && simulationQuality === 0 && heightReference === HeightReference.BodyCM) {
+		if (!projectile && simulationQuality === 0 && bodyRadius == 0 &&
+			heightReference === HeightReference.BodyCM) {
+
 			this.points = [];
 			return;
 		}
@@ -22,11 +24,14 @@ class ProjectileThrowTrajectory {
 		do {
 			projectile.step(simulationQuality);
 			this.points.push(projectile.r);		
-		} while (!ProjectileThrowTrajectory.bodyReachedGround(projectile, heightReference));
+		} while (!ProjectileThrowTrajectory.
+			bodyReachedGround(projectile, bodyRadius, heightReference));
 	}
 
 	//Checks if the body has reached the ground
-	public static bodyReachedGround(projectile: Body, heightReference: HeightReference): boolean {
+	public static bodyReachedGround(projectile: Body, bodyRadius: number,
+		heightReference: HeightReference): boolean {
+
 		//Stop the body when it reaches the ground
 		if (heightReference === HeightReference.BodyCM) {
 			//Stop the body when its center of mass reaches the ground
@@ -36,7 +41,7 @@ class ProjectileThrowTrajectory {
 		} else {
 			//Stop the body when its base reaches the ground (center of mass reaches 1 body
 			//apothem above 0)
-			if (projectile.r.y <= BODY_RADIUS) {
+			if (projectile.r.y <= bodyRadius) {
 				return true;
 			}
 		}
@@ -64,6 +69,7 @@ class ProjectileThrowTrajectory {
 		//Don't make the trajectory more detailed than the desired simulation quality
 		dt = Math.max(dt, settings.simulationQuality);
 
-		return new ProjectileThrowTrajectory(projectile, dt, settings.heightReference);
+		return new ProjectileThrowTrajectory(projectile, dt, settings.radius,
+			settings.heightReference);
 	}
 }

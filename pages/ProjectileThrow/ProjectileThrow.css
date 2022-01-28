@@ -163,6 +163,10 @@ table, th, td {
 	padding-right: 1rem;
 }
 
+#air-res-container {
+	margin-top: 0.5rem;
+}
+
 #launch-button-container {
 	display: flex;
 	align-items: center;
@@ -210,26 +214,29 @@ select {
 	width: 100%;
 }
 
-#height-input-container {
+#height-input-container, #mass-input-container, #radius-input-container {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
 	justify-content: space-between;
+
+	margin-bottom: 0.25rem;
 }
 
-#height-input {
+#height-input, #mass-input, #radius-input {
 	width: 7ch;
 	margin-right: 0.5rem;
 }
 
-.invalid-input {
-	text-align: center;
+.unit-div {
+	display: inline-block;
+	width: 3ch;
 
-	margin-top: 0.5rem;
-	border: 1px solid red;
+	text-align: right;
+}
 
+.red {
 	color: red;
-	font-weight: bold;
 }
 
 #velocity-container {

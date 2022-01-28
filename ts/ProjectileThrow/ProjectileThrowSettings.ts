@@ -25,11 +25,19 @@ class ProjectileThrowSettings {
 
 	private _heightReference: HeightReference;
 
+	private _mass: number;
+	private _validMass: boolean;
+
+	private _radius: number;
+	private _validRadius: boolean;
+
 	private _height: number;
 	private _validHeight: boolean;
 
 	private _launchVelocity: Vec2;
 	private _validVelocity: boolean;
+
+	private _airResistance: boolean;
 
 	constructor() {
 		this._showAxes = true;
@@ -38,10 +46,15 @@ class ProjectileThrowSettings {
 		this._showTrajectory = true;
 		this._simulationQuality = ProjectileThrowSimulationQuality.VeryHigh;
 		this._heightReference = HeightReference.BodyBase;
+		this._mass = 1;
+		this._validMass = true;
+		this._radius = 0.5;
+		this._validRadius = true;
 		this._height = 0;
 		this._validHeight = true;
 		this._launchVelocity = new Vec2(0, 0);
 		this._validVelocity = true;
+		this._airResistance = false;
 	}
 
 	public get showAxes() { return this._showAxes; }
@@ -51,9 +64,11 @@ class ProjectileThrowSettings {
 	public get showSimulationResults() { return this._showSimulationResults; }
 	public get simulationQuality() { return this._simulationQuality; }
 	public get heightReference() { return this._heightReference; }
+	public get mass() { return this._mass; }
+	public get radius() { return this._radius; }
 	public get height() { return this._height; }
 	public get launchVelocity() { return this._launchVelocity; }
-	public get validVelocity() { return this._validVelocity; }
+	public get airResistance() { return this._airResistance; }
 
 	//Gets the settings set by the user in the sidebar. Any unknown setting assumes the value of the
 	//last used setting (this). Not a static function for this reason
@@ -90,18 +105,27 @@ class ProjectileThrowSettings {
 			settings._heightReference = HeightReference.BodyCM;
 		}
 
-		//Get the height and see if it's a valid number
-		let stringHeight = (document.getElementById("height-input") as HTMLInputElement).value;
-		let numberHeight = Number(stringHeight);
-		if (isNaN(numberHeight) || (!isNaN(numberHeight) && numberHeight < 0)) {
-			settings._height = this._height;
-			settings._validHeight = false;
-		} else {
-			settings._height = numberHeight;
-			settings._validHeight = true;
+		//Parses a number from an input element (id) and sets a property in settings to the number
+		//in that input. Whether the number is valid or not is a boolean that is assigned to
+		//validProperty. A number out of the [min, max] range will be considered invalid.
+		let parseWithSettingsUpdate = (id: string, property: string, validProperty: string,
+			min: number = -Infinity, max: number = Infinity) => {
+
+			settings[property] = parseInputNumber(id, min, max);
+			if (isNaN(settings[property])) {
+				settings[validProperty] = false;
+				settings[property] = this[property]; //Use last valid value
+			} else {
+				settings[validProperty] = true;
+			}
 		}
 
-		//Get the x and y velocities and check if they're valid numbers
+		parseWithSettingsUpdate("mass-input",   "_mass",   "_validMass",   Number.MIN_VALUE);
+		parseWithSettingsUpdate("radius-input", "_radius", "_validRadius", Number.MIN_VALUE);
+		parseWithSettingsUpdate("height-input", "_height", "_validHeight", 0);
+
+		//Get the x and y velocities and check if they're valid numbers. Don't use
+		//parseWithSettingsUpdate, as it can't handle vectors.
 		let stringVx = (document.getElementById("vx-input") as HTMLInputElement).value;
 		let stringVy = (document.getElementById("vy-input") as HTMLInputElement).value;
 		let numberVx = Number(stringVx);
@@ -113,6 +137,8 @@ class ProjectileThrowSettings {
 			settings._launchVelocity = new Vec2(numberVx, numberVy);
 			settings._validVelocity = true;
 		}
+
+		settings._airResistance = (document.getElementById("air-res") as HTMLInputElement).checked;
 
 		return settings;
 	}
@@ -152,31 +178,41 @@ class ProjectileThrowSettings {
 			if (this._heightReference === HeightReference.BodyCM)
 				ProjectileThrowSimulation.projectile.r = new Vec2(0, this._height);
 			else
-				ProjectileThrowSimulation.projectile.r = new Vec2(0, this._height + BODY_RADIUS);
-		}
-		if (this._validHeight) {
-			//Hide any invalid height warning
-			document.getElementById("invalid-height").classList.add("hidden");
-		} else {
-			document.getElementById("invalid-height").classList.remove("hidden");
+				ProjectileThrowSimulation.projectile.r = new Vec2(0, this._height + this._radius);
 		}
 
-		//Update the velocity of the body it not mid-simulation. If it is invalid, show a warning.
-		if (ProjectileThrowSimulation.state === ProjectileThrowState.projectileInLaunchPosition || 
+		//Given an input element, it will add "red" to its nth parent class list if the error
+		//boolean is true. Otherwise "red" will be removed from that class list. 
+		function adjustColor(error: boolean, id: string, n: number /* parent */) {
+			//Get the nth parent
+			let element: HTMLElement = document.getElementById(id);
+			for (; n > 0; n--) {
+				element = element.parentElement;
+			}
+
+			if (error) {
+				element.classList.remove("red");
+			} else {
+				element.classList.add("red");
+			}
+		}
+
+		adjustColor(this._validMass, "mass-input", 2);
+		adjustColor(this._validRadius, "radius-input", 2);
+		adjustColor(this._validHeight, "height-input", 2);
+		adjustColor(this._validVelocity, "vx-input",   2);
+
+		//If not mid-simulation, update whats needed.
+		if (ProjectileThrowSimulation.state === ProjectileThrowState.projectileInLaunchPosition ||
 			ProjectileThrowSimulation.state === ProjectileThrowState.projectileStopped) {
 
 			ProjectileThrowSimulation.projectile.v = this._launchVelocity;
-		}
-		if (this._validVelocity) {
-			//Hide any invalid velocity warning
-			document.getElementById("invalid-velocity").classList.add("hidden");
-		} else {
-			document.getElementById("invalid-velocity").classList.remove("hidden");
-		}
 
-		//If the change was applied to a non-moving body, recalculate the trajectory
-		if (ProjectileThrowSimulation.state === ProjectileThrowState.projectileInLaunchPosition || 
-			ProjectileThrowSimulation.state === ProjectileThrowState.projectileStopped) {
+			ProjectileThrowSimulation.projectile.mass = this._mass;
+			ProjectileThrowSimulation.projectile.forces = [ new Vec2(0, -GRAVITY * this._mass) ];
+
+			ProjectileThrowSimulation.projectile.geometry =
+				ExtraMath.generatePolygon(20, this._radius);
 
 			ProjectileThrowSimulation.trajectory = ProjectileThrowTrajectory
 				.generateLimitedTrajectory(ProjectileThrowSimulation.projectile, this);
@@ -196,7 +232,7 @@ class ProjectileThrowSettings {
 		//The list of DOM elements that, when changed, require the simulation to be updated.
 		let settingsElements: string[] = [
 			"axes", "axes-labels", "grid", "trajectory", "simulation-results-checkbox",
-			"simulation-quality", "body-base", "body-cm"
+			"simulation-quality", "body-base", "body-cm", "air-res"
 		];
 
 		//Gets called when a page element is changed
@@ -213,7 +249,7 @@ class ProjectileThrowSettings {
 		//The same as before but with the oninput event, so that the user doesn't need to unfocus a
 		//text input for the value to update
 		settingsElements = [
-			"height-input", "vx-input", "vy-input"
+			"mass-input", "radius-input", "height-input", "vx-input", "vy-input"
 		];
 		for (let i: number = 0; i < settingsElements.length; ++i) {
 			document.getElementById(settingsElements[i]).addEventListener("input", onUpdate);
@@ -224,19 +260,25 @@ class ProjectileThrowSettings {
 		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = true;
 		(document.getElementById("body-base") as HTMLInputElement).disabled = true;
 		(document.getElementById("body-cm") as HTMLInputElement).disabled = true;
+		(document.getElementById("mass-input") as HTMLInputElement).disabled = true;
+		(document.getElementById("radius-input") as HTMLInputElement).disabled = true;
 		(document.getElementById("height-input") as HTMLInputElement).disabled = true;
 		(document.getElementById("vx-input") as HTMLInputElement).disabled = true;
 		(document.getElementById("vy-input") as HTMLInputElement).disabled = true;
 		(document.getElementById("choose-screen-velocity") as HTMLButtonElement).disabled = true;
+		(document.getElementById("air-res") as HTMLButtonElement).disabled = true;
 	}
 	
 	static enableSettingsElements() {
 		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = false;
 		(document.getElementById("body-base") as HTMLInputElement).disabled = false;
 		(document.getElementById("body-cm") as HTMLInputElement).disabled = false;
+		(document.getElementById("mass-input") as HTMLInputElement).disabled = false;
+		(document.getElementById("radius-input") as HTMLInputElement).disabled = false;
 		(document.getElementById("height-input") as HTMLInputElement).disabled = false;
 		(document.getElementById("vx-input") as HTMLInputElement).disabled = false;
 		(document.getElementById("vy-input") as HTMLInputElement).disabled = false;
 		(document.getElementById("choose-screen-velocity") as HTMLButtonElement).disabled = false;
+		(document.getElementById("air-res") as HTMLButtonElement).disabled = false;
 	}
 }

@@ -95,11 +95,11 @@ class ParachuteSettings {
 		settings._simulationResults =
 			(document.getElementById("simulation-results-check") as HTMLInputElement).checked;
 
-		//Parses a number from an input element (id) and sets a property in "this" to the number in
-		//that input. Whether the number is valid or not is a boolean that is assigned to
+		//Parses a number from an input element (id) and sets a property in settings to the number
+		//in that input. Whether the number is valid or not is a boolean that is assigned to
 		//validProperty. A number out of the [min, max] range will be considered invalid.
-		function parseWithSettingsUpdate(id: string, property: string,
-			validProperty: string, min: number, max: number = Infinity) {
+		let parseWithSettingsUpdate = (id: string, property: string, validProperty: string,
+			min: number, max: number = Infinity) => {
 
 			settings[property] = parseInputNumber(id, min, max);
 			if (isNaN(settings[property])) {

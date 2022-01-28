@@ -1,6 +1,4 @@
-const BODY_RADIUS = 0.5;
-const BODY_MASS = 1;
-const BODY_GEOMETRY = ExtraMath.generatePolygon(20, BODY_RADIUS);
+const BODY_GEOMETRY = ExtraMath.generatePolygon(20, 0.5);
 
 class ProjectileThrowSimulation {
 	static state: ProjectileThrowState = ProjectileThrowState.projectileInLaunchPosition;
@@ -11,7 +9,7 @@ class ProjectileThrowSimulation {
 
 	//Physics
 	static trajectory: ProjectileThrowTrajectory = new ProjectileThrowTrajectory();
-	static projectile: Body = new Body(BODY_MASS, BODY_GEOMETRY, new Vec2(0, 0));
+	static projectile: Body = new Body(1, BODY_GEOMETRY, new Vec2(0, 0));
 
 	//Simulation settings
 	static settings = new ProjectileThrowSettings();
@@ -45,7 +43,7 @@ class ProjectileThrowSimulation {
 	}
 
 	static startSimulation() {
-		this.projectile.forces = [ new Vec2(0, -GRAVITY * BODY_MASS) ]; //Projectile gravity
+		this.projectile.forces = [ new Vec2(0, -GRAVITY * 1) ]; //Projectile gravity
 
 		ProjectileThrowSettings.addEvents();
 		ProjectileThrowEvents.addEvents();
@@ -249,6 +247,7 @@ class ProjectileThrowSimulation {
 				bufferCount = 0; //Parameter to reset first
 				this.parallelWorker.start({
 					projectile: ProjectileThrowSimulation.projectile,
+					bodyRadius: ProjectileThrowSimulation.settings.radius,
 					heightReference: ProjectileThrowSimulation.settings.heightReference
 				}, this.settings.simulationQuality);
 

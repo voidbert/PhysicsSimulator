@@ -4,6 +4,7 @@ importScripts("../../pages/ProjectileThrow/compiledJS.js");
 let projectile;
 let simulationQuality;
 let heightReference;
+let bodyRadius;
 let maxHeight = 0; //Keep track of the maximum height of the projectile
 
 let bufferSize;
@@ -25,6 +26,8 @@ self.addEventListener("message", (e) => {
 		heightReference = e.data.heightReference;
 	if ("bufferSize" in e.data)
 		bufferSize = e.data.bufferSize;
+	if ("bodyRadius" in e.data)
+		bodyRadius = e.data.bodyRadius;
 	if ("allowedBuffers" in e.data)
 		allowedBuffers = e.data.allowedBuffers;
 
@@ -57,7 +60,7 @@ self.addEventListener("message", (e) => {
 			sessionUsedBuffers++;
 		}
 	
-		if (ProjectileThrowTrajectory.bodyReachedGround(projectile, heightReference) &&
+		if (ProjectileThrowTrajectory.bodyReachedGround(projectile, bodyRadius, heightReference) &&
 			totalSimulationTicks !== 0) { //totalSimulationTicks !== 0 -> allow launch height of 0m
 			//The body reached the ground. Stop the simulation and send any data left unsent
 			postMessage({ size: bufferUsedVec2s * 16, buf: buffer }, [buffer]);

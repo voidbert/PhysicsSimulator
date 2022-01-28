@@ -33,7 +33,7 @@ class ProjectileThrowResults {
 		} else {
 			solutions =
 				ExtraMath.solveQuadratic(0.5 * a.y, projectile.v.y,
-				projectile.r.y - BODY_RADIUS);
+				projectile.r.y - settings.radius);
 		}
 
 		if (solutions.length === 0) {
