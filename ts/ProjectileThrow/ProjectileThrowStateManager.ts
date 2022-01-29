@@ -85,6 +85,24 @@ class ProjectileThrowStateManager {
 		document.getElementById("simulation-interaction-div").classList.add("blur");
 		document.body.classList.add("no-interaction");
 	
+		//Set the table head text depending on whether air resistance is on
+		let toShow: HTMLCollectionOf<Element>;
+		let toHide: HTMLCollectionOf<Element>;
+		if (ProjectileThrowSimulation.settings.airResistance) {	
+			toShow = document.getElementsByClassName("air-resistance-simulation-results-th");
+			toHide = document.getElementsByClassName("default-simulation-results-th");
+		} else {
+			toShow = document.getElementsByClassName("default-simulation-results-th");
+			toHide = document.getElementsByClassName("air-resistance-simulation-results-th");
+		}
+
+		for (let i: number = 0; i < toShow.length; ++i) {
+			(toShow[i] as HTMLElement).style.removeProperty("display");
+		}
+		for (let i: number = 0; i < toHide.length; ++i) {
+			(toHide[i] as HTMLElement).style.display = "none";
+		}
+
 		document.getElementById("simulation-results").classList.remove("hidden");
 	
 		ProjectileThrowSimulation.state = ProjectileThrowState.showingSimulationResults;
