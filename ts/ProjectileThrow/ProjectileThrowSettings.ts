@@ -86,8 +86,6 @@ class ProjectileThrowSettings {
 		}
 
 		settings._showGrid = (document.getElementById("grid") as HTMLInputElement).checked;
-		settings._showTrajectory =
-			(document.getElementById("trajectory") as HTMLInputElement).checked;
 		settings._showSimulationResults =
 			(document.getElementById("simulation-results-checkbox") as HTMLInputElement).checked;
 
@@ -139,6 +137,9 @@ class ProjectileThrowSettings {
 		}
 
 		settings._airResistance = (document.getElementById("air-res") as HTMLInputElement).checked;
+
+		settings._showTrajectory = !settings._airResistance &&
+			(document.getElementById("trajectory") as HTMLInputElement).checked;
 
 		return settings;
 	}
@@ -201,6 +202,9 @@ class ProjectileThrowSettings {
 		adjustColor(this._validRadius, "radius-input", 2);
 		adjustColor(this._validHeight, "height-input", 2);
 		adjustColor(this._validVelocity, "vx-input",   2);
+
+		let trajectoryCheckbox = (document.getElementById("trajectory") as HTMLInputElement);
+		trajectoryCheckbox.disabled = this._airResistance;
 
 		//If not mid-simulation, update whats needed.
 		if (ProjectileThrowSimulation.state === ProjectileThrowState.projectileInLaunchPosition ||

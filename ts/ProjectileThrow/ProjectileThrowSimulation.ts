@@ -248,6 +248,7 @@ class ProjectileThrowSimulation {
 				this.parallelWorker.start({
 					projectile: ProjectileThrowSimulation.projectile,
 					bodyRadius: ProjectileThrowSimulation.settings.radius,
+					airResistance: ProjectileThrowSimulation.settings.airResistance,
 					heightReference: ProjectileThrowSimulation.settings.heightReference
 				}, this.settings.simulationQuality);
 

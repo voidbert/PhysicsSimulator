@@ -5,6 +5,7 @@ let projectile;
 let simulationQuality;
 let heightReference;
 let bodyRadius;
+let airResistance;
 let maxHeight = 0; //Keep track of the maximum height of the projectile
 
 let bufferSize;
@@ -28,6 +29,8 @@ self.addEventListener("message", (e) => {
 		bufferSize = e.data.bufferSize;
 	if ("bodyRadius" in e.data)
 		bodyRadius = e.data.bodyRadius;
+	if ("airResistance" in e.data)
+		airResistance = e.data.airResistance;
 	if ("allowedBuffers" in e.data)
 		allowedBuffers = e.data.allowedBuffers;
 
@@ -74,7 +77,16 @@ self.addEventListener("message", (e) => {
 			postMessage(experimentalResults);
 			break;
 		}
-	
+
+		if (airResistance) {
+			let k = 0.5 * Math.PI * bodyRadius * bodyRadius * AIR_DENSITY * 0.47;
+
+			projectile.forces = [
+				new Vec2(0, -GRAVITY * projectile.mass),
+				projectile.v.scale(-k * projectile.v.norm()) // -kv^2
+			];
+		}
+
 		projectile.step(simulationQuality);
 	}
 });
