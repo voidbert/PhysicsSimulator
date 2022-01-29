@@ -171,7 +171,7 @@ td:not(:first-child) {
 }
 
 select {
-	width: 16ch;
+	width: 14ch;
 }
 
 button {
