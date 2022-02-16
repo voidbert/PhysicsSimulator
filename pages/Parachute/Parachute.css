@@ -86,13 +86,6 @@ body {
 	margin-bottom: 0.5rem;
 }
 
-.second-line-text-input {
-	display: flex;
-	justify-content: right;
-
-	margin-top: 0.5rem;
-}
-
 .second-line-text-double-input {
 	display: flex;
 	justify-content: space-between;

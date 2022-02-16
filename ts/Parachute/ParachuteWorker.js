@@ -22,6 +22,7 @@ function convertParachuteSettings(settings) {
 	converted._mass = settings._mass;
 	converted._h0   = settings._h0;
 	converted._hopening = settings._hopening;
+	converted._openingTime = settings._openingTime;
 
 	converted._cd0 = settings._cd0; converted._A0 = settings._A0;
 	converted._cd1 = settings._cd1; converted._A1 = settings._A1;
@@ -147,9 +148,21 @@ self.addEventListener("message", (e) => {
 				parachuteOpenedInstant = totalSimulationTicks * simulationQuality * 0.001;
 			}
 
-			//After the parachute is opened
-			body.forces[1] =
-				new Vec2(0, 0.5 * settings._cd1 * AIR_DENSITY * settings._A1 * body.v.y * body.v.y);
+			let elapsedSinceOpening;
+
+			if (settings._openingTime === 0) {
+				//No parachute opening transition.
+				body.forces[1] = new Vec2(0, 0.5 * settings._cd1 * AIR_DENSITY * settings._A1
+					* body.v.y * body.v.y);
+			} else {
+				elapsedSinceOpening = totalSimulationTicks * simulationQuality * 0.001 -
+				parachuteOpenedInstant;
+					elapsedSinceOpening = Math.min(settings._openingTime, elapsedSinceOpening);
+
+				body.forces[1] = new Vec2(0, 0.5 * AIR_DENSITY * body.v.y * body.v.y *
+					ExtraMath.linearInterpolation(settings._cd0, settings._cd1, settings._openingTime, elapsedSinceOpening) *
+					ExtraMath.linearInterpolation(settings._A0, settings._A1, settings._openingTime, elapsedSinceOpening));
+			}
 		}
 
 		body.step(simulationQuality);

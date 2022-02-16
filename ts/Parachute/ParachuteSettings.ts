@@ -40,12 +40,15 @@ class ParachuteSettings {
 	private _mass: number = 80;
 	private _h0: number = 2000; //Initial height
 	private _hopening: number = 500; //The height at which the parachute is opened
+	private _openingTime: number = 5.0;
 
 	private _cd0: number = 0.4; private _A0: number = 0.5;
 	private _cd1: number = 1.6; private _A1: number = 5;
 
 	//Whether the inputted values are valid numbers
-	private _validMass: boolean; private _validH0: boolean; private _validHopening;
+	private _validMass: boolean; private _validH0: boolean;
+	private _validHopening: boolean; private _validOpeningTime: boolean;
+
 	private _validCd0: boolean; private _validA0: boolean;
 	private _validCd1: boolean; private _validA1: boolean;
 
@@ -57,6 +60,7 @@ class ParachuteSettings {
 	get mass() { return this._mass; }
 	get h0() { return this._h0; }
 	get hopening() { return this._hopening; }
+	get openingTime() { return this._openingTime; }
 
 	get cd0() { return this._cd0; } get A0() { return this._A0; } 
 	get cd1() { return this._cd1; } get A1() { return this._A1; } 
@@ -115,6 +119,7 @@ class ParachuteSettings {
 		parseWithSettingsUpdate("h0", "_h0", "_validH0", Number.MIN_VALUE);
 		parseWithSettingsUpdate("hopening", "_hopening", "_validHopening", Number.MIN_VALUE,
 			settings._h0);
+		parseWithSettingsUpdate("opening-time", "_openingTime", "_validOpeningTime", 0);
 
 		parseWithSettingsUpdate("cd0", "_cd0", "_validCd0", Number.MIN_VALUE);
 		parseWithSettingsUpdate("A0", "_A0", "_validA0", Number.MIN_VALUE);
@@ -151,6 +156,7 @@ class ParachuteSettings {
 		adjustColor(this._validMass, "mass", 2);
 		adjustColor(this._validH0, "h0", 2);
 		adjustColor(this._validHopening, "hopening", 2);
+		adjustColor(this._validOpeningTime, "opening-time", 2);
 
 		adjustColor(this._validCd0, "cd0", 1);
 		adjustColor(this._validA0, "A0", 1);
@@ -187,7 +193,7 @@ class ParachuteSettings {
 		//The same as before but with the oninput event, so that the user doesn't need to unfocus a
 		//text input for the value to update
 		settingsElements = [
-			"mass", "h0", "hopening", "cd0", "A0", "cd1", "A1"
+			"mass", "h0", "hopening", "opening-time", "cd0", "A0", "cd1", "A1"
 		];
 		for (let i: number = 0; i < settingsElements.length; ++i) {
 			document.getElementById(settingsElements[i]).addEventListener("input", onUpdate);
@@ -237,6 +243,7 @@ class ParachuteSettings {
 		(document.getElementById("mass") as HTMLInputElement).disabled = true;
 		(document.getElementById("h0") as HTMLInputElement).disabled = true;
 		(document.getElementById("hopening") as HTMLInputElement).disabled = true;
+		(document.getElementById("opening-time") as HTMLInputElement).disabled = true;
 
 		(document.getElementById("cd0") as HTMLInputElement).disabled = true;
 		(document.getElementById("A0") as HTMLInputElement).disabled = true;
@@ -253,6 +260,7 @@ class ParachuteSettings {
 		(document.getElementById("mass") as HTMLInputElement).disabled = false;
 		(document.getElementById("h0") as HTMLInputElement).disabled = false;
 		(document.getElementById("hopening") as HTMLInputElement).disabled = false;
+		(document.getElementById("opening-time") as HTMLInputElement).disabled = false;
 
 		(document.getElementById("cd0") as HTMLInputElement).disabled = false;
 		(document.getElementById("A0") as HTMLInputElement).disabled = false;
