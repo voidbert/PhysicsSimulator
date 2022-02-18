@@ -56,6 +56,7 @@ class ParachuteSettings {
 	private _graphProperty: ParachuteGraphProperty = ParachuteGraphProperty.Velocity;
 	private _seeTheoretical: boolean = true;
 	private _simulationResults: boolean = true;
+	private _fastForward: boolean = false;
 
 	get mass() { return this._mass; }
 	get h0() { return this._h0; }
@@ -69,6 +70,7 @@ class ParachuteSettings {
 	get graphProperty() { return this._graphProperty; }
 	get seeTheoretical() { return this._seeTheoretical; }
 	get simulationResults() { return this._simulationResults; }
+	get fastForward() { return this._fastForward; }
 
 	constructor() {}
 
@@ -98,6 +100,9 @@ class ParachuteSettings {
 
 		settings._simulationResults =
 			(document.getElementById("simulation-results-check") as HTMLInputElement).checked;
+
+		settings._fastForward =
+			(document.getElementById("fast-checkbox") as HTMLInputElement).checked;
 
 		//Parses a number from an input element (id) and sets a property in settings to the number
 		//in that input. Whether the number is valid or not is a boolean that is assigned to
@@ -183,7 +188,7 @@ class ParachuteSettings {
 
 		//The list of DOM elements that, when changed, require the simulation to be updated.
 		let settingsElements: string[] = [
-			"simulation-quality", "graph-property", 
+			"simulation-quality", "graph-property", "fast-checkbox"
 		];
 
 		for (let i: number = 0; i < settingsElements.length; ++i) {
@@ -250,6 +255,7 @@ class ParachuteSettings {
 		(document.getElementById("cd1") as HTMLInputElement).disabled = true;
 		(document.getElementById("A1") as HTMLInputElement).disabled = true;
 
+		(document.getElementById("fast-checkbox") as HTMLSelectElement).disabled = true;
 		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = true;
 		(document.getElementById("graph-property") as HTMLSelectElement).disabled = true;
 
@@ -267,6 +273,7 @@ class ParachuteSettings {
 		(document.getElementById("cd1") as HTMLInputElement).disabled = false;
 		(document.getElementById("A1") as HTMLInputElement).disabled = false;
 
+		(document.getElementById("fast-checkbox") as HTMLSelectElement).disabled = false;
 		(document.getElementById("simulation-quality") as HTMLSelectElement).disabled = false;
 		(document.getElementById("graph-property") as HTMLSelectElement).disabled = false;
 

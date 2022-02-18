@@ -1,5 +1,6 @@
 //The web worker only sends one tenth of the points processed to the window context.
 const PARACHUTE_SIMULATION_SKIPPED_FACTOR = 10;
+const FAST_FORWARD_FACTOR = 2;
 
 class ParachuteGraph {
 	public renderer: Renderer;
@@ -161,7 +162,12 @@ class ParachuteGraph {
 				lastRendererTick = Date.now();
 			} else {
 				//Simulation time has passed
-				elapsedSimulationTime += Date.now() - lastRendererTick;
+				if (ParachuteSimulation.settings.fastForward) {
+					elapsedSimulationTime += (Date.now() - lastRendererTick) * FAST_FORWARD_FACTOR;
+				} else {
+					elapsedSimulationTime += Date.now() - lastRendererTick;
+				}
+
 				lastRendererTick = Date.now();
 			}
 		}, () => {
