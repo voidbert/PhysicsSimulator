@@ -80,7 +80,7 @@ class ProjectileThrowSimulation {
 							this.workerStopped = true;
 						} else {
 							this.parallelWorker.addBuffer(
-								new NumberedBuffer(bufferCount, data.size, data.buf));
+								new NumberedBuffer(bufferCount, data.size, data.buf, 16));
 							bufferCount++;
 						}
 					},

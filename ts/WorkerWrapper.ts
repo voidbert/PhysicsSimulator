@@ -2,27 +2,30 @@
 //simulation data and those need to be ordered, therefore the index.
 class NumberedBuffer {
 	index: number;
-	size: number; //Number of bytes in the buffer (the buffer may not be full)
+	size: number; //Number of BYTES in the buffer (the buffer may not be full)
 	buffer: ArrayBuffer;
+	//The number of bytes in every frame (information transferred per simulator update)
+	frameSize: number;
 
-	constructor(index: number, size: number, buffer: ArrayBuffer) {
+	constructor(index: number, size: number, buffer: ArrayBuffer, frameSize: number) {
 		this.index = index;
 		this.size = size;
 		this.buffer = buffer;
+		this.frameSize = frameSize;
 	}
 
 	//Gets the nth frame in this buffer. If index is greater than the buffer's number of frames,
 	//this will return null.
-	getFrame(index: number, frameSize: number): ArrayBuffer {
-		if (index * frameSize >= this.size) {
-			return null;
+	getFrame(index: number): ArrayBuffer {
+		if (index * this.frameSize >= this.size) {
+			return null; //Out of bounds
 		}
 
 		let bufferView = new Uint8Array(this.buffer);
-		let ret = new Uint8Array(frameSize);
+		let ret = new Uint8Array(this.frameSize);
 
-		for (let i: number = 0; i < frameSize; ++i) {
-			ret[i] = bufferView[index * frameSize + i];
+		for (let i: number = 0; i < this.frameSize; ++i) {
+			ret[i] = bufferView[index * this.frameSize + i];
 		}
 
 		return ret.buffer;
@@ -38,14 +41,14 @@ class WorkerWrapper {
 	private buffers: NumberedBuffer[] = [];
 	private bufferLimit: number;
 
-	private frameSize: number
+	private currentFrameSize: number
 	private simulationQuality: number;
 
 	//Creates a web worker from a file (url).
 	//
 	//frameSize is the number of bytes in every frame (information transferred per simulator update)
 	//
-	//callback is called when the webworker posts a message (except "TERMINATE").
+	//callback is called when the webworker posts a message.
 	//
 	//bufferSize is the number of frames in a buffer, a block of data transmitted between the two
 	//contexts (window and web worker).
@@ -53,25 +56,18 @@ class WorkerWrapper {
 	//bufferLimit is the number of buffers that this class can store at once before discarding old
 	//ones. WorkerWrapper stores buffers provided by the web worker that can be requested later for
 	//things like rendering body's positions.
-	//
-	//For the worker to stop itself, use postMessage("TERMINATE"). Therefore, don't post "TERMINATE"
-	//otherwise.
 	constructor(url: string, frameSize: number, simulationQuality: number,
 		callback: (w: Worker, data: any) => any, bufferSize: number = 512,
 		bufferLimit: number = 16) {
 
 		this.bufferSize = bufferSize;
 		this.bufferLimit = bufferLimit;
-		this.frameSize = frameSize;
+		this.currentFrameSize = frameSize;
 		this.simulationQuality = simulationQuality;
 
 		this.worker = new Worker(url);
 
 		this.worker.onmessage = (e: MessageEvent) => {
-			if (e.data === "TERMINATE") {
-				this.worker.terminate();
-			}
-
 			callback(this.worker, e.data);
 		};
 	}
@@ -152,8 +148,8 @@ class WorkerWrapper {
 		frameNumber0 -= bufferNumber0 * this.bufferSize;
 		frameNumber1 -= bufferNumber1 * this.bufferSize;
 
-		let frame0: ArrayBuffer = buffer0.getFrame(frameNumber0, this.frameSize);
-		let frame1: ArrayBuffer = buffer1.getFrame(frameNumber1, this.frameSize);
+		let frame0: ArrayBuffer = buffer0.getFrame(frameNumber0);
+		let frame1: ArrayBuffer = buffer1.getFrame(frameNumber1);
 
 		//Out of bounds check
 		if (frame0 === null || frame1 === null) {
@@ -200,7 +196,7 @@ class WorkerWrapper {
 		//Find the buffer in the stored array
 		for (let i: number = 0; i < this.buffers.length; ++i) {
 			if (this.buffers[i] && this.buffers[i].index === buffer) {
-				return this.buffers[i].getFrame(frame, this.frameSize);
+				return this.buffers[i].getFrame(frame);
 			}
 		}
 
@@ -224,7 +220,7 @@ class WorkerWrapper {
 			throw new Error("No buffers stored");
 		} else {
 			let buf = this.buffers[bufferIndex];
-			return buf.getFrame(buf.size / this.frameSize - 1, this.frameSize);
+			return buf.getFrame(buf.size / buf.frameSize - 1);
 		}
 	}
 }

@@ -62,7 +62,7 @@ class ParachuteSimulation {
 							this.workerStopped = true;
 						} else {
 							this.parallelWorker.addBuffer(
-								new NumberedBuffer(this.bufferCount, data.size, data.buf));
+								new NumberedBuffer(this.bufferCount, data.size, data.buf, 8));
 							this.bufferCount++;
 						}
 					},
