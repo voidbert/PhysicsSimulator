@@ -62,7 +62,6 @@ class ProjectileThrowSimulation {
 
 				this.parallelWorker = new WorkerWrapper(
 					"../../js/ProjectileThrow/ProjectileThrowWorker.js",
-					16, /*two numbers (8 bytes each) per Vec2, position of the body*/
 					this.settings.simulationQuality,
 					(w: Worker, data: any) => {
 						//Worker posted a message. If it is the simulation statistics, stop the

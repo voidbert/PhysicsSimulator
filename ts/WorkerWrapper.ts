@@ -41,12 +41,9 @@ class WorkerWrapper {
 	private buffers: NumberedBuffer[] = [];
 	private bufferLimit: number;
 
-	private currentFrameSize: number
 	private simulationQuality: number;
 
 	//Creates a web worker from a file (url).
-	//
-	//frameSize is the number of bytes in every frame (information transferred per simulator update)
 	//
 	//callback is called when the webworker posts a message.
 	//
@@ -56,13 +53,12 @@ class WorkerWrapper {
 	//bufferLimit is the number of buffers that this class can store at once before discarding old
 	//ones. WorkerWrapper stores buffers provided by the web worker that can be requested later for
 	//things like rendering body's positions.
-	constructor(url: string, frameSize: number, simulationQuality: number,
+	constructor(url: string, simulationQuality: number,
 		callback: (w: Worker, data: any) => any, bufferSize: number = 512,
 		bufferLimit: number = 16) {
 
 		this.bufferSize = bufferSize;
 		this.bufferLimit = bufferLimit;
-		this.currentFrameSize = frameSize;
 		this.simulationQuality = simulationQuality;
 
 		this.worker = new Worker(url);

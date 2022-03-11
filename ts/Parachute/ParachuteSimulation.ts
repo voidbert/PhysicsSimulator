@@ -28,7 +28,6 @@ class ParachuteSimulation {
 
 				this.parallelWorker = new WorkerWrapper(
 					"../../js/Parachute/ParachuteWorker.js",
-					8, /*the number (float64) that will be shown on the graph*/
 					this.settings.simulationQuality,
 					(w: Worker, data: any) => {
 						//Worker posted a message. Stop the worker if it is done.
