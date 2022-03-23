@@ -1,246 +1,215 @@
-var MAX_GRID_SIZE = 64;
-//A class made to render the x and y axes to the screen.
-var AxisSystem = /** @class */ (function () {
-    //margin -> the number of pixels from the end of the axis (positive and negative) and the
-    //borders of the camera's rendering area.
-    //showArrows -> whether or not to draw arrows showing the positive orientation
-    //onlyPositive -> if true, only the positive parts of the axes.
-    //
-    //labelFont MUST BE in px or in rem.
-    //
-    //The constructor doesn't generate the axes' caches. Do that when you are sure the camera has a
-    //set canvasSize
-    function AxisSystem(camera, showAxes, showArrows, axisColor, axisWidth, showGrid, gridColor, gridWidth, showAxisLabels, showUnitLabels, labelFont, pageBackgroundColor, onlyPositive) {
-        if (showAxes === void 0) { showAxes = true; }
-        if (showArrows === void 0) { showArrows = true; }
-        if (axisColor === void 0) { axisColor = "#000000"; }
-        if (axisWidth === void 0) { axisWidth = 2; }
-        if (showGrid === void 0) { showGrid = false; }
-        if (gridColor === void 0) { gridColor = "#cccccc"; }
-        if (gridWidth === void 0) { gridWidth = 1; }
-        if (showAxisLabels === void 0) { showAxisLabels = false; }
-        if (showUnitLabels === void 0) { showUnitLabels = false; }
-        if (pageBackgroundColor === void 0) { pageBackgroundColor = "#ffffff"; }
-        if (onlyPositive === void 0) { onlyPositive = true; }
-        //The AxisSystem keeps the coordinates of the lines to be drawn cached, so that these don't have
-        //to be generated every frame. See AxisSystem.updateCaches().
-        this.cachedAxesBaseLines = [];
-        this.cachedArrowPolygons = [];
-        this.cachedAxesScaleLines = [];
-        this.cachedGridLines = [];
+var AxisSystem = (function () {
+    function AxisSystem(camera, showAxes, showArrows, onlyPositiveAxes, showUnitSeparationsX, showUnitLabelsX, showUnitSeparationsY, showUnitLabelsY, showHorizontalGrid, showVerticalGrid, onlyPositiveGrid, autoScaleX, autoScaleY, maxGridSizeX, maxGridSizeY, axesScale, horizontalAxisName, verticalAxisName, axesColor, axesWidth, labelFont, gridColor, gridWidth, pageColor) {
         this.camera = camera;
         this.showAxes = showAxes;
         this.showArrows = showArrows;
-        this.axisColor = axisColor;
-        this.axisWidth = axisWidth;
-        this.showGrid = showGrid;
+        this.onlyPositiveAxes = onlyPositiveAxes;
+        this.showUnitSeparationsX = showUnitSeparationsX;
+        this.showUnitLabelsX = showUnitLabelsX;
+        this.showUnitSeparationsY = showUnitSeparationsY;
+        this.showUnitLabelsY = showUnitLabelsY;
+        this.showHorizontalGrid = showHorizontalGrid;
+        this.showVerticalGrid = showVerticalGrid;
+        this.onlyPositiveGrid = onlyPositiveGrid;
+        this.autoScaleX = autoScaleX;
+        this.autoScaleY = autoScaleY;
+        this.maxGridSizeX = maxGridSizeX;
+        this.maxGridSizeY = maxGridSizeY;
+        this.axesScale = axesScale;
+        this.horizontalAxisName = horizontalAxisName;
+        this.verticalAxisName = verticalAxisName;
+        this.axesColor = axesColor;
+        this.axesWidth = axesWidth;
+        this.labelFont = labelFont;
         this.gridColor = gridColor;
         this.gridWidth = gridWidth;
-        this.showAxisLabels = showAxisLabels;
-        this.showUnitLabels = showUnitLabels;
-        this.labelFont = labelFont;
-        this.pageBackgroundColor = pageBackgroundColor;
-        this.onlyPositive = onlyPositive;
+        this.pageColor = pageColor;
     }
-    //Generates the points to renderer the axes' base lines (without any scaling marks or labeling)
-    AxisSystem.prototype.generateAxesBaseLines = function () {
-        //Get the points of the lines to be rendered (based on the screen coordinates of the origin)
-        var linePoints = [];
-        var origin = this.camera.pointToScreenPosition(new Vec2(0, 0));
-        if (this.onlyPositive) {
-            linePoints = [
-                /* X */ origin, new Vec2(this.camera.canvasSize.x, origin.y),
-                /* Y */ origin, new Vec2(origin.x, 0)
-            ];
+    AxisSystem.prototype.getBoundingRect = function () {
+        return new Rect(this.camera.pointToWorldPosition(new Vec2(0, 0)), this.camera.pointToWorldPosition(this.camera.canvasSize));
+    };
+    AxisSystem.prototype.drawXAxisBaseLine = function (renderer, screenOrigin) {
+        var minX;
+        var maxX;
+        if (this.onlyPositiveAxes) {
+            minX = Math.max(0, screenOrigin.x);
+            maxX = this.camera.canvasSize.x;
         }
         else {
-            linePoints = [
-                /* X */ new Vec2(0, origin.y), new Vec2(this.camera.canvasSize.x, origin.y),
-                /* Y */ new Vec2(origin.x, 0), new Vec2(origin.x, this.camera.canvasSize.y),
-            ];
+            minX = 0;
+            maxX = this.camera.canvasSize.x;
         }
-        return linePoints;
+        if (maxX > minX) {
+            renderer.renderLines([new Vec2(minX, screenOrigin.y), new Vec2(maxX, screenOrigin.y)], this.axesColor, this.axesWidth);
+            return true;
+        }
+        return false;
     };
-    //Returns the ideal scaling for the axes with the current camera settings. The returned object
-    //contains the number of pixels of each axis division (gridScreenSize) and its equivalent in
-    //world size (gridWorldSize).
-    AxisSystem.prototype.generateAxesScale = function () {
-        //Calculate the grid division (O(1))
-        var maxGridWorldSize = MAX_GRID_SIZE / this.camera.scale;
-        var realGridWorldSize = Math.floor(maxGridWorldSize);
-        //If the scale is less than 1, flooring it would make it 0 and the app would crash. Let the
-        //scale assume values in the sequence 0.5^n.
-        if (realGridWorldSize === 0) {
+    AxisSystem.prototype.drawYAxisBaseLine = function (renderer, screenOrigin) {
+        var minY;
+        var maxY;
+        if (this.onlyPositiveAxes) {
+            minY = 0;
+            maxY = Math.min(screenOrigin.y, this.camera.canvasSize.y);
+        }
+        else {
+            minY = 0;
+            maxY = this.camera.canvasSize.y;
+        }
+        if (maxY > minY) {
+            renderer.renderLines([new Vec2(screenOrigin.x, minY), new Vec2(screenOrigin.x, maxY)], this.axesColor, this.axesWidth);
+            return true;
+        }
+        return false;
+    };
+    AxisSystem.prototype.drawXArrow = function (renderer, screenOrigin) {
+        renderer.renderPolygon([
+            new Vec2(this.camera.canvasSize.x, screenOrigin.y),
+            new Vec2(this.camera.canvasSize.x - this.axesWidth * 3.5, screenOrigin.y - this.axesWidth * 3.5),
+            new Vec2(this.camera.canvasSize.x - this.axesWidth * 3.5, screenOrigin.y + this.axesWidth * 3.5),
+        ], this.axesColor);
+    };
+    AxisSystem.prototype.drawYArrow = function (renderer, screenOrigin) {
+        renderer.renderPolygon([
+            new Vec2(screenOrigin.x, 0),
+            new Vec2(screenOrigin.x - this.axesWidth * 3.5, this.axesWidth * 3.5),
+            new Vec2(screenOrigin.x + this.axesWidth * 3.5, this.axesWidth * 3.5),
+        ], this.axesColor);
+    };
+    AxisSystem.prototype.drawXName = function (renderer, screenOrigin) {
+        var measure = new Vec2(renderer.ctx.measureText(this.horizontalAxisName).width, renderer.fontHeight);
+        var position = new Vec2(this.camera.canvasSize.x - measure.x - 10, screenOrigin.y + 10 + this.axesWidth * 3.5);
+        renderer.renderTextWithBackground(this.horizontalAxisName, position, this.pageColor, measure, this.axesColor, this.labelFont);
+    };
+    AxisSystem.prototype.drawYName = function (renderer, screenOrigin) {
+        var measure = new Vec2(renderer.ctx.measureText(this.verticalAxisName).width, renderer.fontHeight);
+        var position = new Vec2(screenOrigin.x - measure.x - 10 - this.axesWidth * 3.5, 10);
+        renderer.renderTextWithBackground(this.verticalAxisName, position, this.pageColor, measure, this.axesColor, this.labelFont);
+    };
+    AxisSystem.prototype.autoScale = function (maxGridSize, axis) {
+        var maxGridWorldSize = maxGridSize / this.camera.scale[axis];
+        var gridWorldSize = Math.floor(maxGridWorldSize);
+        if (gridWorldSize === 0) {
             var multiplier = Math.round(Math.log(maxGridWorldSize) / Math.log(0.5));
-            realGridWorldSize = Math.pow(0.5, multiplier);
-            //Prevention measure. I think this won't happen but its better to get a wrong axis scale
-            //than a complete program crash.
-            if (realGridWorldSize === 0) {
-                realGridWorldSize = 0.5;
+            gridWorldSize = Math.pow(0.5, multiplier);
+            if (gridWorldSize === 0) {
+                gridWorldSize = 0.5;
             }
         }
-        return {
-            gridWorldSize: realGridWorldSize,
-            gridScreenSize: realGridWorldSize * this.camera.scale
-        };
+        return gridWorldSize;
     };
-    //Generates the two triangles at the end of the axes (x and y).
-    AxisSystem.prototype.generateArrows = function () {
-        var origin = this.camera.pointToScreenPosition(new Vec2(0, 0));
-        var arrows = [[
-                //X axis arrow
-                new Vec2(this.camera.canvasSize.x, origin.y),
-                new Vec2(this.camera.canvasSize.x - this.axisWidth * 3.5, origin.y - this.axisWidth * 3.5),
-                new Vec2(this.camera.canvasSize.x - this.axisWidth * 3.5, origin.y + this.axisWidth * 3.5),
-            ], [
-                //Y axis arrow
-                new Vec2(origin.x, 0),
-                new Vec2(origin.x - this.axisWidth * 3.5, this.axisWidth * 3.5),
-                new Vec2(origin.x + this.axisWidth * 3.5, this.axisWidth * 3.5),
-            ]];
-        return arrows;
-    };
-    //Generates where each vertical grid line (or axis split should be).
-    AxisSystem.prototype.generateGridAndAxesXSplits = function (gridScreenSize, callback) {
-        var origin = this.camera.pointToScreenPosition(new Vec2(0, 0));
-        if (!this.onlyPositive) {
-            //Start from the origin and fill the negative parts of the axes
-            for (var x = origin.x; x >= 0; x -= gridScreenSize) {
-                callback(x);
-            }
-        }
-        //Start from the origin and determine the positive positions of the splits
-        for (var x = origin.x; x <= this.camera.canvasSize.x; x += gridScreenSize) {
-            callback(x);
+    AxisSystem.prototype.loopScale = function (scale, start, end, callback) {
+        start -= start % scale;
+        for (; start < end; start += scale) {
+            callback(start);
         }
     };
-    //Generates where each horizontal grid line (or axis split should be).
-    AxisSystem.prototype.generateGridAndAxesYSplits = function (gridScreenSize, callback) {
-        var origin = this.camera.pointToScreenPosition(new Vec2(0, 0));
-        if (!this.onlyPositive) {
-            //Start from the origin and fill the negative parts of the axes
-            for (var y = origin.y; y <= this.camera.canvasSize.y; y += gridScreenSize) {
-                callback(y);
-            }
-        }
-        //Start from the origin and determine the positive positions of the splits
-        for (var y = origin.y; y >= 0; y -= gridScreenSize) {
-            callback(y);
-        }
+    AxisSystem.prototype.drawXAxisUnitSeparator = function (renderer, screenOrigin, point) {
+        var screenX = this.camera.pointToScreenPosition(new Vec2(point, 0)).x;
+        renderer.renderLines([
+            new Vec2(screenX, screenOrigin.y - this.axesWidth),
+            new Vec2(screenX, screenOrigin.y + this.axesWidth),
+        ], this.axesColor, this.axesWidth);
     };
-    //Generates the tiny lines that are responsible for showing the scale of the axes.
-    AxisSystem.prototype.generateAxesScaleLines = function (gridScreenSize) {
-        var _this = this;
-        //Get the points of the lines to be rendered (based on the screen coordinates of the origin)
-        var linePoints = [];
-        var origin = this.camera.pointToScreenPosition(new Vec2(0, 0));
-        this.generateGridAndAxesXSplits(gridScreenSize, function (x) {
-            linePoints.push(new Vec2(x, origin.y - _this.axisWidth), new Vec2(x, origin.y + _this.axisWidth));
-        });
-        this.generateGridAndAxesYSplits(gridScreenSize, function (y) {
-            linePoints.push(new Vec2(origin.x - _this.axisWidth, y), new Vec2(origin.x + _this.axisWidth, y));
-        });
-        return linePoints;
+    AxisSystem.prototype.drawYAxisUnitSeparator = function (renderer, screenOrigin, point) {
+        var screenY = this.camera.pointToScreenPosition(new Vec2(0, point)).y;
+        renderer.renderLines([
+            new Vec2(screenOrigin.x - this.axesWidth, screenY),
+            new Vec2(screenOrigin.x + this.axesWidth, screenY),
+        ], this.axesColor, this.axesWidth);
     };
-    AxisSystem.prototype.generateGridLines = function (gridScreenSize) {
-        var _this = this;
-        //Get the points of the lines to be rendered (based on the screen coordinates of the origin)
-        var linePoints = [];
-        var origin = this.camera.pointToScreenPosition(new Vec2(0, 0));
-        this.generateGridAndAxesXSplits(gridScreenSize, function (x) {
-            if (_this.onlyPositive) {
-                linePoints.push(new Vec2(x, 0), new Vec2(x, origin.y));
-            }
-            else {
-                linePoints.push(new Vec2(x, 0), new Vec2(x, _this.camera.canvasSize.y));
-            }
-        });
-        this.generateGridAndAxesYSplits(gridScreenSize, function (y) {
-            if (_this.onlyPositive) {
-                linePoints.push(new Vec2(origin.x, y), new Vec2(_this.camera.canvasSize.x, y));
-            }
-            else {
-                linePoints.push(new Vec2(0, y), new Vec2(_this.camera.canvasSize.x, y));
-            }
-        });
-        return linePoints;
+    AxisSystem.prototype.drawXUnitLabels = function (renderer, screenOrigin, point) {
+        var measure = new Vec2(renderer.ctx.measureText(point.toString()).width, renderer.fontHeight);
+        var screenX = this.camera.pointToScreenPosition(new Vec2(point, 0)).x;
+        var position = new Vec2(screenX - measure.x / 2, screenOrigin.y + this.axesWidth + 10);
+        renderer.renderTextWithBackground(point.toString(), position, this.pageColor, measure, this.axesColor, this.labelFont);
     };
-    //This class caches the coordinates of the axis. These need to be updated when anything in the
-    //camera is updated (position, scale, canvas size, ...) or when either showGrid, showArrows or
-    //onlyPositive is changed.
-    AxisSystem.prototype.updateCaches = function () {
-        this.cachedAxesScale = this.generateAxesScale();
-        this.cachedArrowPolygons = this.generateArrows();
-        this.cachedAxesBaseLines = this.generateAxesBaseLines();
-        this.cachedAxesScaleLines = this.generateAxesScaleLines(this.cachedAxesScale.gridScreenSize);
-        this.cachedGridLines = this.generateGridLines(this.cachedAxesScale.gridScreenSize);
+    AxisSystem.prototype.drawYUnitLabels = function (renderer, screenOrigin, point) {
+        var measure = new Vec2(renderer.ctx.measureText(point.toString()).width, renderer.fontHeight);
+        var screenY = this.camera.pointToScreenPosition(new Vec2(0, point)).y;
+        var position = new Vec2(screenOrigin.x - this.axesWidth - measure.x - 10, screenY - measure.y / 2);
+        renderer.renderTextWithBackground(point.toString(), position, this.pageColor, measure, this.axesColor, this.labelFont);
     };
     AxisSystem.prototype.drawAxes = function (renderer) {
         var _this = this;
-        //Draw the grid
-        if (this.showGrid) {
-            renderer.renderLines(this.cachedGridLines, this.gridColor, this.gridWidth);
+        renderer.ctx.font = this.labelFont;
+        var boundingRect = this.getBoundingRect();
+        var screenOrigin = this.camera.pointToScreenPosition(new Vec2(0, 0));
+        if (this.autoScaleX) {
+            this.axesScale.x = this.autoScale(this.maxGridSizeX, "x");
         }
-        //Draw the axis lines (base and unit separators)
-        if (this.showAxes) {
-            renderer.renderLines(this.cachedAxesBaseLines, this.axisColor, this.axisWidth);
-            renderer.renderLines(this.cachedAxesScaleLines, this.axisColor, this.axisWidth);
+        if (this.autoScaleY) {
+            this.axesScale.y = this.autoScale(this.maxGridSizeY, "y");
         }
-        //Draw the arrows
-        if (this.showArrows) {
-            for (var i = 0; i < this.cachedArrowPolygons.length; ++i) {
-                renderer.renderPolygon(this.cachedArrowPolygons[i], this.axisColor);
+        if (this.showHorizontalGrid &&
+            !(this.onlyPositiveGrid && screenOrigin.y < 0)) {
+            var bottom = boundingRect.bottom;
+            var left_1 = 0;
+            if (this.onlyPositiveGrid) {
+                bottom = Math.max(bottom, 0);
+                left_1 = screenOrigin.x;
             }
-        }
-        var origin = this.camera.pointToScreenPosition(new Vec2(0, 0));
-        //Unit labels
-        if (this.showUnitLabels) {
-            renderer.ctx.fillStyle = this.axisColor;
-            //x axis labels
-            renderer.ctx.textAlign = "center";
-            renderer.ctx.textBaseline = "top";
-            this.generateGridAndAxesXSplits(this.cachedAxesScale.gridScreenSize, function (x) {
-                if (x === origin.x) //Don't draw 0 in the origin
-                    return;
-                //Round the number to 2 decimal places (toFixed(2)) and don't have excess 0s
-                //(conversion to Number and back to string).
-                var text = Number((((x - origin.x) * _this.cachedAxesScale.gridWorldSize) /
-                    _this.cachedAxesScale.gridScreenSize).toFixed(2)).toString();
-                renderer.ctx.fillText(text, x, origin.y + 10);
-            });
-            //y axis labels
-            renderer.ctx.textAlign = "right";
-            renderer.ctx.textBaseline = "middle";
-            this.generateGridAndAxesYSplits(this.cachedAxesScale.gridScreenSize, function (y) {
-                if (y === origin.y) //Don't draw 0 in the origin
-                    return;
-                //Round the number to 2 decimal places (toFixed(2)) and don't have excess 0s
-                //(conversion to Number and back to string).
-                var text = Number((((origin.y - y) * _this.cachedAxesScale.gridWorldSize) /
-                    _this.cachedAxesScale.gridScreenSize).toFixed(2)).toString();
-                renderer.ctx.fillText(text, origin.x - 10, y);
+            this.loopScale(this.axesScale.y, bottom, boundingRect.top, function (point) {
+                var screenY = _this.camera.pointToScreenPosition(new Vec2(0, point)).y;
+                renderer.renderLines([new Vec2(left_1, screenY), new Vec2(_this.camera.canvasSize.x, screenY)], _this.gridColor, _this.gridWidth);
             });
         }
-        //Axis labels
-        if (this.showAxisLabels) {
-            renderer.ctx.textAlign = "right";
-            renderer.ctx.textBaseline = "top";
-            renderer.ctx.font = this.labelFont;
-            //Render squares behind the text so that it is visible.
-            renderer.ctx.fillStyle = this.pageBackgroundColor;
-            //x
-            var measure = renderer.ctx.measureText("x").width;
-            renderer.ctx.fillRect(this.camera.canvasSize.x - 10 - measure, origin.y + this.axisWidth * 3.5 + 5, measure, renderer.fontHeight());
-            //y
-            measure = renderer.ctx.measureText("y").width;
-            renderer.ctx.fillRect(origin.x - this.axisWidth * 3.5 - 5 - measure, 10, measure, renderer.fontHeight());
-            //It isn't expected for there to be text under the origin of the axis system. Therefore,
-            //don't draw the rectangle.
-            //Render the text
-            renderer.ctx.fillStyle = this.axisColor;
-            renderer.ctx.fillText("x", this.camera.canvasSize.x - 10, origin.y + this.axisWidth * 3.5 + 5);
-            renderer.ctx.fillText("y", origin.x - this.axisWidth * 3.5 - 5, 10);
-            renderer.ctx.fillText("O", origin.x - 10, origin.y + 10);
+        if (this.showVerticalGrid &&
+            !(this.onlyPositiveGrid && screenOrigin.x > this.camera.canvasSize.x)) {
+            var left = boundingRect.left;
+            var bottom_1 = this.camera.canvasSize.y;
+            if (this.onlyPositiveGrid) {
+                left = Math.max(left, 0);
+                bottom_1 = Math.min(bottom_1, screenOrigin.y);
+            }
+            this.loopScale(this.axesScale.x, left, boundingRect.right, function (point) {
+                var screenX = _this.camera.pointToScreenPosition(new Vec2(point, 0)).x;
+                renderer.renderLines([new Vec2(screenX, 0), new Vec2(screenX, bottom_1)], _this.gridColor, _this.gridWidth);
+            });
+        }
+        if (this.showAxes) {
+            if (screenOrigin.y >= 0 && screenOrigin.y <= this.camera.canvasSize.y) {
+                var canRenderArrow = this.drawXAxisBaseLine(renderer, screenOrigin);
+                if (this.showUnitSeparationsX) {
+                    var left = boundingRect.left;
+                    if (this.onlyPositiveAxes) {
+                        left = Math.max(left, 0);
+                    }
+                    this.loopScale(this.axesScale.x, left, boundingRect.right, function (point) {
+                        if (point != 0) {
+                            _this.drawXAxisUnitSeparator(renderer, screenOrigin, point);
+                            if (_this.showUnitLabelsX)
+                                _this.drawXUnitLabels(renderer, screenOrigin, point);
+                        }
+                    });
+                }
+                if (canRenderArrow) {
+                    this.drawXName(renderer, screenOrigin);
+                    if (this.showArrows)
+                        this.drawXArrow(renderer, screenOrigin);
+                }
+            }
+            if (screenOrigin.x >= 0 && screenOrigin.x <= this.camera.canvasSize.x) {
+                var canRenderArrow = this.drawYAxisBaseLine(renderer, screenOrigin);
+                if (this.showUnitSeparationsY) {
+                    var bottom = boundingRect.bottom;
+                    if (this.onlyPositiveAxes) {
+                        bottom = Math.max(bottom, 0);
+                    }
+                    this.loopScale(this.axesScale.y, bottom, boundingRect.top, function (point) {
+                        if (point != 0) {
+                            _this.drawYAxisUnitSeparator(renderer, screenOrigin, point);
+                            if (_this.showUnitLabelsY)
+                                _this.drawYUnitLabels(renderer, screenOrigin, point);
+                        }
+                    });
+                }
+                if (canRenderArrow) {
+                    this.drawYName(renderer, screenOrigin);
+                    if (this.showArrows)
+                        this.drawYArrow(renderer, screenOrigin);
+                }
+            }
         }
     };
     return AxisSystem;
