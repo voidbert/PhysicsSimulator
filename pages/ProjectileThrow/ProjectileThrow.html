@@ -2,46 +2,43 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
 		<title>Lançamento de um projétil</title>
 
-		<script src="../js/ExtraMath.js"></script>
-		<script src="../js/Vec2.js"></script>
-		<script src="../js/TimeStepper.js"></script>
-		<script src="../js/Body.js"></script>
-		<script src="../js/Camera.js"></script>
-		<script src="../js/Renderer.js"></script>
-		<script src="../js/AxisSystem.js"></script>
+		<script src="compiledJS.js" defer></script>
 
-		<script src="../js/ProjectileTheoreticalOutcome.js"></script>
-		<script src="../js/ProjectileTrajectory.js"></script>
-		<script src="../js/ProjectileThrowSettings.js"></script>
-		<script src="../js/ProjectileThrow.js" defer></script>
-
-		<link rel="stylesheet" type="text/css" href="styles.css">
+		<link rel="stylesheet" type="text/css" href="./ProjectileThrow.css">
 	</head>
 	<body>
-		<canvas id="canvas">
-			<!--No <canvas> support warning-->
-			Este browser não suporta o elemento HTML &lt;canvas&gt;, necessário para o funcionamento
-			desta aplicação Web.
-		</canvas>
-
 		<div id="ui-div"> <!--Where HTML UI elements are-->
 			<div id="no-script-div">
-				<div id="choose-velocity-instructions">
+				<div id="choose-velocity-instructions-mouse" class="hidden">
 					Clique para escolher a velocidade<br/>
 					Carregue em <span class="bold">ESC</span> para sair deste modo
 				</div>
+				<div id="choose-velocity-instructions-touch" class="hidden">
+					Largue para escolher a velocidade<br/>
+				</div>
+				<div id="scroll-down">
+					Arraste para mais opções
+				</div>
 
-				<div id="simulation-results">
+				<canvas id="canvas">
+					<!--No <canvas> support warning-->
+					Este browser não suporta o elemento HTML &lt;canvas&gt;, necessário para o
+					funcionamento desta aplicação Web.
+				</canvas>
+
+				<div id="simulation-results" class="hidden">
 					<div>
 						<table>
 							<thead>
 								<tr>
-									<th class="table-top-left-corner"></th>
-									<th>Simulador</th>
-									<th>Valor teórico</th>
+									<th></th>
+									<th class="default-simulation-results-th">Simulador</th>
+									<th class="air-resistance-simulation-results-th">Com resistência</th>
+									<th class="default-simulation-results-th">Valor teórico</th>
+									<th class="air-resistance-simulation-results-th">Sem resistência</th>
 									<th>Erro relativo (%)</th>
 								</tr>
 							</thead>
@@ -132,25 +129,47 @@
 					<div class="simulation-interaction-section">
 
 						<div class="simulation-interaction-section-title">Parâmetros da simulação</div>
+
+						<div id="mass-input-container">
+							<div>Massa:</div>
+							<div>
+								<input inputmode="numeric" id="mass-input" type="text" value="1"></input>
+								<div class="unit-div">kg</div>
+							</div>
+						</div>
+
+						<div id="radius-input-container">
+							<div>Raio:</div>
+							<div>
+								<input inputmode="numeric" id="radius-input" type="text" value="0.5"></input>
+								<div class="unit-div">m</div>
+							</div>
+						</div>
+
 						<div id="height-input-container">
 							<div>Altura:</div>
-							<div><input id="height-input" type="text" value="5"></input>m</div>
+							<div>
+								<input inputmode="numeric" id="height-input" type="text" value="5"></input>
+								<div class="unit-div">m</div>
+							</div>
 						</div>
-						<div class="invalid-input" id="invalid-height">Altura inválida</div>
-
 						<div id="velocity-container">
 							<div>Velocidade inicial (m s <span class="superscript">-1</span>):</div>
 							<div id="velocity-input-container">
-								<input id="vx-input" type="text" value="7"></input>
+								<input inputmode="numeric" id="vx-input" type="text" value="7"></input>
 								ê<span class="subscript">x</span> +
 
-								<input id="vy-input" type="text" value="7"></input>
+								<input inputmode="numeric" id="vy-input" type="text" value="7"></input>
 								ê<span class="subscript">y</span>
 							</div>
 						</div>
-						<div class="invalid-input" id="invalid-velocity">Velocidade inválida</div>
 						<div id="choose-screen-velocity-container">
 							<button id="choose-screen-velocity">Escolher velocidade no mundo</button>
+						</div>
+
+						<div id="air-res-container">
+							<input type="checkbox" id="air-res" name="air-res" value="air-res"></input>
+							<label for="air-res">Resistência do ar</label>
 						</div>
 					</div>
 				</div>

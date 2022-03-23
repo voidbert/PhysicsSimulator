@@ -1,0 +1,114 @@
+body {
+	position: relative; /*For the footer*/
+	min-height: 100vh;
+
+	margin: 0px;
+	padding: 0px;
+
+	background-color: black;
+	color: white;
+	font: 1rem sans-serif;
+}
+
+#header {
+	width: 100%;
+	padding-top: 0.75rem;
+	margin-bottom: 1.5rem;
+
+	font-size: 1.5rem;
+	font-weight: bold;
+
+	text-align: center;
+}
+
+#simulation-grid {
+	display: grid;
+
+	grid-template-columns: repeat(auto-fit, 15rem);
+	column-gap: 1rem;
+	row-gap: 1rem;
+
+	justify-content: center;
+}
+
+.simulation {
+	display: block;
+	width: 15rem;
+
+	text-align: center;
+	border-radius: 0.5rem;
+}
+
+.simulation:hover {
+	text-align: center;
+
+	background-color: white;
+	color: black;
+
+	transition-property: all;
+	transition-duration: 0.25s;
+}
+
+.simulation-a {
+	all: unset;
+
+	color: white;
+	font: 1rem sans-serif;
+}
+
+.simulation-image {
+	margin-top: 0.75rem;
+	margin-bottom: 0.5rem;
+
+	border-radius: 0.5rem;
+}
+
+.simulation-title {
+	padding-bottom: 0.5rem;
+}
+
+#footer-size {
+	height: 3.5rem;
+}
+
+#footer {
+	display: block;
+
+	position: absolute;
+	left: 0px;
+	bottom: 0.75rem;
+
+	width: calc(100vw - 1.5rem);
+	height: 2rem;
+}
+
+#author-container {
+	position: relative;
+	float: left;
+
+	padding-left: 0.75rem;
+	height: 2rem;
+}
+
+#author {
+	position: absolute;
+	top: 50%; left: 0.75rem;
+	transform: translate(0, -50%); /*center vertically*/
+
+	white-space: nowrap;
+}
+
+#github-container {
+	float: right;
+	height: 2rem;
+}
+
+#github {
+	height: 2rem;
+}
+
+#github:hover {
+	opacity: 0.75;
+	transition-property: opacity;
+	transition-duration: 0.25s;
+}
