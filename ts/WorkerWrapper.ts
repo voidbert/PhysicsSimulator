@@ -161,15 +161,7 @@ class WorkerWrapper {
 						this.buffers[i] = null;
 						clearCount++;
 					}
-				} else {
-					//The last data point was collected from buffer number 0. All buffers with a
-					//smaller index than buffer 1 can be deleted
-					if (this.buffers[i] && this.buffers[i].index < buffer1.index) {
-						this.buffers[i] = null;
-						clearCount++;
-					}
 				}
-				
 			}
 			if (clearCount !== 0)
 				this.worker.postMessage({ allowedBuffers: clearCount });
