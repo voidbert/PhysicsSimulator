@@ -75,16 +75,39 @@ class SolarSystemBodyManager {
 		}
 	}
 
-	renderBodies(renderer: Renderer, camera: Camera) {
+	//The provided time must come from the SolarSystemTimeManager
+	renderBodies(renderer: Renderer, camera: Camera, time: number) {
 		for (let i = 0; i < this.bodies.length; ++i) {
 			let scale = i === 0 ? 1 : 1000; //TODO - option radius multiplier
 
+			//Draw planet
 			let geometry = this.bodies[i].geometry.map((point: Vec2) => {
 				return camera.pointToScreenPosition(this.bodies[i].transformVertex(
 					point.scale(this.bodyCharacteristics[i].radius * scale)));
 			});
-
 			renderer.renderPolygon(geometry, this.bodyCharacteristics[i].color);
+
+			//Draw orbit
+			let frameNumber: number = Math.floor(time / SIMULATION_QUALITY);
+			let frame = this.parallelWorker.getFrame(frameNumber);
+
+			renderer.ctx.strokeStyle = "#fff";
+			renderer.ctx.beginPath();
+			let position = camera.pointToScreenPosition(this.bodies[i].r);
+			renderer.ctx.moveTo(position.x, position.y);
+
+			while (frame !== null) {
+				let positionFloats = new Float64Array(frame);
+				position = new Vec2(positionFloats[i * 2], positionFloats[i * 2 + 1]);
+				position = camera.pointToScreenPosition(position);
+
+				renderer.ctx.lineTo(position.x, position.y);
+
+				frameNumber++;
+				frame = this.parallelWorker.getFrame(frameNumber);
+			}
+
+			renderer.ctx.stroke();
 		}
 	}
 }

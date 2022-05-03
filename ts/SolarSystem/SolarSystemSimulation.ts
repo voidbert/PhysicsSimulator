@@ -57,7 +57,7 @@ class SolarSystemSimulation {
 		this.renderer = new Renderer(window, document.getElementById("canvas") as HTMLCanvasElement,
 		() => {
 			this.bodyManager.updatePositions(this.timeManager.getTime(), SIMULATION_QUALITY);
-			this.bodyManager.renderBodies(this.renderer, this.camera);
+			this.bodyManager.renderBodies(this.renderer, this.camera, this.timeManager.getTime());
 
 			if (this.timeManager.isPaused &&
 				this.timeManager.pauseReason == SolarSystemPauseReason.UserAction) {
