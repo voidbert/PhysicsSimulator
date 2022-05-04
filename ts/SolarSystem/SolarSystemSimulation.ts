@@ -2,6 +2,7 @@ const PLANET_GEOMETRY = ExtraMath.generatePolygon(30, 1);
 const SIMULATION_QUALITY = 86400000; /* TODO - allow for a different value */
 
 class SolarSystemSimulation {
+	static state: SolarSystemState = SolarSystemState.ChoosingSimulationQuality;
 	static bodyManager: SolarSystemBodyManager;
 	static timeManager: SolarSystemTimeManager;
 
@@ -62,6 +63,7 @@ class SolarSystemSimulation {
 			if (this.timeManager.isPaused &&
 				this.timeManager.pauseReason == SolarSystemPauseReason.UserAction) {
 
+				//Red screen when simulation is paused
 				this.renderer.ctx.strokeStyle = "#f00";
 				this.renderer.ctx.lineWidth = 5;
 				this.renderer.ctx.strokeRect(0, 0,
@@ -73,6 +75,12 @@ class SolarSystemSimulation {
 
 			this.camera.canvasSize =
 				new Vec2(this.renderer.canvas.width, this.renderer.canvas.height);
+
+			//Stop showing settings (in the middle of the screen) if the user changes from portrait
+			//to landscape.
+			if (!isPortrait() && this.state === SolarSystemState.ShowingSettings) {
+				SolarSystemStateManager.leaveShowingSettingsMode();
+			}
 		});
 		this.renderer.renderLoop();
 

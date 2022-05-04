@@ -79,5 +79,25 @@ class SolarSystemEvents {
 			);
 
 		}, 50);
+
+		document.getElementById("canvas").addEventListener("click", () => {
+			if (isPortrait() && SolarSystemSimulation.state === SolarSystemState.ShowingSettings) {
+				SolarSystemStateManager.leaveShowingSettingsMode();
+			}
+		});
+
+		document.getElementById("settings-icon-container").addEventListener("click", () => {
+			if (isPortrait()) {
+				if (SolarSystemSimulation.state === SolarSystemState.NormalSimulation) {
+					SolarSystemStateManager.enterShowingSettingsMode();
+				} else {
+					SolarSystemStateManager.leaveShowingSettingsMode();
+				}
+			}
+		});
+
+		document.getElementById("quality-confirm-button").addEventListener("click", () => {
+			SolarSystemStateManager.leaveChoosingSimulationQualityMode();
+		});
 	}
 }
