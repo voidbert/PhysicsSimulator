@@ -90,5 +90,8 @@ class SolarSystemSimulation {
 }
 
 window.addEventListener("load", () => {
+	//Hide the noscript tag (empty) to remove margins
+	document.getElementById("noscript-container").style.display = "none";
+
 	SolarSystemSimulation.startSimulation();
 });
