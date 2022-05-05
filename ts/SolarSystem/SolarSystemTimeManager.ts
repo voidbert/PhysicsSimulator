@@ -2,6 +2,16 @@ enum SolarSystemPauseReason { //Why the simulation may be paused
 	LackOfData, UserAction
 }
 
+const SIMULATION_SPEED_CORRESPONDENCE = [
+	86400, //1 day per second
+	172800, //2 days per second
+	432000, //5 days per second
+	864000, //10 days per second
+	1728000, //20 days per second
+	4320000, //50 days per second
+	8640000 //100 days per second
+];
+
 class SolarSystemTimeManager {
 	private lastUpdate: number; //When the manager was updated (started, paused, resumed or getTime)
 	private lastUpdateCorrespondence: number; //The simulation time when that happened.
@@ -34,8 +44,8 @@ class SolarSystemTimeManager {
 		if (this.isPaused) {
 			return this.lastUpdateCorrespondence;
 		} else {
-			//OG - 846000
-			this.lastUpdateCorrespondence += (Date.now() - this.lastUpdate) * 423000; //TODO - speed
+			this.lastUpdateCorrespondence += (Date.now() - this.lastUpdate) *
+				SIMULATION_SPEED_CORRESPONDENCE[SolarSystemSimulation.settings.simulationSpeed];
 			this.lastUpdate = Date.now();
 			return this.lastUpdateCorrespondence;
 		}

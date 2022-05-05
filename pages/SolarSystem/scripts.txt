@@ -11,5 +11,6 @@ js/PageTools.js
 js/SolarSystem/SolarSystemStateManager.js
 js/SolarSystem/SolarSystemTimeManager.js
 js/SolarSystem/SolarSystemBodyManager.js
+js/SolarSystem/SolarSystemSettings.js
 js/SolarSystem/SolarSystemSimulation.js
 js/SolarSystem/SolarSystemEvents.js

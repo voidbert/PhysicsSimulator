@@ -1,13 +1,14 @@
-const PLANET_GEOMETRY = ExtraMath.generatePolygon(30, 1);
-const SIMULATION_QUALITY = 86400000; /* TODO - allow for a different value */
+const PLANET_GEOMETRY = ExtraMath.generatePolygon(50, 1);
 
 class SolarSystemSimulation {
 	static state: SolarSystemState = SolarSystemState.ChoosingSimulationQuality;
 	static bodyManager: SolarSystemBodyManager;
 	static timeManager: SolarSystemTimeManager;
 
+	static settings: SolarSystemSettings = new SolarSystemSettings();
+
 	static renderer: Renderer;
-	static camera: Camera = new Camera(new Vec2(), new Vec2(1e-8, 1e-8));
+	static camera: Camera = new Camera(new Vec2(), new Vec2(3e-9, 3e-9));
 
 	//Creates the body manager and the planets
 	private static generateSolarSystem() {
@@ -47,9 +48,12 @@ class SolarSystemSimulation {
 		this.bodyManager = new SolarSystemBodyManager(bodies, characteristics);
 	}
 
-	static startSimulation() {
-		SolarSystemEvents.addEvents();
+	static startPage() {
+		SolarSystemSettings.addEvents();
+		SolarSystemEvents.addEvents();		
+	}
 
+	static startSimulation() {
 		this.generateSolarSystem();
 
 		this.timeManager = new SolarSystemTimeManager();
@@ -57,7 +61,8 @@ class SolarSystemSimulation {
 
 		this.renderer = new Renderer(window, document.getElementById("canvas") as HTMLCanvasElement,
 		() => {
-			this.bodyManager.updatePositions(this.timeManager.getTime(), SIMULATION_QUALITY);
+			this.bodyManager.updatePositions(this.timeManager.getTime(),
+				this.settings.simulationQuality);
 			this.bodyManager.renderBodies(this.renderer, this.camera, this.timeManager.getTime());
 
 			if (this.timeManager.isPaused &&
@@ -93,5 +98,5 @@ window.addEventListener("load", () => {
 	//Hide the noscript tag (empty) to remove margins
 	document.getElementById("noscript-container").style.display = "none";
 
-	SolarSystemSimulation.startSimulation();
+	SolarSystemSimulation.startPage();
 });

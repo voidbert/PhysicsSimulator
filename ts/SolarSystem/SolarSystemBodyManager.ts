@@ -20,7 +20,7 @@ class SolarSystemBodyManager {
 		this.bufferCount = 0;
 		this.parallelWorker = new WorkerWrapper(
 			"../../js/SolarSystem/SolarSystemWorker.js",
-			SIMULATION_QUALITY, 
+			SolarSystemSimulation.settings.simulationQuality,
 			(w: Worker, data: any) => {
 				this.parallelWorker.addBuffer(
 					new NumberedBuffer(this.bufferCount, data.size, data.buf, bodies.length * 16));
@@ -45,7 +45,8 @@ class SolarSystemBodyManager {
 			this.bodyCharacteristics = newArray;
 		}
 
-		this.parallelWorker.start({ bodies: this.bodies }, SIMULATION_QUALITY);
+		this.parallelWorker.start({ bodies: this.bodies },
+			SolarSystemSimulation.settings.simulationQuality);
 	}
 
 	//Sets the positions of the bodies to the ones of a certain instant processed by the worker.
@@ -77,21 +78,37 @@ class SolarSystemBodyManager {
 
 	//The provided time must come from the SolarSystemTimeManager
 	renderBodies(renderer: Renderer, camera: Camera, time: number) {
+		//Draw planets
 		for (let i = 0; i < this.bodies.length; ++i) {
-			let scale = i === 0 ? 1 : 1000; //TODO - option radius multiplier
 
-			//Draw planet
+			let scale = 0;
+			if (i === 0) { //Use a different scale for the Sun so that it doesn't overlap planets
+				scale = 1 + 5 * SolarSystemSimulation.settings.bodyRadius;
+			} else if (i <= 4) {
+				scale = 1 + 200 * SolarSystemSimulation.settings.bodyRadius;
+			} else { //Use a different scale for gas (and ice) giants
+				scale = 1 + 50 * SolarSystemSimulation.settings.bodyRadius;
+			}
+
 			let geometry = this.bodies[i].geometry.map((point: Vec2) => {
 				return camera.pointToScreenPosition(this.bodies[i].transformVertex(
 					point.scale(this.bodyCharacteristics[i].radius * scale)));
 			});
 			renderer.renderPolygon(geometry, this.bodyCharacteristics[i].color);
+		}
 
-			//Draw orbit
-			let frameNumber: number = Math.floor(time / SIMULATION_QUALITY);
+		if (!SolarSystemSimulation.settings.seeOrbits)
+			return;
+
+		renderer.ctx.strokeStyle = "#fff";
+		renderer.ctx.lineWidth = 1;
+
+		//Draw orbits
+		for (let i = 0; i < this.bodies.length; ++i) {
+			let frameNumber: number = Math.floor(time /
+				SolarSystemSimulation.settings.simulationQuality) + 1;
 			let frame = this.parallelWorker.getFrame(frameNumber);
 
-			renderer.ctx.strokeStyle = "#fff";
 			renderer.ctx.beginPath();
 			let position = camera.pointToScreenPosition(this.bodies[i].r);
 			renderer.ctx.moveTo(position.x, position.y);
@@ -104,7 +121,7 @@ class SolarSystemBodyManager {
 				renderer.ctx.lineTo(position.x, position.y);
 
 				frameNumber++;
-				frame = this.parallelWorker.getFrame(frameNumber);
+				frame = this.parallelWorker.getFrame(frameNumber); //TODO - can be optimized
 			}
 
 			renderer.ctx.stroke();
