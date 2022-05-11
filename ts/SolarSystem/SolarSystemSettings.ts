@@ -17,7 +17,7 @@ class SolarSystemSettings {
 	private _bodyRadius: number;
 
 	constructor() {
-		this._simulationQuality = SolarSystemSimulationQuality.High; //TODO - change to high
+		this._simulationQuality = SolarSystemSimulationQuality.High;
 	}
 
 	get simulationQuality() { return this._simulationQuality; }
@@ -29,6 +29,14 @@ class SolarSystemSettings {
 	//Gets the settings set by the user in #ui-div.
 	getFromPage(): SolarSystemSettings {
 		let settings: SolarSystemSettings = new SolarSystemSettings();
+
+		settings._simulationQuality = {
+			"vl": SolarSystemSimulationQuality.VeryLow,
+			"l": SolarSystemSimulationQuality.Low,
+			"m": SolarSystemSimulationQuality.Medium,
+			"h": SolarSystemSimulationQuality.High,
+			"vh": SolarSystemSimulationQuality.VeryHigh
+		}[(document.getElementById("simulation-quality") as HTMLSelectElement).value];
 
 		settings._simulationSpeed =
 			parseInt((document.getElementById("sim-speed") as HTMLInputElement).value);
@@ -47,15 +55,6 @@ class SolarSystemSettings {
 	//settings are updated. 
 	static addEvents(): void {
 		document.getElementById("quality-confirm-button").addEventListener("click", () => {
-			
-			SolarSystemSimulation.settings._simulationQuality = {
-				"vl": SolarSystemSimulationQuality.VeryLow,
-				"l": SolarSystemSimulationQuality.Low,
-				"m": SolarSystemSimulationQuality.Medium,
-				"h": SolarSystemSimulationQuality.High,
-				"vh": SolarSystemSimulationQuality.VeryHigh
-			}[(document.getElementById("simulation-quality") as HTMLSelectElement).value];
-
 			//Set the correct settings when the simulation starts.
 			SolarSystemSimulation.settings = SolarSystemSimulation.settings.getFromPage();
 
