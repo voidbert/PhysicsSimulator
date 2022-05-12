@@ -64,7 +64,11 @@ class SolarSystemEvents {
 				"w": new Vec2(0, MOVEMENT_SPEED),
 				"s": new Vec2(0, -MOVEMENT_SPEED),
 				"a": new Vec2(-MOVEMENT_SPEED, 0),
-				"d": new Vec2(MOVEMENT_SPEED, 0)
+				"d": new Vec2(MOVEMENT_SPEED, 0),
+				"arrowup": new Vec2(0, MOVEMENT_SPEED),
+				"arrowdown": new Vec2(0, -MOVEMENT_SPEED),
+				"arrowleft": new Vec2(-MOVEMENT_SPEED, 0),
+				"arrowright": new Vec2(MOVEMENT_SPEED, 0)
 			};
 
 			let keys = this.getKeysDown();
