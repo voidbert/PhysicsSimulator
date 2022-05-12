@@ -115,30 +115,60 @@ class SolarSystemBodyManager {
 
 		//Draw orbits
 		for (let i = 0; i < this.bodies.length; ++i) {
+
+			//Code to get the next frame with better performance than WorkerWrapper.getFrame().
+			let currentBuffer: NumberedBuffer;
+			let bufferArrayView: Float64Array;
+			let currentBufferNumber: number;
+			let currentFrameNumber: number; //From start of current buffer
+			let updateFrame = (): Vec2 | null => {
+				if (currentFrameNumber >= this.parallelWorker.bufferSize) { //Load the next buffer
+					currentFrameNumber -= this.parallelWorker.bufferSize;
+					currentBufferNumber++;
+					currentBuffer = this.parallelWorker.getBuffer(currentBufferNumber);
+				}
+
+				if (currentBuffer === null) {
+					return null;
+				} else {
+					bufferArrayView = new Float64Array(currentBuffer.buffer);
+				}
+
+				return new Vec2(bufferArrayView[this.bodies.length * 2 * currentFrameNumber + i * 2],
+					bufferArrayView[this.bodies.length * 2 * currentFrameNumber + i * 2 + 1]);
+			}
+
+			//Frame number counting from the start of the simulation
 			let frameNumber: number = Math.floor(time /
 				SolarSystemSimulation.settings.simulationQuality) + 1;
-			let frame = this.parallelWorker.getFrame(frameNumber);
+			currentBufferNumber = Math.floor(frameNumber / this.parallelWorker.bufferSize);
+			currentFrameNumber = frameNumber - currentBufferNumber * this.parallelWorker.bufferSize;
+			currentBuffer = this.parallelWorker.getBuffer(currentBufferNumber);
+			if (currentBuffer === null) {
+				break;
+			} else {
+				bufferArrayView = new Float64Array(currentBuffer.buffer);
+			}
+
+			//Can't be null as the function is left if the currentBuffer hasn't been processed yet
+			let frame: Vec2 = updateFrame(); 
 			let elapsed = 0;
 
 			renderer.ctx.beginPath();
-			let position: Vec2 = this.bodies[i].r;
-			let cameraPosition = camera.pointToScreenPosition(position);
+			let cameraPosition = camera.pointToScreenPosition(frame);
 			renderer.ctx.moveTo(cameraPosition.x, cameraPosition.y);
 
 			let limitAngle: number = SINGLE_ORBIT_ANGLE[SolarSystemSimulationQuality[
 					SolarSystemSimulation.settings.simulationQuality]];	
 
 			while (frame !== null) {
-				let positionFloats = new Float64Array(frame);
-				position = new Vec2(positionFloats[i * 2], positionFloats[i * 2 + 1]);
-				cameraPosition = camera.pointToScreenPosition(position);
-
+				cameraPosition = camera.pointToScreenPosition(frame);
 				renderer.ctx.lineTo(cameraPosition.x, cameraPosition.y);
 
 				if (SolarSystemSimulation.settings.singleOrbits && i !== 0) {
 					//Check if the planet has completed one orbit to stop drawing it
 					if (elapsed >= 80 * 86400000 && i <= 4 || elapsed >= 4000 * 86400000) {
-						let vectorOrbit = position.subtract(this.bodies[0].r);
+						let vectorOrbit = frame.subtract(this.bodies[0].r);
 						let vectorReal = this.bodies[i].r.subtract(this.bodies[0].r);
 
 						//Angle from dot product between the vectors going from the Sun to the
@@ -152,8 +182,8 @@ class SolarSystemBodyManager {
 					}
 				}
 
-				frameNumber++;
-				frame = this.parallelWorker.getFrame(frameNumber); //TODO - can be optimized
+				currentFrameNumber++;
+				frame = updateFrame();
 				elapsed += SolarSystemSimulation.settings.simulationQuality;
 			}
 
