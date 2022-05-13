@@ -12,8 +12,8 @@ class SolarSystemPlanetCharacteristics {
 //higher error margin.
 const SINGLE_ORBIT_ANGLE = {
 	"VeryLow": Math.PI * 0.20,
-	"Low": Math.PI * 0.1,
-	"Medium": Math.PI * 0.05,
+	"Low": Math.PI * 0.08,
+	"Medium": Math.PI * 0.03,
 	"High": Math.PI * 0.01,
 	"VeryHigh": Math.PI * 0.01
 };
@@ -113,8 +113,12 @@ class SolarSystemBodyManager {
 		renderer.ctx.strokeStyle = "#fff";
 		renderer.ctx.lineWidth = 1;
 
+		let limitAngleCosine: number = Math.cos(SINGLE_ORBIT_ANGLE[SolarSystemSimulationQuality[
+			SolarSystemSimulation.settings.simulationQuality]]);	
+
 		//Draw orbits
 		for (let i = 0; i < this.bodies.length; ++i) {
+			let vectorReal = this.bodies[i].r.subtract(this.bodies[0].r);
 
 			//Code to get the next frame with better performance than WorkerWrapper.getFrame().
 			let currentBuffer: NumberedBuffer;
@@ -145,7 +149,7 @@ class SolarSystemBodyManager {
 			currentFrameNumber = frameNumber - currentBufferNumber * this.parallelWorker.bufferSize;
 			currentBuffer = this.parallelWorker.getBuffer(currentBufferNumber);
 			if (currentBuffer === null) {
-				break;
+				return;
 			} else {
 				bufferArrayView = new Float64Array(currentBuffer.buffer);
 			}
@@ -158,26 +162,27 @@ class SolarSystemBodyManager {
 			let cameraPosition = camera.pointToScreenPosition(frame);
 			renderer.ctx.moveTo(cameraPosition.x, cameraPosition.y);
 
-			let limitAngle: number = SINGLE_ORBIT_ANGLE[SolarSystemSimulationQuality[
-					SolarSystemSimulation.settings.simulationQuality]];	
-
 			while (frame !== null) {
 				cameraPosition = camera.pointToScreenPosition(frame);
 				renderer.ctx.lineTo(cameraPosition.x, cameraPosition.y);
 
-				if (SolarSystemSimulation.settings.singleOrbits && i !== 0) {
+				if (SolarSystemSimulation.settings.singleOrbits) {
 					//Check if the planet has completed one orbit to stop drawing it
-					if (elapsed >= 80 * 86400000 && i <= 4 || elapsed >= 4000 * 86400000) {
+					if (i !== 0 &&
+						(elapsed >= 80 * 86400000 && i <= 4 || elapsed >= 4000 * 86400000 && i <= 7
+						|| elapsed >= 60000 * 86400000)) {
+
 						let vectorOrbit = frame.subtract(this.bodies[0].r);
-						let vectorReal = this.bodies[i].r.subtract(this.bodies[0].r);
 
 						//Angle from dot product between the vectors going from the Sun to the
-						//current planet position and to the orbit point being drawn.
-						let angle = Math.acos(vectorOrbit.dotProduct(vectorReal) /
-							(vectorOrbit.norm() * vectorReal.norm()));
+						//current planet position and to the orbit point being drawn. Cosines are
+						//compared instead of angles (higher cosine, smaller angle) for better
+						//performance. Vector norm: only one square root for performance.
+						let angle = vectorOrbit.dotProduct(vectorReal) /
+							(Math.sqrt(vectorOrbit.squareNorm() * vectorReal.squareNorm()));
 
 						//A small angle means close enough to the planet to stop drawing the orbit.
-						if (angle < limitAngle)
+						if (angle > limitAngleCosine)
 							break;
 					}
 				}
