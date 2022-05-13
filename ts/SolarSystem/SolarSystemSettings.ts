@@ -51,12 +51,23 @@ class SolarSystemSettings {
 		return settings;
 	}
 
+	//Updates the simulation and the page to match the settings (enables / disables some settings
+	//checkboxes).
+	updatePage(): void {
+		if (this.seeOrbits) {
+			(document.getElementById("single-orbit") as HTMLInputElement).disabled = false;
+		} else {
+			(document.getElementById("single-orbit") as HTMLInputElement).disabled = true;
+		}
+	}
+
 	//Adds events to the UI elements in the page. So, when something is inputted, the page and the
 	//settings are updated. 
 	static addEvents(): void {
 		document.getElementById("quality-confirm-button").addEventListener("click", () => {
 			//Set the correct settings when the simulation starts.
 			SolarSystemSimulation.settings = SolarSystemSimulation.settings.getFromPage();
+			SolarSystemSimulation.settings.updatePage();
 
 			SolarSystemSimulation.startSimulation();
 		});
@@ -68,6 +79,7 @@ class SolarSystemSettings {
 		for (let i: number = 0; i < elements.length; ++i) {
 			elements[i].addEventListener("input", () => {
 				SolarSystemSimulation.settings = SolarSystemSimulation.settings.getFromPage();
+				SolarSystemSimulation.settings.updatePage();
 			});
 		}
 	}
