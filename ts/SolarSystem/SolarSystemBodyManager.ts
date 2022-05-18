@@ -62,7 +62,7 @@ class SolarSystemBodyManager {
 	//Sets the positions of the bodies to the ones of a certain instant processed by the worker.
 	//instant must be in milliseconds.
 	updatePositions(instant: number, simulationQuality: number) {
-		let buffers = this.parallelWorker.getBoundaryBuffers(instant, true);
+		let buffers = this.parallelWorker.getBoundaryBuffers(instant, true, true);
 
 		if (buffers.length === 0) {
 			//No data yet

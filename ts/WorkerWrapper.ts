@@ -118,8 +118,12 @@ class WorkerWrapper {
 	//before the timestamp and the other the first after the timestamp. With these frames, you can
 	//implement linear interpolation to know any needed physics parameters. time should be provided
 	//in milliseconds and if there are no frames available, an empty array will be returned.
-	//autoClear deletes old buffers automatically
-	getBoundaryBuffers(time: number, autoClear: boolean = false): ArrayBuffer[] {
+	//autoClear deletes old buffers automatically and sleepProtection allows perpetually running
+	//simulations to recover in case the computer enters sleep mode (the user thread gets ahead of
+	//all stored buffers).
+	getBoundaryBuffers(time: number, autoClear: boolean = false, sleepProtection = false):
+		ArrayBuffer[] {
+
 		//Find the frames and the buffers where the data for the time is.
 		let frameNumber0: number = Math.floor(time / this._simulationQuality);
 		let frameNumber1: number = Math.ceil(time / this._simulationQuality);
@@ -130,6 +134,7 @@ class WorkerWrapper {
 		//Find the buffers in the stored array
 		let buffer0: NumberedBuffer = null;
 		let buffer1: NumberedBuffer = null;
+		let maxBufferNumber: number = -1; //Keep track of the last buffer generated.
 		for (let i: number = 0; i < this.buffers.length; ++i) {
 			if (this.buffers[i] && this.buffers[i].index === bufferNumber0) {
 				buffer0 = this.buffers[i];
@@ -137,9 +142,24 @@ class WorkerWrapper {
 			if (this.buffers[i] && this.buffers[i].index === bufferNumber1) {
 				buffer1 = this.buffers[i];
 			}
+			if (this.buffers[i] && this.buffers[i].index > maxBufferNumber) {
+				maxBufferNumber = this.buffers[i].index;
+			}
 		}
+
 		//If one of the buffers wasn't found, return []
 		if (buffer0 === null || buffer1 === null) {
+			if (sleepProtection && bufferNumber0 >= maxBufferNumber) {
+				//The user thread got ahead of the physics thread. Delete unused older buffers.
+				let bufferCount = 0;
+				for (let i: number = 0; i < this.buffers.length; ++i) {
+					if (this.buffers[i] && this.buffers[i].index < bufferNumber0) {
+						this.buffers[i] = null;
+						bufferCount++;
+					}
+				}
+				this.worker.postMessage({ allowedBuffers: bufferCount });
+			}
 			return [];
 		}
 
