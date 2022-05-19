@@ -1,0 +1,6 @@
+#graph {
+	position: fixed;
+	top: 1rem; left: 1rem;
+	width: calc(100vw - 2rem);
+	height: calc(100vh - 2rem);
+}
