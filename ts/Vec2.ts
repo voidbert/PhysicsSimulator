@@ -11,6 +11,11 @@ class Vec2 {
 		return Math.sqrt(this.x * this.x + this.y * this.y);
 	}
 
+	//Best suited for intensity comparisons (where the expensive square root isn't needed)
+	squareNorm(): number {
+		return this.x * this.x + this.y * this.y;
+	}
+
 	//Typescript doesn't have operator overloading (-_-)
 
 	add(vec: Vec2): Vec2 {

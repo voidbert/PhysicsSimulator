@@ -55,3 +55,11 @@ function smoothScroll(x: number, y: number, callback: () => any = () => {},
 		}, timeout);
 	}
 }
+
+var mouseScreenPosition: Vec2 = new Vec2();
+
+if (window) {
+	window.addEventListener("mousemove", (e: MouseEvent) => {
+		mouseScreenPosition = new Vec2(e.clientX, e.clientY).scale(window.devicePixelRatio);
+	});
+}

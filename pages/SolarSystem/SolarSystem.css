@@ -1,0 +1,158 @@
+:root {
+	/* Start simulation showing the option to choose a quality. Don't show the settings. */
+	--initial-ui-div-display: none; 
+	--ui-div-display: none;
+}
+
+body {
+	background-color: black;
+	padding: 0px;
+}
+
+#canvas {
+	position: fixed;
+	top: 0px; left: 0px;
+	width: 100vw; height: 100vh;
+}
+
+#choose-simulation-quality {
+	position: fixed;
+	top: 0px; left: 0px;
+	width: 100vw; height: 100vh;
+
+	background-color: white;
+	font-family: sans-serif;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
+
+#choose-simulation-quality * {
+	margin: 0.5rem;
+}
+
+#simulation-quality-title {
+	font-weight: bold;
+}
+
+#simulation-quality {
+	max-width: 20rem;
+	width: 100%;
+}
+
+@media (orientation: portrait) {
+	#ui-div {
+		/* In portrait mode, show the settings only if they're toggled. Always show them in
+		landscape mode. */
+		display: var(--ui-div-display) !important;
+
+		position: fixed;
+		top: 50vh; left: 1.5rem;
+		width: calc(100vw - 5rem);
+		transform: translateY(-50%);
+		
+		border-radius: 0.5rem;
+	}
+
+	:root {
+		--gear-icon-opacity: 1;
+	}
+}
+
+@media (orientation: landscape) {
+	#ui-div {
+		position: fixed;
+		bottom: 0px; right: 0px;
+
+		border-top-left-radius: 0.5rem;
+	}
+
+	:root {
+		--settings-icon-opacity: 0;
+	}
+
+	#settings-icon-container {
+		z-index: -100;
+	}
+}
+
+#ui-div {
+	display: var(--initial-ui-div-display);
+
+	padding: 1rem;
+
+	background-color: white;
+	font-family: sans-serif;
+}
+
+.simulation-interaction-section:not(:last-child) {
+	padding-bottom: 1rem;
+	margin-bottom: 1rem;
+	border-bottom: 1px solid black;
+}
+
+.simulation-interaction-section-title {
+	margin-bottom: 0.5rem;
+
+	font-weight: bold;
+}
+
+#body-radius-contaiener {
+	margin-top: 0.75rem;
+}
+
+#sim-speed, #body-radius {
+	width: 100%;
+}
+
+#settings-icon-container {
+	position: fixed;
+	bottom: 0.5rem; right: 0.5rem;
+	width: 32px; height: 32px;
+	
+	cursor: default;
+}
+
+#svg-path {
+	--svg-color: #fff;
+	fill: var(--svg-color);
+	transition: none;
+}
+
+#svg-path:hover {
+	--svg-color: #bbb;
+	transition: fill 0.3s;
+}
+
+button {
+	all: unset;
+
+	padding: 0.5rem;
+	margin: 0px 0.5rem;
+	border-radius: 0.25rem;
+
+	background-color: #d3d3d3;
+	color: black;
+	cursor: pointer;
+
+	user-select: none;
+}
+
+button:hover {
+	background-color: #bbbbbb;
+}
+
+button:disabled {
+	background-color: #eeeeee;
+	cursor: default;
+}
+
+.red {
+	color: red;
+}
+
+.bold {
+	font-weight: bold;
+}

@@ -11,12 +11,14 @@ As of now, the available simulations are:
 
  - Projectile launch simulation
  - Air resistance simulations
+  - Solar System simulation
+ - Coefficient of restitution simulation
 
 In the future, the following will be available:
 
- - Solar System simulation
- - Coefficient of restitution simulation
  - Elastic collisions that calculate π
+
+Improvements to the current simulations are also planned.
 
 ## Building
 
