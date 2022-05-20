@@ -47,7 +47,7 @@ class RestitutionSimulation {
 							downloadButton.disabled = false;
 							downloadButton.onclick = () => {
 								let csv = new CSVTable(this.parallelWorker,
-									this.settings.simulationQuality * RESTITUTION_SIMULATION_SKIPPED_FACTOR,
+									this.settings.simulationQuality * 0.001,
 									(buf: ArrayBuffer) => {
 										return new Float64Array(buf)[0];
 									}, restitutionGraphPropertyToString(this.settings.graphProperty));

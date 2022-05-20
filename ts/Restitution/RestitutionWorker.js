@@ -62,12 +62,9 @@ self.addEventListener("message", (e) => {
 				break;
 		}
 
-		//Only send one tenth of the points to the page (window context)
-		if (totalSimulationTicks % RESTITUTION_SIMULATION_SKIPPED_FACTOR === 0) {
-			//Add the current body property to the buffer
-			view[bufferUsedFloats] = point;
-			bufferUsedFloats++;
-		}
+		//Add the current body property to the buffer
+		view[bufferUsedFloats] = point;
+		bufferUsedFloats++;
 
 		if (bufferUsedFloats === bufferSize) {
 			//Buffer is full. Message it to the window and recreate it.

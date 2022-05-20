@@ -1,5 +1,3 @@
-const RESTITUTION_SIMULATION_SKIPPED_FACTOR = 1; //TODO - adjust
-
 class RestitutionGraph {
 	public renderer: Renderer;
 	public camera: Camera = new Camera(new Vec2(-2, -1), new Vec2(32, 32));
@@ -65,8 +63,7 @@ class RestitutionGraph {
 
 				//Draw all points until the current simulation time
 				let maxi = this.elapsedSimulationTime /
-					(RestitutionSimulation.settings.simulationQuality *
-					RESTITUTION_SIMULATION_SKIPPED_FACTOR);
+					RestitutionSimulation.settings.simulationQuality;
 				for (let i: number = 1; i < maxi; i++) {
 					frame = RestitutionSimulation.parallelWorker.getFrame(i);
 					if (frame === null) {
@@ -76,8 +73,7 @@ class RestitutionGraph {
 
 					let y = new Float64Array(frame)[0];
 					let point = this.camera.pointToScreenPosition(
-						new Vec2(i * RestitutionSimulation.settings.simulationQuality *
-						RESTITUTION_SIMULATION_SKIPPED_FACTOR * 0.001, y));
+						new Vec2(i * RestitutionSimulation.settings.simulationQuality * 0.001, y));
 
 					if (y > this.maxY) {
 						this.maxY = y;
