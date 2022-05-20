@@ -11,8 +11,8 @@ var HeightReference;
     HeightReference[HeightReference["BodyBase"] = 0] = "BodyBase";
     HeightReference[HeightReference["BodyCM"] = 1] = "BodyCM";
 })(HeightReference || (HeightReference = {}));
-var ProjectileThrowSettings = (function () {
-    function ProjectileThrowSettings() {
+class ProjectileThrowSettings {
+    constructor() {
         this._showAxes = true;
         this._showAxesLabels = true;
         this._showGrid = false;
@@ -29,69 +29,20 @@ var ProjectileThrowSettings = (function () {
         this._validVelocity = true;
         this._airResistance = false;
     }
-    Object.defineProperty(ProjectileThrowSettings.prototype, "showAxes", {
-        get: function () { return this._showAxes; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ProjectileThrowSettings.prototype, "showAxesLabels", {
-        get: function () { return this._showAxesLabels; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ProjectileThrowSettings.prototype, "showGrid", {
-        get: function () { return this._showGrid; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ProjectileThrowSettings.prototype, "showTrajectory", {
-        get: function () { return this._showTrajectory; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ProjectileThrowSettings.prototype, "showSimulationResults", {
-        get: function () { return this._showSimulationResults; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ProjectileThrowSettings.prototype, "simulationQuality", {
-        get: function () { return this._simulationQuality; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ProjectileThrowSettings.prototype, "heightReference", {
-        get: function () { return this._heightReference; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ProjectileThrowSettings.prototype, "mass", {
-        get: function () { return this._mass; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ProjectileThrowSettings.prototype, "radius", {
-        get: function () { return this._radius; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ProjectileThrowSettings.prototype, "height", {
-        get: function () { return this._height; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ProjectileThrowSettings.prototype, "launchVelocity", {
-        get: function () { return this._launchVelocity; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ProjectileThrowSettings.prototype, "airResistance", {
-        get: function () { return this._airResistance; },
-        enumerable: false,
-        configurable: true
-    });
-    ProjectileThrowSettings.prototype.getFromPage = function () {
-        var _this = this;
-        var settings = new ProjectileThrowSettings();
+    get showAxes() { return this._showAxes; }
+    get showAxesLabels() { return this._showAxesLabels; }
+    get showGrid() { return this._showGrid; }
+    get showTrajectory() { return this._showTrajectory; }
+    get showSimulationResults() { return this._showSimulationResults; }
+    get simulationQuality() { return this._simulationQuality; }
+    get heightReference() { return this._heightReference; }
+    get mass() { return this._mass; }
+    get radius() { return this._radius; }
+    get height() { return this._height; }
+    get launchVelocity() { return this._launchVelocity; }
+    get airResistance() { return this._airResistance; }
+    getFromPage() {
+        let settings = new ProjectileThrowSettings();
         settings._showAxes = document.getElementById("axes").checked;
         if (settings._showAxes) {
             settings._showAxesLabels =
@@ -116,13 +67,11 @@ var ProjectileThrowSettings = (function () {
         else {
             settings._heightReference = HeightReference.BodyCM;
         }
-        var parseWithSettingsUpdate = function (id, property, validProperty, min, max) {
-            if (min === void 0) { min = -Infinity; }
-            if (max === void 0) { max = Infinity; }
+        let parseWithSettingsUpdate = (id, property, validProperty, min = -Infinity, max = Infinity) => {
             settings[property] = parseInputNumber(id, min, max);
             if (isNaN(settings[property])) {
                 settings[validProperty] = false;
-                settings[property] = _this[property];
+                settings[property] = this[property];
             }
             else {
                 settings[validProperty] = true;
@@ -131,10 +80,10 @@ var ProjectileThrowSettings = (function () {
         parseWithSettingsUpdate("mass-input", "_mass", "_validMass", Number.MIN_VALUE);
         parseWithSettingsUpdate("radius-input", "_radius", "_validRadius", Number.MIN_VALUE);
         parseWithSettingsUpdate("height-input", "_height", "_validHeight", 0);
-        var stringVx = document.getElementById("vx-input").value;
-        var stringVy = document.getElementById("vy-input").value;
-        var numberVx = Number(stringVx);
-        var numberVy = Number(stringVy);
+        let stringVx = document.getElementById("vx-input").value;
+        let stringVy = document.getElementById("vy-input").value;
+        let numberVx = Number(stringVx);
+        let numberVy = Number(stringVy);
         if (isNaN(numberVx) || isNaN(numberVy)) {
             settings._launchVelocity = this._launchVelocity;
             settings._validVelocity = false;
@@ -147,8 +96,8 @@ var ProjectileThrowSettings = (function () {
         settings._showTrajectory = !settings._airResistance &&
             document.getElementById("trajectory").checked;
         return settings;
-    };
-    ProjectileThrowSettings.prototype.updatePage = function () {
+    }
+    updatePage() {
         ProjectileThrowSimulation.axes.showAxes = this._showAxes;
         ProjectileThrowSimulation.axes.showArrows = this._showAxes;
         ProjectileThrowSimulation.axes.showUnitLabelsX = this._showAxesLabels;
@@ -163,7 +112,7 @@ var ProjectileThrowSettings = (function () {
         }
         ProjectileThrowSimulation.axes.showHorizontalGrid = this._showGrid;
         ProjectileThrowSimulation.axes.showVerticalGrid = this._showGrid;
-        var showArrowsCheckbox = document.getElementById("axes-labels");
+        let showArrowsCheckbox = document.getElementById("axes-labels");
         if (this._showAxes) {
             showArrowsCheckbox.disabled = false;
         }
@@ -178,7 +127,7 @@ var ProjectileThrowSettings = (function () {
                 ProjectileThrowSimulation.projectile.r = new Vec2(0, this._height + this._radius);
         }
         function adjustColor(error, id, n) {
-            var element = document.getElementById(id);
+            let element = document.getElementById(id);
             for (; n > 0; n--) {
                 element = element.parentElement;
             }
@@ -193,7 +142,7 @@ var ProjectileThrowSettings = (function () {
         adjustColor(this._validRadius, "radius-input", 2);
         adjustColor(this._validHeight, "height-input", 2);
         adjustColor(this._validVelocity, "vx-input", 2);
-        var trajectoryCheckbox = document.getElementById("trajectory");
+        let trajectoryCheckbox = document.getElementById("trajectory");
         trajectoryCheckbox.disabled = this._airResistance;
         if (ProjectileThrowSimulation.state === ProjectileThrowState.projectileInLaunchPosition ||
             ProjectileThrowSimulation.state === ProjectileThrowState.projectileStopped) {
@@ -205,13 +154,13 @@ var ProjectileThrowSettings = (function () {
             ProjectileThrowSimulation.trajectory = ProjectileThrowTrajectory
                 .generateLimitedTrajectory(ProjectileThrowSimulation.projectile, this);
         }
-    };
-    ProjectileThrowSettings.updatePageVelocity = function (velocity) {
+    }
+    static updatePageVelocity(velocity) {
         document.getElementById("vx-input").value = velocity.x.toString();
         document.getElementById("vy-input").value = velocity.y.toString();
-    };
-    ProjectileThrowSettings.addEvents = function () {
-        var settingsElements = [
+    }
+    static addEvents() {
+        let settingsElements = [
             "axes", "axes-labels", "grid", "trajectory", "simulation-results-checkbox",
             "simulation-quality", "body-base", "body-cm", "air-res"
         ];
@@ -219,17 +168,17 @@ var ProjectileThrowSettings = (function () {
             ProjectileThrowSimulation.settings = ProjectileThrowSimulation.settings.getFromPage();
             ProjectileThrowSimulation.settings.updatePage();
         }
-        for (var i = 0; i < settingsElements.length; ++i) {
+        for (let i = 0; i < settingsElements.length; ++i) {
             document.getElementById(settingsElements[i]).addEventListener("change", onUpdate);
         }
         settingsElements = [
             "mass-input", "radius-input", "height-input", "vx-input", "vy-input"
         ];
-        for (var i = 0; i < settingsElements.length; ++i) {
+        for (let i = 0; i < settingsElements.length; ++i) {
             document.getElementById(settingsElements[i]).addEventListener("input", onUpdate);
         }
-    };
-    ProjectileThrowSettings.disableSettingsElements = function () {
+    }
+    static disableSettingsElements() {
         document.getElementById("simulation-quality").disabled = true;
         document.getElementById("body-base").disabled = true;
         document.getElementById("body-cm").disabled = true;
@@ -240,8 +189,8 @@ var ProjectileThrowSettings = (function () {
         document.getElementById("vy-input").disabled = true;
         document.getElementById("choose-screen-velocity").disabled = true;
         document.getElementById("air-res").disabled = true;
-    };
-    ProjectileThrowSettings.enableSettingsElements = function () {
+    }
+    static enableSettingsElements() {
         document.getElementById("simulation-quality").disabled = false;
         document.getElementById("body-base").disabled = false;
         document.getElementById("body-cm").disabled = false;
@@ -252,6 +201,5 @@ var ProjectileThrowSettings = (function () {
         document.getElementById("vy-input").disabled = false;
         document.getElementById("choose-screen-velocity").disabled = false;
         document.getElementById("air-res").disabled = false;
-    };
-    return ProjectileThrowSettings;
-}());
+    }
+}

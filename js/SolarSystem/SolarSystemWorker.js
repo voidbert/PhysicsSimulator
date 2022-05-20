@@ -46,10 +46,33 @@ self.addEventListener("message", (e) => {
 			//Buffer is full. Message it to the window and recreate it.
 			postMessage({ size: bufferUsedSnapshots * SNAPSHOT_SIZE, buf: buffer }, [buffer]);
 
-			buffer = new ArrayBuffer(bufferSize * 8);
+			buffer = new ArrayBuffer(bufferSize * SNAPSHOT_SIZE);
 			view = new Float64Array(buffer);
 			bufferUsedSnapshots = 0;
 			sessionUsedBuffers++;
+		}
+
+		//Reset the forces on the planets
+		for (let i = 0; i < bodies.length; ++i) {
+			bodies[i].forces = [];
+		}
+
+		//Apply gravitational forces on the planets
+		for (let i = 0; i < bodies.length; ++i) {
+			for (let j = i + 1; j < bodies.length; ++j) {
+
+				//Calculate the unit vector between the two planets
+				let vectorIJ = bodies[j].r.subtract(bodies[i].r);
+				let distance = vectorIJ.norm();
+				vectorIJ = vectorIJ.scale(1 / distance);
+
+				//Calculate the gravitational force
+				let force = (GRAVITATIONAL_CONSTANT * bodies[i].mass * bodies[j].mass) /
+					(distance * distance);
+				
+				bodies[i].forces.push(vectorIJ.scale(force));
+				bodies[j].forces.push(vectorIJ.scale(-force));
+			}
 		}
 
 		for (let i = 0; i < bodies.length; ++i) {

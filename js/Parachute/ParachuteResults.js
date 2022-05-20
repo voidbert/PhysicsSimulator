@@ -1,45 +1,45 @@
-var ParachuteResults = (function () {
-    function ParachuteResults() {
+class ParachuteResults {
+    constructor() {
     }
-    ParachuteResults.calculateTheoreticalResults = function (settings) {
-        var ret = new ParachuteResults();
+    static calculateTheoreticalResults(settings) {
+        let ret = new ParachuteResults();
         function rIntegral(t) {
             return ((2 * settings.mass) / (AIR_DENSITY * settings.A0 * settings.cd0)) *
                 Math.log(Math.abs(2 * Math.cosh(Math.sqrt(GRAVITY * AIR_DENSITY * settings.A0 * settings.cd0 /
                     (2 * settings.mass)) * t)));
         }
-        ret.r = function (t) {
+        ret.r = (t) => {
             return rIntegral(t) - rIntegral(0);
         };
-        ret.y = function (t) {
+        ret.y = (t) => {
             return settings.h0 - ret.r(t);
         };
-        ret.v = function (t) {
+        ret.v = (t) => {
             return Math.sqrt((2 * settings.mass * GRAVITY) /
                 (AIR_DENSITY * settings.A0 * settings.cd0)) * Math.tanh(Math.sqrt((GRAVITY * AIR_DENSITY * settings.A0 * settings.cd0) / (2 * settings.mass)) * t);
         };
-        ret.a = function (t) {
+        ret.a = (t) => {
             return GRAVITY / Math.pow(Math.cosh(Math.sqrt((GRAVITY * AIR_DENSITY * settings.A0 * settings.cd0) /
                 (2 * settings.mass)) * t), 2);
         };
-        ret.Fr = function (t) {
+        ret.Fr = (t) => {
             return ret.a(t) * settings.mass;
         };
-        ret.Rair = function (t) {
-            var v = ret.v(t);
+        ret.Rair = (t) => {
+            let v = ret.v(t);
             return 0.5 * settings.cd0 * AIR_DENSITY * settings.A0 * v * v;
         };
         ret.timeParachuteOpens = Math.acosh(0.5 * Math.exp(((settings.h0 - settings.hopening + rIntegral(0)) * AIR_DENSITY * settings.A0 *
             settings.cd0) / (2 * settings.mass))) / Math.sqrt((GRAVITY * AIR_DENSITY * settings.A0 *
             settings.cd0) / (2 * settings.mass));
         return ret;
-    };
-    ParachuteResults.applyToPage = function (theoreticalResults, errorAvg, openedInstant) {
+    }
+    static applyToPage(theoreticalResults, errorAvg, openedInstant) {
         function strigify(n) {
-            var parts = n.toExponential().split("e");
+            let parts = n.toExponential().split("e");
             parts[0] = Number(parts[0]).toFixed(2);
-            var superscript = "";
-            for (var i = 0; i < parts[1].length; ++i) {
+            let superscript = "";
+            for (let i = 0; i < parts[1].length; ++i) {
                 switch (parts[1][i]) {
                     case "-":
                         superscript += "⁻";
@@ -67,9 +67,8 @@ var ParachuteResults = (function () {
             document.getElementById("error-opened").textContent = "Divisão por 0";
         }
         else {
-            var error = ExtraMath.relativeError(openedInstant, theoreticalResults.timeParachuteOpens) * 100;
+            let error = ExtraMath.relativeError(openedInstant, theoreticalResults.timeParachuteOpens) * 100;
             document.getElementById("error-opened").textContent = strigify(error);
         }
-    };
-    return ParachuteResults;
-}());
+    }
+}

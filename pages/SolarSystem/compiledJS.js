@@ -725,536 +725,414 @@ if (window) {
         mouseScreenPosition = new Vec2(e.clientX, e.clientY).scale(window.devicePixelRatio);
     });
 }
-class CSVTable {
-    constructor(worker, horizontalStep, frameParserCallback, verticalAxisName, horizontalAxisName = "t (s)") {
-        this.text = horizontalAxisName + "," + verticalAxisName + "\n";
-        let index = 0;
-        while (true) {
-            let frame = worker.getFrame(index);
-            if (frame === null) {
-                return;
-            }
-            let number = frameParserCallback(frame);
-            this.text += (index * horizontalStep).toString() + "," + number.toString() + "\n";
-            index++;
-        }
+var SolarSystemState;
+(function (SolarSystemState) {
+    SolarSystemState[SolarSystemState["ChoosingSimulationQuality"] = 0] = "ChoosingSimulationQuality";
+    SolarSystemState[SolarSystemState["NormalSimulation"] = 1] = "NormalSimulation";
+    SolarSystemState[SolarSystemState["ShowingSettings"] = 2] = "ShowingSettings";
+})(SolarSystemState || (SolarSystemState = {}));
+class SolarSystemStateManager {
+    static leaveChoosingSimulationQualityMode() {
+        document.getElementById("choose-simulation-quality").style.display = "none";
+        document.documentElement.style.setProperty("--initial-ui-div-display", "block");
+        SolarSystemSimulation.state = SolarSystemState.NormalSimulation;
     }
-    toBlob() {
-        return new Blob([this.text], { type: "text/csv" });
+    static enterShowingSettingsMode() {
+        document.documentElement.style.setProperty("--ui-div-display", "block");
+        SolarSystemSimulation.state = SolarSystemState.ShowingSettings;
+    }
+    static leaveShowingSettingsMode() {
+        document.documentElement.style.setProperty("--ui-div-display", "none");
+        SolarSystemSimulation.state = SolarSystemState.NormalSimulation;
     }
 }
-class ParachuteResults {
-    constructor() {
+var SolarSystemPauseReason;
+(function (SolarSystemPauseReason) {
+    SolarSystemPauseReason[SolarSystemPauseReason["LackOfData"] = 0] = "LackOfData";
+    SolarSystemPauseReason[SolarSystemPauseReason["UserAction"] = 1] = "UserAction";
+})(SolarSystemPauseReason || (SolarSystemPauseReason = {}));
+const SIMULATION_SPEED_CORRESPONDENCE = [
+    86400,
+    172800,
+    432000,
+    864000,
+    1728000,
+    4320000,
+    8640000
+];
+class SolarSystemTimeManager {
+    constructor() { }
+    start() {
+        this.lastUpdate = Date.now();
+        this.lastUpdateCorrespondence = 0;
+        this.isPaused = false;
     }
-    static calculateTheoreticalResults(settings) {
-        let ret = new ParachuteResults();
-        function rIntegral(t) {
-            return ((2 * settings.mass) / (AIR_DENSITY * settings.A0 * settings.cd0)) *
-                Math.log(Math.abs(2 * Math.cosh(Math.sqrt(GRAVITY * AIR_DENSITY * settings.A0 * settings.cd0 /
-                    (2 * settings.mass)) * t)));
-        }
-        ret.r = (t) => {
-            return rIntegral(t) - rIntegral(0);
-        };
-        ret.y = (t) => {
-            return settings.h0 - ret.r(t);
-        };
-        ret.v = (t) => {
-            return Math.sqrt((2 * settings.mass * GRAVITY) /
-                (AIR_DENSITY * settings.A0 * settings.cd0)) * Math.tanh(Math.sqrt((GRAVITY * AIR_DENSITY * settings.A0 * settings.cd0) / (2 * settings.mass)) * t);
-        };
-        ret.a = (t) => {
-            return GRAVITY / Math.pow(Math.cosh(Math.sqrt((GRAVITY * AIR_DENSITY * settings.A0 * settings.cd0) /
-                (2 * settings.mass)) * t), 2);
-        };
-        ret.Fr = (t) => {
-            return ret.a(t) * settings.mass;
-        };
-        ret.Rair = (t) => {
-            let v = ret.v(t);
-            return 0.5 * settings.cd0 * AIR_DENSITY * settings.A0 * v * v;
-        };
-        ret.timeParachuteOpens = Math.acosh(0.5 * Math.exp(((settings.h0 - settings.hopening + rIntegral(0)) * AIR_DENSITY * settings.A0 *
-            settings.cd0) / (2 * settings.mass))) / Math.sqrt((GRAVITY * AIR_DENSITY * settings.A0 *
-            settings.cd0) / (2 * settings.mass));
-        return ret;
+    pause(reason) {
+        this.lastUpdateCorrespondence += Date.now() - this.lastUpdate;
+        this.lastUpdate = Date.now();
+        this.isPaused = true;
+        this.pauseReason = reason;
     }
-    static applyToPage(theoreticalResults, errorAvg, openedInstant) {
-        function strigify(n) {
-            let parts = n.toExponential().split("e");
-            parts[0] = Number(parts[0]).toFixed(2);
-            let superscript = "";
-            for (let i = 0; i < parts[1].length; ++i) {
-                switch (parts[1][i]) {
-                    case "-":
-                        superscript += "⁻";
-                        break;
-                    case "1":
-                        superscript += "¹";
-                    case "2":
-                        superscript += "²";
-                        break;
-                    case "3":
-                        superscript += "³";
-                        break;
-                    default:
-                        superscript += String.fromCodePoint(0x2074 + parts[1].codePointAt(i) - 52);
-                        break;
-                }
-            }
-            return parts[0] + " x 10" + superscript;
-        }
-        document.getElementById("error-graph").textContent = strigify(errorAvg);
-        document.getElementById("simulated-opened").textContent = openedInstant.toFixed(2);
-        document.getElementById("real-opened").textContent =
-            theoreticalResults.timeParachuteOpens.toFixed(2);
-        if (theoreticalResults.timeParachuteOpens === 0) {
-            document.getElementById("error-opened").textContent = "Divisão por 0";
+    resume() {
+        this.lastUpdate = Date.now();
+        this.isPaused = false;
+    }
+    getTime() {
+        if (this.isPaused) {
+            return this.lastUpdateCorrespondence;
         }
         else {
-            let error = ExtraMath.relativeError(openedInstant, theoreticalResults.timeParachuteOpens) * 100;
-            document.getElementById("error-opened").textContent = strigify(error);
+            this.lastUpdateCorrespondence += (Date.now() - this.lastUpdate) *
+                SIMULATION_SPEED_CORRESPONDENCE[SolarSystemSimulation.settings.simulationSpeed];
+            this.lastUpdate = Date.now();
+            return this.lastUpdateCorrespondence;
         }
     }
 }
-var ParachuteState;
-(function (ParachuteState) {
-    ParachuteState[ParachuteState["BeforeRelease"] = 0] = "BeforeRelease";
-    ParachuteState[ParachuteState["Released"] = 1] = "Released";
-    ParachuteState[ParachuteState["ReachedGround"] = 2] = "ReachedGround";
-    ParachuteState[ParachuteState["ShowingSimulationResults"] = 3] = "ShowingSimulationResults";
-})(ParachuteState || (ParachuteState = {}));
-class ParachuteStateManager {
-    static scaleSimulationResults() {
-        let style = window.getComputedStyle(document.getElementById("simulation-results"));
-        let elementWidth = (parseFloat(style.width) + 2 * parseFloat(style.paddingLeft))
-            * window.devicePixelRatio / this.simulationResultsScale;
-        let maxWidth = (window.innerWidth - 20) * window.devicePixelRatio;
-        let scale = maxWidth / (elementWidth * this.simulationResultsScale);
-        scale = Math.min(scale, 1);
-        document.documentElement.style.setProperty("--simulation-results-scale", scale.toString());
-        this.simulationResultsScale = scale;
-    }
-    static showSimulationResults() {
-        this.scaleSimulationResults();
-        document.getElementById("settings-grid").classList.add("blur");
-        document.getElementById("graph-container").classList.add("blur");
-        document.body.classList.add("no-interaction");
-        document.getElementById("simulation-results").classList.remove("hidden");
-        ParachuteSimulation.state = ParachuteState.ShowingSimulationResults;
-        smoothScroll(0, 0);
-    }
-    static hideSimulationResults() {
-        this.scaleSimulationResults();
-        document.getElementById("settings-grid").classList.remove("blur");
-        document.getElementById("graph-container").classList.remove("blur");
-        document.body.classList.remove("no-interaction");
-        document.getElementById("simulation-results").classList.add("hidden");
-        ParachuteSimulation.state = ParachuteState.BeforeRelease;
+class SolarSystemPlanetCharacteristics {
+    constructor(radius = 1, color = "#fff") {
+        this.radius = radius;
+        this.color = color;
     }
 }
-ParachuteStateManager.simulationResultsScale = 1;
-const PARACHUTE_SIMULATION_SKIPPED_FACTOR = 10;
-const FAST_FORWARD_FACTOR = 2;
-class ParachuteGraph {
-    constructor() {
-        this.camera = new Camera(new Vec2(-2, -1), new Vec2(32, 32));
-        this.axes = new AxisSystem(this.camera, true, true, true, true, true, true, true, false, false, false, true, true, 64, 64, new Vec2(), "t", "y (m)", "black", 2, "0.9rem sans-serif", "#555555", 1, "white");
-        let elapsedSimulationTime = 0;
-        let lastRendererTick = Date.now();
-        this.renderer = new Renderer(window, document.getElementById("graph"), () => {
-            function getTheoreticalPoint(time) {
-                switch (ParachuteSimulation.settings.graphProperty) {
-                    case ParachuteGraphProperty.Y:
-                        return ParachuteSimulation.theoreticalResults.y(time);
-                    case ParachuteGraphProperty.R:
-                        return ParachuteSimulation.theoreticalResults.r(time);
-                    case ParachuteGraphProperty.Velocity:
-                        return ParachuteSimulation.theoreticalResults.v(time);
-                    case ParachuteGraphProperty.AirResistance:
-                        return ParachuteSimulation.theoreticalResults.Rair(time);
-                    case ParachuteGraphProperty.ResultantForce:
-                        return ParachuteSimulation.theoreticalResults.Fr(time);
-                    case ParachuteGraphProperty.Acceleration:
-                        return ParachuteSimulation.theoreticalResults.a(time);
-                }
+const SINGLE_ORBIT_ANGLE = {
+    "VeryLow": Math.PI * 0.20,
+    "Low": Math.PI * 0.08,
+    "Medium": Math.PI * 0.03,
+    "High": Math.PI * 0.01,
+    "VeryHigh": Math.PI * 0.01
+};
+class SolarSystemBodyManager {
+    constructor(bodies, characteristics) {
+        var _a;
+        this.bufferCount = 0;
+        this.parallelWorker = new WorkerWrapper("../../js/SolarSystem/SolarSystemWorker.js", SolarSystemSimulation.settings.simulationQuality, (w, data) => {
+            this.parallelWorker.addBuffer(new NumberedBuffer(this.bufferCount, data.size, data.buf, bodies.length * 16));
+            this.bufferCount++;
+        }, 1024, 16);
+        this.bodies = bodies;
+        this.bodyCharacteristics = characteristics;
+        if (this.bodies.length > this.bodyCharacteristics.length) {
+            console.error("SolarSystemBodyManager: different number of planets and characteristics");
+            let newArray = new Array(this.bodies.length);
+            for (let i = 0; i < this.bodies.length; ++i) {
+                newArray[i] = (_a = characteristics[i]) !== null && _a !== void 0 ? _a : new SolarSystemPlanetCharacteristics();
             }
-            ParachuteSettings.adjustUI();
-            if (ParachuteSimulation.state === ParachuteState.BeforeRelease) {
-                elapsedSimulationTime = 0;
-                lastRendererTick = Date.now();
-                this.maxY = 0;
-                this.camera.scale = new Vec2(32, 32);
-                this.camera.forcePosition(new Vec2(0, 0), new Vec2(96, this.renderer.canvas.height - 32));
-                this.axes.drawAxes(this.renderer);
-                return;
+            this.bodyCharacteristics = newArray;
+        }
+        this.parallelWorker.start({ bodies: this.bodies }, SolarSystemSimulation.settings.simulationQuality);
+    }
+    updatePositions(instant, simulationQuality) {
+        let buffers = this.parallelWorker.getBoundaryBuffers(instant, true, true);
+        if (buffers.length === 0) {
+            SolarSystemSimulation.timeManager.pause(SolarSystemPauseReason.LackOfData);
+        }
+        else {
+            if (SolarSystemSimulation.timeManager.pauseReason ===
+                SolarSystemPauseReason.LackOfData) {
+                SolarSystemSimulation.timeManager.resume();
             }
-            this.scaleCamera(elapsedSimulationTime * 0.001, this.maxY + 1);
-            this.axes.drawAxes(this.renderer);
-            let lackOfData = false;
-            let frame = ParachuteSimulation.parallelWorker.getFrame(0);
-            if (frame === null) {
-                lackOfData = true;
+            let buf1 = new Float64Array(buffers[0]);
+            let buf2 = new Float64Array(buffers[1]);
+            let length = Math.max(buf1.length, buf2.length, this.bodies.length * 2) / 2;
+            for (let i = 0; i < length; ++i) {
+                this.bodies[i].r = ExtraMath.linearInterpolationVec2(new Vec2(buf1[i * 2], buf1[i * 2 + 1]), new Vec2(buf2[i * 2], buf2[i * 2 + 1]), simulationQuality, instant % simulationQuality);
             }
-            if (!lackOfData) {
-                let lastPoint = this.camera.pointToScreenPosition(new Vec2(0, new Float64Array(frame)[0]));
-                this.renderer.ctx.strokeStyle = "#00ff00";
-                this.renderer.ctx.lineWidth = 2;
-                this.renderer.ctx.beginPath();
-                this.renderer.ctx.moveTo(lastPoint.x, lastPoint.y);
-                let maxi = elapsedSimulationTime / (ParachuteSimulation.settings.simulationQuality *
-                    PARACHUTE_SIMULATION_SKIPPED_FACTOR);
-                let reachedi = -1;
-                for (let i = 1; i < maxi; i++) {
-                    frame = ParachuteSimulation.parallelWorker.getFrame(i);
-                    if (frame === null) {
-                        lackOfData = true;
-                        reachedi = i;
-                        break;
-                    }
-                    let y = new Float64Array(frame)[0];
-                    let point = this.camera.pointToScreenPosition(new Vec2(i * ParachuteSimulation.settings.simulationQuality *
-                        PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001, y));
-                    if (y > this.maxY) {
-                        this.maxY = y;
-                    }
-                    this.renderer.ctx.lineTo(point.x, point.y);
-                    lastPoint = point;
-                }
-                this.renderer.ctx.stroke();
-                if (reachedi === -1) {
-                    reachedi = maxi;
-                }
-                let lastTheoreticalPoint = this.camera.pointToScreenPosition(new Vec2(0, getTheoreticalPoint(0)));
-                if (ParachuteSimulation.settings.seeTheoretical) {
-                    this.renderer.ctx.beginPath();
-                    this.renderer.ctx.strokeStyle = "#ff0000aa";
-                    this.renderer.ctx.lineWidth = 2;
-                    this.renderer.ctx.moveTo(lastTheoreticalPoint.x, lastTheoreticalPoint.y);
-                    maxi = Math.min(reachedi, ParachuteSimulation.theoreticalResults.timeParachuteOpens /
-                        (ParachuteSimulation.settings.simulationQuality * PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001));
-                    for (let i = 1; i < maxi; i++) {
-                        let time = i * ParachuteSimulation.settings.simulationQuality *
-                            PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001;
-                        let theoreticalPoint = this.camera.pointToScreenPosition(new Vec2(time, getTheoreticalPoint(time)));
-                        this.renderer.ctx.lineTo(theoreticalPoint.x, theoreticalPoint.y);
-                        lastTheoreticalPoint = theoreticalPoint;
-                    }
-                }
-                this.renderer.ctx.stroke();
+        }
+    }
+    renderBodies(renderer, camera, time) {
+        for (let i = 0; i < this.bodies.length; ++i) {
+            let scale = 0;
+            if (i === 0) {
+                scale = 1 + 5 * SolarSystemSimulation.settings.bodyRadius;
             }
-            if (lackOfData) {
-                if (ParachuteSimulation.workerStopped &&
-                    ParachuteSimulation.state === ParachuteState.Released) {
-                    if (ParachuteSimulation.settings.simulationResults) {
-                        ParachuteStateManager.showSimulationResults();
-                    }
-                    else {
-                        ParachuteSimulation.state = ParachuteState.ReachedGround;
-                    }
-                    ParachuteSettings.enableSettingsElements();
-                }
-                lastRendererTick = Date.now();
+            else if (i <= 4) {
+                scale = 1 + 200 * SolarSystemSimulation.settings.bodyRadius;
             }
             else {
-                if (ParachuteSimulation.settings.fastForward) {
-                    elapsedSimulationTime += (Date.now() - lastRendererTick) * FAST_FORWARD_FACTOR;
+                scale = 1 + 50 * SolarSystemSimulation.settings.bodyRadius;
+            }
+            let geometry = this.bodies[i].geometry.map((point) => {
+                return camera.pointToScreenPosition(this.bodies[i].transformVertex(point.scale(this.bodyCharacteristics[i].radius * scale)));
+            });
+            renderer.renderPolygon(geometry, this.bodyCharacteristics[i].color);
+        }
+        if (!SolarSystemSimulation.settings.seeOrbits)
+            return;
+        renderer.ctx.strokeStyle = "#fff";
+        renderer.ctx.lineWidth = 1;
+        let limitAngleCosine = Math.cos(SINGLE_ORBIT_ANGLE[SolarSystemSimulationQuality[SolarSystemSimulation.settings.simulationQuality]]);
+        for (let i = 0; i < this.bodies.length; ++i) {
+            let vectorReal = this.bodies[i].r.subtract(this.bodies[0].r);
+            let currentBuffer;
+            let bufferArrayView;
+            let currentBufferNumber;
+            let currentFrameNumber;
+            let updateFrame = () => {
+                if (currentFrameNumber >= this.parallelWorker.bufferSize) {
+                    currentFrameNumber -= this.parallelWorker.bufferSize;
+                    currentBufferNumber++;
+                    currentBuffer = this.parallelWorker.getBuffer(currentBufferNumber);
+                }
+                if (currentBuffer === null) {
+                    return null;
                 }
                 else {
-                    elapsedSimulationTime += Date.now() - lastRendererTick;
+                    bufferArrayView = new Float64Array(currentBuffer.buffer);
                 }
-                lastRendererTick = Date.now();
-            }
-        }, () => {
-            let rect = this.renderer.canvas.getBoundingClientRect();
-            this.renderer.canvas.width = rect.width * window.devicePixelRatio;
-            this.renderer.canvas.height = rect.height * window.devicePixelRatio;
-            this.camera.canvasSize = new Vec2(this.renderer.canvas.width, this.renderer.canvas.height);
-            if (ParachuteSimulation.state === ParachuteState.BeforeRelease) {
-                this.maxY = this.camera.pointToWorldPosition(new Vec2(0, 0)).y;
-            }
-            ParachuteStateManager.scaleSimulationResults();
-        });
-        this.renderer.renderLoop();
-    }
-    scaleCamera(maxX, maxY) {
-        this.camera.fitMaxX(maxX);
-        this.camera.scale.x = Math.min(this.camera.scale.x, 32);
-        this.camera.fitMaxY(maxY);
-        this.camera.scale.y = Math.min(this.camera.scale.y, 32);
-        this.camera.forcePosition(new Vec2(0, 0), new Vec2(96, this.renderer.canvas.height - 32));
-    }
-}
-var ParachuteSimulationQuality;
-(function (ParachuteSimulationQuality) {
-    ParachuteSimulationQuality[ParachuteSimulationQuality["VeryLow"] = 10] = "VeryLow";
-    ParachuteSimulationQuality[ParachuteSimulationQuality["Low"] = 5] = "Low";
-    ParachuteSimulationQuality[ParachuteSimulationQuality["Medium"] = 2] = "Medium";
-    ParachuteSimulationQuality[ParachuteSimulationQuality["High"] = 1] = "High";
-    ParachuteSimulationQuality[ParachuteSimulationQuality["VeryHigh"] = 0.5] = "VeryHigh";
-})(ParachuteSimulationQuality || (ParachuteSimulationQuality = {}));
-var ParachuteGraphProperty;
-(function (ParachuteGraphProperty) {
-    ParachuteGraphProperty[ParachuteGraphProperty["Y"] = 0] = "Y";
-    ParachuteGraphProperty[ParachuteGraphProperty["R"] = 1] = "R";
-    ParachuteGraphProperty[ParachuteGraphProperty["Velocity"] = 2] = "Velocity";
-    ParachuteGraphProperty[ParachuteGraphProperty["AirResistance"] = 3] = "AirResistance";
-    ParachuteGraphProperty[ParachuteGraphProperty["ResultantForce"] = 4] = "ResultantForce";
-    ParachuteGraphProperty[ParachuteGraphProperty["Acceleration"] = 5] = "Acceleration";
-})(ParachuteGraphProperty || (ParachuteGraphProperty = {}));
-function parachuteGraphPropertyToString(property) {
-    switch (property) {
-        case ParachuteGraphProperty.Y:
-            return "y (m)";
-        case ParachuteGraphProperty.R:
-            return "r (m)";
-        case ParachuteGraphProperty.Velocity:
-            return "v (m s⁻¹)";
-        case ParachuteGraphProperty.AirResistance:
-            return "Rar (N)";
-        case ParachuteGraphProperty.ResultantForce:
-            return "Fr (N)";
-        case ParachuteGraphProperty.Acceleration:
-            return "a (m s⁻²)";
-    }
-}
-class ParachuteSettings {
-    constructor() {
-        this._mass = 80;
-        this._h0 = 2000;
-        this._hopening = 500;
-        this._openingTime = 5.0;
-        this._cd0 = 0.4;
-        this._A0 = 0.5;
-        this._cd1 = 1.6;
-        this._A1 = 5;
-        this._simulationQuality = ParachuteSimulationQuality.VeryHigh;
-        this._graphProperty = ParachuteGraphProperty.Velocity;
-        this._seeTheoretical = true;
-        this._simulationResults = true;
-        this._fastForward = false;
-    }
-    get mass() { return this._mass; }
-    get h0() { return this._h0; }
-    get hopening() { return this._hopening; }
-    get openingTime() { return this._openingTime; }
-    get cd0() { return this._cd0; }
-    get A0() { return this._A0; }
-    get cd1() { return this._cd1; }
-    get A1() { return this._A1; }
-    get simulationQuality() { return this._simulationQuality; }
-    get graphProperty() { return this._graphProperty; }
-    get seeTheoretical() { return this._seeTheoretical; }
-    get simulationResults() { return this._simulationResults; }
-    get fastForward() { return this._fastForward; }
-    getFromPage() {
-        let settings = new ParachuteSettings();
-        settings._simulationQuality = {
-            "vl": ParachuteSimulationQuality.VeryLow,
-            "l": ParachuteSimulationQuality.Low,
-            "m": ParachuteSimulationQuality.Medium,
-            "h": ParachuteSimulationQuality.High,
-            "vh": ParachuteSimulationQuality.VeryHigh
-        }[document.getElementById("simulation-quality").value];
-        settings._graphProperty = {
-            "y": ParachuteGraphProperty.Y,
-            "r": ParachuteGraphProperty.R,
-            "v": ParachuteGraphProperty.Velocity,
-            "Rar": ParachuteGraphProperty.AirResistance,
-            "Fr": ParachuteGraphProperty.ResultantForce,
-            "a": ParachuteGraphProperty.Acceleration
-        }[document.getElementById("graph-property").value];
-        settings._seeTheoretical =
-            document.getElementById("see-theoretical").checked;
-        settings._simulationResults =
-            document.getElementById("simulation-results-check").checked;
-        settings._fastForward =
-            document.getElementById("fast-checkbox").checked;
-        let parseWithSettingsUpdate = (id, property, validProperty, min, max = Infinity) => {
-            settings[property] = parseInputNumber(id, min, max);
-            if (isNaN(settings[property])) {
-                settings[validProperty] = false;
-                settings[property] = this[property];
+                return new Vec2(bufferArrayView[this.bodies.length * 2 * currentFrameNumber + i * 2], bufferArrayView[this.bodies.length * 2 * currentFrameNumber + i * 2 + 1]);
+            };
+            let frameNumber = Math.floor(time /
+                SolarSystemSimulation.settings.simulationQuality) + 1;
+            currentBufferNumber = Math.floor(frameNumber / this.parallelWorker.bufferSize);
+            currentFrameNumber = frameNumber - currentBufferNumber * this.parallelWorker.bufferSize;
+            currentBuffer = this.parallelWorker.getBuffer(currentBufferNumber);
+            if (currentBuffer === null) {
+                return;
             }
             else {
-                settings[validProperty] = true;
+                bufferArrayView = new Float64Array(currentBuffer.buffer);
             }
-        };
-        parseWithSettingsUpdate("mass", "_mass", "_validMass", Number.MIN_VALUE);
-        parseWithSettingsUpdate("h0", "_h0", "_validH0", Number.MIN_VALUE);
-        parseWithSettingsUpdate("hopening", "_hopening", "_validHopening", Number.MIN_VALUE, settings._h0);
-        parseWithSettingsUpdate("opening-time", "_openingTime", "_validOpeningTime", 0);
-        parseWithSettingsUpdate("cd0", "_cd0", "_validCd0", Number.MIN_VALUE);
-        parseWithSettingsUpdate("A0", "_A0", "_validA0", Number.MIN_VALUE);
-        parseWithSettingsUpdate("cd1", "_cd1", "_validCd1", Number.MIN_VALUE);
-        parseWithSettingsUpdate("A1", "_A1", "_validA1", Number.MIN_VALUE);
+            let frame = updateFrame();
+            let elapsed = 0;
+            renderer.ctx.beginPath();
+            let cameraPosition = camera.pointToScreenPosition(frame);
+            renderer.ctx.moveTo(cameraPosition.x, cameraPosition.y);
+            while (frame !== null) {
+                cameraPosition = camera.pointToScreenPosition(frame);
+                renderer.ctx.lineTo(cameraPosition.x, cameraPosition.y);
+                if (SolarSystemSimulation.settings.singleOrbits) {
+                    if (i !== 0 &&
+                        (elapsed >= 80 * 86400000 && i <= 4 || elapsed >= 4000 * 86400000 && i <= 7
+                            || elapsed >= 60000 * 86400000)) {
+                        let vectorOrbit = frame.subtract(this.bodies[0].r);
+                        let angle = vectorOrbit.dotProduct(vectorReal) /
+                            (Math.sqrt(vectorOrbit.squareNorm() * vectorReal.squareNorm()));
+                        if (angle > limitAngleCosine)
+                            break;
+                    }
+                }
+                currentFrameNumber++;
+                frame = updateFrame();
+                elapsed += SolarSystemSimulation.settings.simulationQuality;
+            }
+            renderer.ctx.stroke();
+        }
+    }
+}
+var SolarSystemSimulationQuality;
+(function (SolarSystemSimulationQuality) {
+    SolarSystemSimulationQuality[SolarSystemSimulationQuality["VeryLow"] = 864000000] = "VeryLow";
+    SolarSystemSimulationQuality[SolarSystemSimulationQuality["Low"] = 432000000] = "Low";
+    SolarSystemSimulationQuality[SolarSystemSimulationQuality["Medium"] = 86400000] = "Medium";
+    SolarSystemSimulationQuality[SolarSystemSimulationQuality["High"] = 43200000] = "High";
+    SolarSystemSimulationQuality[SolarSystemSimulationQuality["VeryHigh"] = 8640000] = "VeryHigh";
+})(SolarSystemSimulationQuality || (SolarSystemSimulationQuality = {}));
+class SolarSystemSettings {
+    constructor() {
+        this._simulationQuality = SolarSystemSimulationQuality.High;
+    }
+    get simulationQuality() { return this._simulationQuality; }
+    get simulationSpeed() { return this._simulationSpeed; }
+    get seeOrbits() { return this._seeOrbits; }
+    get singleOrbits() { return this._singleOrbits; }
+    get bodyRadius() { return this._bodyRadius; }
+    getFromPage() {
+        let settings = new SolarSystemSettings();
+        settings._simulationQuality = {
+            "vl": SolarSystemSimulationQuality.VeryLow,
+            "l": SolarSystemSimulationQuality.Low,
+            "m": SolarSystemSimulationQuality.Medium,
+            "h": SolarSystemSimulationQuality.High,
+            "vh": SolarSystemSimulationQuality.VeryHigh
+        }[document.getElementById("simulation-quality").value];
+        settings._simulationSpeed =
+            parseInt(document.getElementById("sim-speed").value);
+        settings._seeOrbits = document.getElementById("orbits").checked;
+        settings._singleOrbits =
+            document.getElementById("single-orbit").checked;
+        settings._bodyRadius =
+            parseInt(document.getElementById("body-radius").value);
         return settings;
     }
     updatePage() {
-        ParachuteSimulation.state = ParachuteState.BeforeRelease;
-        ParachuteSimulation.graph.axes.verticalAxisName =
-            parachuteGraphPropertyToString(this._graphProperty);
-        function adjustColor(error, id, n) {
-            let element = document.getElementById(id);
-            for (; n > 0; n--) {
-                element = element.parentElement;
-            }
-            if (error) {
-                element.classList.remove("red");
-            }
-            else {
-                element.classList.add("red");
-            }
-        }
-        adjustColor(this._validMass, "mass", 2);
-        adjustColor(this._validH0, "h0", 2);
-        adjustColor(this._validHopening, "hopening", 2);
-        adjustColor(this._validOpeningTime, "opening-time", 2);
-        adjustColor(this._validCd0, "cd0", 1);
-        adjustColor(this._validA0, "A0", 1);
-        adjustColor(this._validCd1, "cd1", 1);
-        adjustColor(this._validA1, "A1", 1);
-        ParachuteSimulation.body.mass = this._mass;
-        ParachuteSimulation.body.r = new Vec2(0, this._h0);
-        document.getElementById("download-button").disabled = true;
-    }
-    static addEvents() {
-        function onUpdate() {
-            ParachuteSimulation.settings = ParachuteSimulation.settings.getFromPage();
-            ParachuteSimulation.settings.updatePage();
-        }
-        let settingsElements = [
-            "simulation-quality", "graph-property", "fast-checkbox"
-        ];
-        for (let i = 0; i < settingsElements.length; ++i) {
-            document.getElementById(settingsElements[i]).addEventListener("change", onUpdate);
-        }
-        settingsElements = [
-            "mass", "h0", "hopening", "opening-time", "cd0", "A0", "cd1", "A1"
-        ];
-        for (let i = 0; i < settingsElements.length; ++i) {
-            document.getElementById(settingsElements[i]).addEventListener("input", onUpdate);
-        }
-        let seeTheoreticalCheckbox = document.getElementById("see-theoretical");
-        seeTheoreticalCheckbox.addEventListener("change", () => {
-            ParachuteSimulation.settings._seeTheoretical = seeTheoreticalCheckbox.checked;
-        });
-        let simulationResults = document.getElementById("simulation-results-check");
-        simulationResults.addEventListener("change", () => {
-            ParachuteSimulation.settings._simulationResults = simulationResults.checked;
-        });
-    }
-    static adjustUI() {
-        let gridElements = document.getElementsByClassName("settings-grid-item");
-        let gridElementsY = [];
-        let hiddenElementY = document.getElementById("buttons-centerer").getBoundingClientRect().y;
-        for (let i = 0; i < gridElements.length; ++i) {
-            gridElementsY.push(gridElements[i].getBoundingClientRect().y);
-        }
-        if (gridElementsY[0] === gridElementsY[1] && gridElementsY[0] === gridElementsY[2] &&
-            gridElementsY[0] !== gridElementsY[3] && gridElementsY[0] !== hiddenElementY) {
-            document.getElementById("buttons-centerer").style.display = "initial";
+        if (this.seeOrbits) {
+            document.getElementById("single-orbit").disabled = false;
         }
         else {
-            document.getElementById("buttons-centerer").style.display = "none";
+            document.getElementById("single-orbit").disabled = true;
         }
     }
-    static disableSettingsElements() {
-        document.getElementById("mass").disabled = true;
-        document.getElementById("h0").disabled = true;
-        document.getElementById("hopening").disabled = true;
-        document.getElementById("opening-time").disabled = true;
-        document.getElementById("cd0").disabled = true;
-        document.getElementById("A0").disabled = true;
-        document.getElementById("cd1").disabled = true;
-        document.getElementById("A1").disabled = true;
-        document.getElementById("fast-checkbox").disabled = true;
-        document.getElementById("simulation-quality").disabled = true;
-        document.getElementById("graph-property").disabled = true;
-        document.getElementById("download-button").disabled = true;
-    }
-    static enableSettingsElements() {
-        document.getElementById("mass").disabled = false;
-        document.getElementById("h0").disabled = false;
-        document.getElementById("hopening").disabled = false;
-        document.getElementById("opening-time").disabled = false;
-        document.getElementById("cd0").disabled = false;
-        document.getElementById("A0").disabled = false;
-        document.getElementById("cd1").disabled = false;
-        document.getElementById("A1").disabled = false;
-        document.getElementById("fast-checkbox").disabled = false;
-        document.getElementById("simulation-quality").disabled = false;
-        document.getElementById("graph-property").disabled = false;
-    }
-}
-class ParachuteSimulation {
-    static startSimulation() {
-        this.graph = new ParachuteGraph();
-        ParachuteSettings.addEvents();
-        this.settings = this.settings.getFromPage();
-        this.settings.updatePage();
-        let newWorker = () => {
-            if (!this.workerStopped) {
-                if (this.parallelWorker) {
-                    this.parallelWorker.terminate();
-                }
-                this.parallelWorker = new WorkerWrapper("../../js/Parachute/ParachuteWorker.js", this.settings.simulationQuality, (w, data) => {
-                    if ("errorAvg" in data && "openedInstant" in data) {
-                        let downloadButton = document.getElementById("download-button");
-                        downloadButton.disabled = false;
-                        downloadButton.onclick = () => {
-                            let csv = new CSVTable(this.parallelWorker, this.settings.simulationQuality * PARACHUTE_SIMULATION_SKIPPED_FACTOR, (buf) => {
-                                return new Float64Array(buf)[0];
-                            }, parachuteGraphPropertyToString(this.settings.graphProperty));
-                            let a = document.createElement("a");
-                            a.href = window.URL.createObjectURL(csv.toBlob());
-                            a.download = "Gráfico.csv";
-                            a.click();
-                            setTimeout(() => {
-                                window.URL.revokeObjectURL(a.href);
-                            }, 10000);
-                        };
-                        ParachuteResults.applyToPage(this.theoreticalResults, data.errorAvg, data.openedInstant);
-                        this.workerStopped = true;
-                    }
-                    else {
-                        this.parallelWorker.addBuffer(new NumberedBuffer(this.bufferCount, data.size, data.buf, 8));
-                        this.bufferCount++;
-                    }
-                }, 1024, 100000);
-            }
-        };
-        newWorker();
-        document.getElementById("reset-button").addEventListener("click", () => {
-            if (this.state === ParachuteState.Released) {
-                newWorker();
-            }
-            this.state = ParachuteState.BeforeRelease;
-            ParachuteSettings.enableSettingsElements();
-            document.getElementById("download-button").disabled = true;
+    static addEvents() {
+        document.getElementById("quality-confirm-button").addEventListener("click", () => {
+            SolarSystemSimulation.settings = SolarSystemSimulation.settings.getFromPage();
+            SolarSystemSimulation.settings.updatePage();
+            SolarSystemSimulation.startSimulation();
         });
-        document.getElementById("start-button").addEventListener("click", () => {
-            this.settings.updatePage();
-            this.theoreticalResults = ParachuteResults.calculateTheoreticalResults(this.settings);
-            let y = this.graph.renderer.canvas.getBoundingClientRect().top + window.scrollY;
-            smoothScroll(0, y, () => {
-                this.workerStopped = false;
-                this.bufferCount = 0;
-                this.state = ParachuteState.Released;
-                this.parallelWorker.start({ body: this.body, settings: this.settings }, this.settings.simulationQuality);
+        let elements = [
+            document.getElementById("sim-speed"), document.getElementById("orbits"),
+            document.getElementById("single-orbit"), document.getElementById("body-radius")
+        ];
+        for (let i = 0; i < elements.length; ++i) {
+            elements[i].addEventListener("input", () => {
+                SolarSystemSimulation.settings = SolarSystemSimulation.settings.getFromPage();
+                SolarSystemSimulation.settings.updatePage();
             });
-            ParachuteSettings.disableSettingsElements();
+        }
+    }
+}
+const PLANET_GEOMETRY = ExtraMath.generatePolygon(50, 1);
+class SolarSystemSimulation {
+    static generateSolarSystem() {
+        let bodies = [
+            new Body(1.988e30, PLANET_GEOMETRY, new Vec2(0, 0)),
+            new Body(3.30e23, PLANET_GEOMETRY, new Vec2(0, 5.790e10)),
+            new Body(4.87e24, PLANET_GEOMETRY, new Vec2(0, 1.082e11)),
+            new Body(5.97e24, PLANET_GEOMETRY, new Vec2(0, 1.496e11)),
+            new Body(6.42e23, PLANET_GEOMETRY, new Vec2(0, 2.280e11)),
+            new Body(1.898e27, PLANET_GEOMETRY, new Vec2(0, 7.785e11)),
+            new Body(5.68e26, PLANET_GEOMETRY, new Vec2(0, 1.432e12)),
+            new Body(8.68e25, PLANET_GEOMETRY, new Vec2(0, 2.867e12)),
+            new Body(1.02e26, PLANET_GEOMETRY, new Vec2(0, 4.515e12))
+        ];
+        bodies[1].v = new Vec2(-47400, 0);
+        bodies[2].v = new Vec2(-35000, 0);
+        bodies[3].v = new Vec2(-29800, 0);
+        bodies[4].v = new Vec2(-24100, 0);
+        bodies[5].v = new Vec2(-13100, 0);
+        bodies[6].v = new Vec2(-9700, 0);
+        bodies[7].v = new Vec2(-6800, 0);
+        bodies[8].v = new Vec2(-5400, 0);
+        let characteristics = [
+            new SolarSystemPlanetCharacteristics(6.957e8, "#f59f00"),
+            new SolarSystemPlanetCharacteristics(2439500, "#adb5bd"),
+            new SolarSystemPlanetCharacteristics(6052000, "#ffc078"),
+            new SolarSystemPlanetCharacteristics(6378000, "#1864ab"),
+            new SolarSystemPlanetCharacteristics(3396000, "#d9480f"),
+            new SolarSystemPlanetCharacteristics(71492000, "#e67700"),
+            new SolarSystemPlanetCharacteristics(60268000, "#ffc078"),
+            new SolarSystemPlanetCharacteristics(25559000, "#74c0fc"),
+            new SolarSystemPlanetCharacteristics(24764000, "#1864ab"),
+        ];
+        this.bodyManager = new SolarSystemBodyManager(bodies, characteristics);
+    }
+    static startPage() {
+        SolarSystemSettings.addEvents();
+        SolarSystemEvents.addEvents();
+    }
+    static startSimulation() {
+        this.generateSolarSystem();
+        this.timeManager = new SolarSystemTimeManager();
+        this.timeManager.start();
+        this.renderer = new Renderer(window, document.getElementById("canvas"), () => {
+            this.bodyManager.updatePositions(this.timeManager.getTime(), this.settings.simulationQuality);
+            this.bodyManager.renderBodies(this.renderer, this.camera, this.timeManager.getTime());
+            if (this.timeManager.isPaused &&
+                this.timeManager.pauseReason == SolarSystemPauseReason.UserAction) {
+                this.renderer.ctx.strokeStyle = "#f00";
+                this.renderer.ctx.lineWidth = 5;
+                this.renderer.ctx.strokeRect(0, 0, this.renderer.canvas.width, this.renderer.canvas.height);
+            }
+        }, () => {
+            this.renderer.canvas.width = window.innerWidth * window.devicePixelRatio;
+            this.renderer.canvas.height = window.innerHeight * window.devicePixelRatio;
+            this.camera.canvasSize =
+                new Vec2(this.renderer.canvas.width, this.renderer.canvas.height);
+            if (!isPortrait() && this.state === SolarSystemState.ShowingSettings) {
+                SolarSystemStateManager.leaveShowingSettingsMode();
+            }
         });
-        document.getElementById("simulation-results-ok").addEventListener("click", () => {
-            ParachuteStateManager.hideSimulationResults();
+        this.renderer.renderLoop();
+        this.camera.forcePosition(new Vec2(0, 0), this.camera.canvasSize.scale(0.5));
+    }
+}
+SolarSystemSimulation.state = SolarSystemState.ChoosingSimulationQuality;
+SolarSystemSimulation.settings = new SolarSystemSettings();
+SolarSystemSimulation.camera = new Camera(new Vec2(), new Vec2(3e-9, 3e-9));
+window.addEventListener("load", () => {
+    document.getElementById("noscript-container").style.display = "none";
+    SolarSystemSimulation.startPage();
+});
+class SolarSystemEvents {
+    static isKeyDown(key) {
+        var _a;
+        return (_a = this.keysDown[key]) !== null && _a !== void 0 ? _a : false;
+    }
+    static getKeysDown() {
+        let ret = [];
+        let keys = Object.keys(this.keysDown);
+        for (let i = 0; i < keys.length; ++i) {
+            if (this.keysDown[keys[i]]) {
+                ret.push(keys[i]);
+            }
+        }
+        return ret;
+    }
+    static addEvents() {
+        window.addEventListener("keypress", (e) => {
+            if (e.key == " " && SolarSystemSimulation.timeManager) {
+                if (SolarSystemSimulation.timeManager.isPaused) {
+                    SolarSystemSimulation.timeManager.resume();
+                }
+                else {
+                    SolarSystemSimulation.timeManager.pause(SolarSystemPauseReason.UserAction);
+                }
+            }
+        });
+        window.addEventListener("wheel", (e) => {
+            let mouseWorldPosition = SolarSystemSimulation.camera.pointToWorldPosition(mouseScreenPosition);
+            SolarSystemSimulation.camera.scale =
+                SolarSystemSimulation.camera.scale.scale(e.deltaY > 0 ? 0.85 : 1.15);
+            SolarSystemSimulation.camera.forcePosition(mouseWorldPosition, mouseScreenPosition);
+        });
+        window.addEventListener("keydown", (e) => {
+            this.keysDown[e.key.toLocaleLowerCase()] = true;
+        });
+        window.addEventListener("keyup", (e) => {
+            this.keysDown[e.key.toLocaleLowerCase()] = false;
+        });
+        window.addEventListener("blur", () => {
+            this.keysDown = {};
+        });
+        window.setInterval(() => {
+            var _a;
+            const MOVEMENT_SPEED = 20;
+            const movementKeyTable = {
+                "w": new Vec2(0, MOVEMENT_SPEED),
+                "s": new Vec2(0, -MOVEMENT_SPEED),
+                "a": new Vec2(-MOVEMENT_SPEED, 0),
+                "d": new Vec2(MOVEMENT_SPEED, 0),
+                "arrowup": new Vec2(0, MOVEMENT_SPEED),
+                "arrowdown": new Vec2(0, -MOVEMENT_SPEED),
+                "arrowleft": new Vec2(-MOVEMENT_SPEED, 0),
+                "arrowright": new Vec2(MOVEMENT_SPEED, 0)
+            };
+            let keys = this.getKeysDown();
+            let movementVector = new Vec2();
+            for (let i = 0; i < keys.length; ++i) {
+                movementVector =
+                    movementVector.add((_a = movementKeyTable[keys[i].toLocaleLowerCase()]) !== null && _a !== void 0 ? _a : new Vec2());
+            }
+            SolarSystemSimulation.camera.r = SolarSystemSimulation.camera.r.add(movementVector.scale2(SolarSystemSimulation.camera.scale.invert()));
+        }, 50);
+        document.getElementById("canvas").addEventListener("click", () => {
+            if (isPortrait() && SolarSystemSimulation.state === SolarSystemState.ShowingSettings) {
+                SolarSystemStateManager.leaveShowingSettingsMode();
+            }
+        });
+        document.getElementById("settings-icon-container").addEventListener("click", () => {
+            if (isPortrait()) {
+                if (SolarSystemSimulation.state === SolarSystemState.NormalSimulation) {
+                    SolarSystemStateManager.enterShowingSettingsMode();
+                }
+                else {
+                    SolarSystemStateManager.leaveShowingSettingsMode();
+                }
+            }
+        });
+        document.getElementById("quality-confirm-button").addEventListener("click", () => {
+            SolarSystemStateManager.leaveChoosingSimulationQualityMode();
         });
     }
 }
-ParachuteSimulation.body = new Body(80, [], new Vec2());
-ParachuteSimulation.workerStopped = false;
-ParachuteSimulation.bufferCount = 0;
-ParachuteSimulation.settings = new ParachuteSettings();
-ParachuteSimulation.state = ParachuteState.BeforeRelease;
-window.addEventListener("load", () => {
-    ParachuteSimulation.startSimulation();
-});
+SolarSystemEvents.keysDown = {};

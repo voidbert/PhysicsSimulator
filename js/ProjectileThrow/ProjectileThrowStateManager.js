@@ -6,10 +6,8 @@ var ProjectileThrowState;
     ProjectileThrowState[ProjectileThrowState["projectileStopped"] = 3] = "projectileStopped";
     ProjectileThrowState[ProjectileThrowState["showingSimulationResults"] = 4] = "showingSimulationResults";
 })(ProjectileThrowState || (ProjectileThrowState = {}));
-var ProjectileThrowStateManager = (function () {
-    function ProjectileThrowStateManager() {
-    }
-    ProjectileThrowStateManager.enterChoosingVelocityMode = function () {
+class ProjectileThrowStateManager {
+    static enterChoosingVelocityMode() {
         ProjectileThrowSimulation.settings.updatePage();
         ProjectileThrowSimulation.velocityBeforeChoosing =
             ProjectileThrowSimulation.settings.launchVelocity;
@@ -22,11 +20,11 @@ var ProjectileThrowStateManager = (function () {
                 classList.remove("hidden");
         }
         document.body.classList.add("no-scrolling");
-        smoothScroll(0, 0, function () {
+        smoothScroll(0, 0, () => {
             ProjectileThrowSimulation.state = ProjectileThrowState.choosingVelocity;
         });
-    };
-    ProjectileThrowStateManager.exitChoosingVelocityMode = function () {
+    }
+    static exitChoosingVelocityMode() {
         ProjectileThrowSimulation.state = ProjectileThrowState.projectileInLaunchPosition;
         if (isTouchScreenAvailable) {
             document.getElementById("choose-velocity-instructions-touch").classList.add("hidden");
@@ -37,24 +35,24 @@ var ProjectileThrowStateManager = (function () {
         ProjectileThrowSimulation.settings = ProjectileThrowSimulation.settings.getFromPage();
         ProjectileThrowSimulation.settings.updatePage();
         document.body.classList.remove("no-scrolling");
-    };
-    ProjectileThrowStateManager.scaleSimulationResults = function () {
-        var style = window.getComputedStyle(document.getElementById("simulation-results"));
-        var elementWidth = (parseFloat(style.width) + 2 * parseFloat(style.paddingLeft))
+    }
+    static scaleSimulationResults() {
+        let style = window.getComputedStyle(document.getElementById("simulation-results"));
+        let elementWidth = (parseFloat(style.width) + 2 * parseFloat(style.paddingLeft))
             * window.devicePixelRatio / this.simulationResultsScale;
-        var maxWidth = (ProjectileThrowSimulation.camera.canvasSize.x - 20 * window.devicePixelRatio);
-        var scale = maxWidth / (elementWidth * this.simulationResultsScale);
+        let maxWidth = (ProjectileThrowSimulation.camera.canvasSize.x - 20 * window.devicePixelRatio);
+        let scale = maxWidth / (elementWidth * this.simulationResultsScale);
         scale = Math.min(scale, 1);
         document.documentElement.style.setProperty("--simulation-results-scale", scale.toString());
         this.simulationResultsScale = scale;
-    };
-    ProjectileThrowStateManager.showSimulationResults = function () {
+    }
+    static showSimulationResults() {
         this.scaleSimulationResults();
         ProjectileThrowSimulation.renderer.canvas.classList.add("blur");
         document.getElementById("simulation-interaction-div").classList.add("blur");
         document.body.classList.add("no-interaction");
-        var toShow;
-        var toHide;
+        let toShow;
+        let toHide;
         if (ProjectileThrowSimulation.settings.airResistance) {
             toShow = document.getElementsByClassName("air-resistance-simulation-results-th");
             toHide = document.getElementsByClassName("default-simulation-results-th");
@@ -63,22 +61,21 @@ var ProjectileThrowStateManager = (function () {
             toShow = document.getElementsByClassName("default-simulation-results-th");
             toHide = document.getElementsByClassName("air-resistance-simulation-results-th");
         }
-        for (var i = 0; i < toShow.length; ++i) {
+        for (let i = 0; i < toShow.length; ++i) {
             toShow[i].style.removeProperty("display");
         }
-        for (var i = 0; i < toHide.length; ++i) {
+        for (let i = 0; i < toHide.length; ++i) {
             toHide[i].style.display = "none";
         }
         document.getElementById("simulation-results").classList.remove("hidden");
         ProjectileThrowSimulation.state = ProjectileThrowState.showingSimulationResults;
-    };
-    ProjectileThrowStateManager.hideSimulationResults = function () {
+    }
+    static hideSimulationResults() {
         ProjectileThrowSimulation.renderer.canvas.classList.remove("blur");
         document.getElementById("simulation-interaction-div").classList.remove("blur");
         document.body.classList.remove("no-interaction");
         document.getElementById("simulation-results").classList.add("hidden");
         ProjectileThrowSimulation.state = ProjectileThrowState.projectileStopped;
-    };
-    ProjectileThrowStateManager.simulationResultsScale = 1;
-    return ProjectileThrowStateManager;
-}());
+    }
+}
+ProjectileThrowStateManager.simulationResultsScale = 1;

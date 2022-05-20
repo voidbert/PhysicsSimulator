@@ -1,34 +1,31 @@
-var ProjectileThrowEvents = (function () {
-    function ProjectileThrowEvents() {
-    }
-    ProjectileThrowEvents.addEvents = function () {
-        var _this = this;
-        var moveCallback = function (x, y) {
-            _this.mousePosition = new Vec2(x * window.devicePixelRatio, y * window.devicePixelRatio);
+class ProjectileThrowEvents {
+    static addEvents() {
+        let moveCallback = (x, y) => {
+            this.mousePosition = new Vec2(x * window.devicePixelRatio, y * window.devicePixelRatio);
             if (ProjectileThrowSimulation.state === ProjectileThrowState.choosingVelocity) {
-                var v = ProjectileThrowSimulation.camera.pointToWorldPosition(_this.mousePosition)
+                let v = ProjectileThrowSimulation.camera.pointToWorldPosition(this.mousePosition)
                     .subtract(ProjectileThrowSimulation.projectile.r)
                     .scale(3);
                 v = new Vec2(ExtraMath.round(v.x, 2), ExtraMath.round(v.y, 2));
                 ProjectileThrowSettings.updatePageVelocity(v);
-                var proj = Object.create(ProjectileThrowSimulation.projectile);
+                let proj = Object.create(ProjectileThrowSimulation.projectile);
                 proj.v = v;
                 ProjectileThrowSimulation.trajectory = ProjectileThrowTrajectory.
                     generateLimitedTrajectory(proj, ProjectileThrowSimulation.settings);
             }
         };
-        window.addEventListener("mousemove", function (e) { moveCallback(e.x, e.y); });
-        window.addEventListener("touchmove", function (e) {
+        window.addEventListener("mousemove", (e) => { moveCallback(e.x, e.y); });
+        window.addEventListener("touchmove", (e) => {
             if (e.touches.length === 1) {
                 moveCallback(e.touches[0].clientX, e.touches[0].clientY);
             }
         });
-        document.getElementById("no-script-div").addEventListener("pointerup", function () {
+        document.getElementById("no-script-div").addEventListener("pointerup", () => {
             if (ProjectileThrowSimulation.state === ProjectileThrowState.choosingVelocity) {
                 ProjectileThrowStateManager.exitChoosingVelocityMode();
             }
         });
-        window.addEventListener("keydown", function (e) {
+        window.addEventListener("keydown", (e) => {
             if (e.key === "Escape") {
                 if (ProjectileThrowSimulation.state === ProjectileThrowState.choosingVelocity) {
                     ProjectileThrowSettings.updatePageVelocity(ProjectileThrowSimulation.velocityBeforeChoosing);
@@ -45,7 +42,6 @@ var ProjectileThrowEvents = (function () {
             window.removeEventListener("scroll", onScroll);
         }
         window.addEventListener("scroll", onScroll);
-    };
-    ProjectileThrowEvents.mousePosition = new Vec2(0, 0);
-    return ProjectileThrowEvents;
-}());
+    }
+}
+ProjectileThrowEvents.mousePosition = new Vec2(0, 0);

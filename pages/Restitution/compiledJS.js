@@ -743,145 +743,16 @@ class CSVTable {
         return new Blob([this.text], { type: "text/csv" });
     }
 }
-class ParachuteResults {
-    constructor() {
-    }
-    static calculateTheoreticalResults(settings) {
-        let ret = new ParachuteResults();
-        function rIntegral(t) {
-            return ((2 * settings.mass) / (AIR_DENSITY * settings.A0 * settings.cd0)) *
-                Math.log(Math.abs(2 * Math.cosh(Math.sqrt(GRAVITY * AIR_DENSITY * settings.A0 * settings.cd0 /
-                    (2 * settings.mass)) * t)));
-        }
-        ret.r = (t) => {
-            return rIntegral(t) - rIntegral(0);
-        };
-        ret.y = (t) => {
-            return settings.h0 - ret.r(t);
-        };
-        ret.v = (t) => {
-            return Math.sqrt((2 * settings.mass * GRAVITY) /
-                (AIR_DENSITY * settings.A0 * settings.cd0)) * Math.tanh(Math.sqrt((GRAVITY * AIR_DENSITY * settings.A0 * settings.cd0) / (2 * settings.mass)) * t);
-        };
-        ret.a = (t) => {
-            return GRAVITY / Math.pow(Math.cosh(Math.sqrt((GRAVITY * AIR_DENSITY * settings.A0 * settings.cd0) /
-                (2 * settings.mass)) * t), 2);
-        };
-        ret.Fr = (t) => {
-            return ret.a(t) * settings.mass;
-        };
-        ret.Rair = (t) => {
-            let v = ret.v(t);
-            return 0.5 * settings.cd0 * AIR_DENSITY * settings.A0 * v * v;
-        };
-        ret.timeParachuteOpens = Math.acosh(0.5 * Math.exp(((settings.h0 - settings.hopening + rIntegral(0)) * AIR_DENSITY * settings.A0 *
-            settings.cd0) / (2 * settings.mass))) / Math.sqrt((GRAVITY * AIR_DENSITY * settings.A0 *
-            settings.cd0) / (2 * settings.mass));
-        return ret;
-    }
-    static applyToPage(theoreticalResults, errorAvg, openedInstant) {
-        function strigify(n) {
-            let parts = n.toExponential().split("e");
-            parts[0] = Number(parts[0]).toFixed(2);
-            let superscript = "";
-            for (let i = 0; i < parts[1].length; ++i) {
-                switch (parts[1][i]) {
-                    case "-":
-                        superscript += "⁻";
-                        break;
-                    case "1":
-                        superscript += "¹";
-                    case "2":
-                        superscript += "²";
-                        break;
-                    case "3":
-                        superscript += "³";
-                        break;
-                    default:
-                        superscript += String.fromCodePoint(0x2074 + parts[1].codePointAt(i) - 52);
-                        break;
-                }
-            }
-            return parts[0] + " x 10" + superscript;
-        }
-        document.getElementById("error-graph").textContent = strigify(errorAvg);
-        document.getElementById("simulated-opened").textContent = openedInstant.toFixed(2);
-        document.getElementById("real-opened").textContent =
-            theoreticalResults.timeParachuteOpens.toFixed(2);
-        if (theoreticalResults.timeParachuteOpens === 0) {
-            document.getElementById("error-opened").textContent = "Divisão por 0";
-        }
-        else {
-            let error = ExtraMath.relativeError(openedInstant, theoreticalResults.timeParachuteOpens) * 100;
-            document.getElementById("error-opened").textContent = strigify(error);
-        }
-    }
-}
-var ParachuteState;
-(function (ParachuteState) {
-    ParachuteState[ParachuteState["BeforeRelease"] = 0] = "BeforeRelease";
-    ParachuteState[ParachuteState["Released"] = 1] = "Released";
-    ParachuteState[ParachuteState["ReachedGround"] = 2] = "ReachedGround";
-    ParachuteState[ParachuteState["ShowingSimulationResults"] = 3] = "ShowingSimulationResults";
-})(ParachuteState || (ParachuteState = {}));
-class ParachuteStateManager {
-    static scaleSimulationResults() {
-        let style = window.getComputedStyle(document.getElementById("simulation-results"));
-        let elementWidth = (parseFloat(style.width) + 2 * parseFloat(style.paddingLeft))
-            * window.devicePixelRatio / this.simulationResultsScale;
-        let maxWidth = (window.innerWidth - 20) * window.devicePixelRatio;
-        let scale = maxWidth / (elementWidth * this.simulationResultsScale);
-        scale = Math.min(scale, 1);
-        document.documentElement.style.setProperty("--simulation-results-scale", scale.toString());
-        this.simulationResultsScale = scale;
-    }
-    static showSimulationResults() {
-        this.scaleSimulationResults();
-        document.getElementById("settings-grid").classList.add("blur");
-        document.getElementById("graph-container").classList.add("blur");
-        document.body.classList.add("no-interaction");
-        document.getElementById("simulation-results").classList.remove("hidden");
-        ParachuteSimulation.state = ParachuteState.ShowingSimulationResults;
-        smoothScroll(0, 0);
-    }
-    static hideSimulationResults() {
-        this.scaleSimulationResults();
-        document.getElementById("settings-grid").classList.remove("blur");
-        document.getElementById("graph-container").classList.remove("blur");
-        document.body.classList.remove("no-interaction");
-        document.getElementById("simulation-results").classList.add("hidden");
-        ParachuteSimulation.state = ParachuteState.BeforeRelease;
-    }
-}
-ParachuteStateManager.simulationResultsScale = 1;
-const PARACHUTE_SIMULATION_SKIPPED_FACTOR = 10;
-const FAST_FORWARD_FACTOR = 2;
-class ParachuteGraph {
+class RestitutionGraph {
     constructor() {
         this.camera = new Camera(new Vec2(-2, -1), new Vec2(32, 32));
         this.axes = new AxisSystem(this.camera, true, true, true, true, true, true, true, false, false, false, true, true, 64, 64, new Vec2(), "t", "y (m)", "black", 2, "0.9rem sans-serif", "#555555", 1, "white");
-        let elapsedSimulationTime = 0;
+        this.elapsedSimulationTime = 0;
+        this.elapsedSimulationTime = 0;
         let lastRendererTick = Date.now();
         this.renderer = new Renderer(window, document.getElementById("graph"), () => {
-            function getTheoreticalPoint(time) {
-                switch (ParachuteSimulation.settings.graphProperty) {
-                    case ParachuteGraphProperty.Y:
-                        return ParachuteSimulation.theoreticalResults.y(time);
-                    case ParachuteGraphProperty.R:
-                        return ParachuteSimulation.theoreticalResults.r(time);
-                    case ParachuteGraphProperty.Velocity:
-                        return ParachuteSimulation.theoreticalResults.v(time);
-                    case ParachuteGraphProperty.AirResistance:
-                        return ParachuteSimulation.theoreticalResults.Rair(time);
-                    case ParachuteGraphProperty.ResultantForce:
-                        return ParachuteSimulation.theoreticalResults.Fr(time);
-                    case ParachuteGraphProperty.Acceleration:
-                        return ParachuteSimulation.theoreticalResults.a(time);
-                }
-            }
-            ParachuteSettings.adjustUI();
-            if (ParachuteSimulation.state === ParachuteState.BeforeRelease) {
-                elapsedSimulationTime = 0;
+            if (RestitutionSimulation.state === RestitutionState.BeforeStart) {
+                this.elapsedSimulationTime = 0;
                 lastRendererTick = Date.now();
                 this.maxY = 0;
                 this.camera.scale = new Vec2(32, 32);
@@ -889,10 +760,10 @@ class ParachuteGraph {
                 this.axes.drawAxes(this.renderer);
                 return;
             }
-            this.scaleCamera(elapsedSimulationTime * 0.001, this.maxY + 1);
+            this.scaleCamera(this.elapsedSimulationTime * 0.001, this.maxY + 1);
             this.axes.drawAxes(this.renderer);
             let lackOfData = false;
-            let frame = ParachuteSimulation.parallelWorker.getFrame(0);
+            let frame = RestitutionSimulation.parallelWorker.getFrame(0);
             if (frame === null) {
                 lackOfData = true;
             }
@@ -902,19 +773,16 @@ class ParachuteGraph {
                 this.renderer.ctx.lineWidth = 2;
                 this.renderer.ctx.beginPath();
                 this.renderer.ctx.moveTo(lastPoint.x, lastPoint.y);
-                let maxi = elapsedSimulationTime / (ParachuteSimulation.settings.simulationQuality *
-                    PARACHUTE_SIMULATION_SKIPPED_FACTOR);
-                let reachedi = -1;
+                let maxi = this.elapsedSimulationTime /
+                    RestitutionSimulation.settings.simulationQuality;
                 for (let i = 1; i < maxi; i++) {
-                    frame = ParachuteSimulation.parallelWorker.getFrame(i);
+                    frame = RestitutionSimulation.parallelWorker.getFrame(i);
                     if (frame === null) {
                         lackOfData = true;
-                        reachedi = i;
                         break;
                     }
                     let y = new Float64Array(frame)[0];
-                    let point = this.camera.pointToScreenPosition(new Vec2(i * ParachuteSimulation.settings.simulationQuality *
-                        PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001, y));
+                    let point = this.camera.pointToScreenPosition(new Vec2(i * RestitutionSimulation.settings.simulationQuality * 0.001, y));
                     if (y > this.maxY) {
                         this.maxY = y;
                     }
@@ -922,47 +790,17 @@ class ParachuteGraph {
                     lastPoint = point;
                 }
                 this.renderer.ctx.stroke();
-                if (reachedi === -1) {
-                    reachedi = maxi;
-                }
-                let lastTheoreticalPoint = this.camera.pointToScreenPosition(new Vec2(0, getTheoreticalPoint(0)));
-                if (ParachuteSimulation.settings.seeTheoretical) {
-                    this.renderer.ctx.beginPath();
-                    this.renderer.ctx.strokeStyle = "#ff0000aa";
-                    this.renderer.ctx.lineWidth = 2;
-                    this.renderer.ctx.moveTo(lastTheoreticalPoint.x, lastTheoreticalPoint.y);
-                    maxi = Math.min(reachedi, ParachuteSimulation.theoreticalResults.timeParachuteOpens /
-                        (ParachuteSimulation.settings.simulationQuality * PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001));
-                    for (let i = 1; i < maxi; i++) {
-                        let time = i * ParachuteSimulation.settings.simulationQuality *
-                            PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001;
-                        let theoreticalPoint = this.camera.pointToScreenPosition(new Vec2(time, getTheoreticalPoint(time)));
-                        this.renderer.ctx.lineTo(theoreticalPoint.x, theoreticalPoint.y);
-                        lastTheoreticalPoint = theoreticalPoint;
-                    }
-                }
-                this.renderer.ctx.stroke();
             }
             if (lackOfData) {
-                if (ParachuteSimulation.workerStopped &&
-                    ParachuteSimulation.state === ParachuteState.Released) {
-                    if (ParachuteSimulation.settings.simulationResults) {
-                        ParachuteStateManager.showSimulationResults();
-                    }
-                    else {
-                        ParachuteSimulation.state = ParachuteState.ReachedGround;
-                    }
-                    ParachuteSettings.enableSettingsElements();
+                if (RestitutionSimulation.workerStopped &&
+                    RestitutionSimulation.state === RestitutionState.OnAir) {
+                    RestitutionSimulation.state = RestitutionState.Ended;
+                    RestitutionSettings.enableSettingsElements();
                 }
                 lastRendererTick = Date.now();
             }
             else {
-                if (ParachuteSimulation.settings.fastForward) {
-                    elapsedSimulationTime += (Date.now() - lastRendererTick) * FAST_FORWARD_FACTOR;
-                }
-                else {
-                    elapsedSimulationTime += Date.now() - lastRendererTick;
-                }
+                this.elapsedSimulationTime += Date.now() - lastRendererTick;
                 lastRendererTick = Date.now();
             }
         }, () => {
@@ -970,10 +808,9 @@ class ParachuteGraph {
             this.renderer.canvas.width = rect.width * window.devicePixelRatio;
             this.renderer.canvas.height = rect.height * window.devicePixelRatio;
             this.camera.canvasSize = new Vec2(this.renderer.canvas.width, this.renderer.canvas.height);
-            if (ParachuteSimulation.state === ParachuteState.BeforeRelease) {
+            if (RestitutionSimulation.state === RestitutionState.BeforeStart) {
                 this.maxY = this.camera.pointToWorldPosition(new Vec2(0, 0)).y;
             }
-            ParachuteStateManager.scaleSimulationResults();
         });
         this.renderer.renderLoop();
     }
@@ -985,91 +822,40 @@ class ParachuteGraph {
         this.camera.forcePosition(new Vec2(0, 0), new Vec2(96, this.renderer.canvas.height - 32));
     }
 }
-var ParachuteSimulationQuality;
-(function (ParachuteSimulationQuality) {
-    ParachuteSimulationQuality[ParachuteSimulationQuality["VeryLow"] = 10] = "VeryLow";
-    ParachuteSimulationQuality[ParachuteSimulationQuality["Low"] = 5] = "Low";
-    ParachuteSimulationQuality[ParachuteSimulationQuality["Medium"] = 2] = "Medium";
-    ParachuteSimulationQuality[ParachuteSimulationQuality["High"] = 1] = "High";
-    ParachuteSimulationQuality[ParachuteSimulationQuality["VeryHigh"] = 0.5] = "VeryHigh";
-})(ParachuteSimulationQuality || (ParachuteSimulationQuality = {}));
-var ParachuteGraphProperty;
-(function (ParachuteGraphProperty) {
-    ParachuteGraphProperty[ParachuteGraphProperty["Y"] = 0] = "Y";
-    ParachuteGraphProperty[ParachuteGraphProperty["R"] = 1] = "R";
-    ParachuteGraphProperty[ParachuteGraphProperty["Velocity"] = 2] = "Velocity";
-    ParachuteGraphProperty[ParachuteGraphProperty["AirResistance"] = 3] = "AirResistance";
-    ParachuteGraphProperty[ParachuteGraphProperty["ResultantForce"] = 4] = "ResultantForce";
-    ParachuteGraphProperty[ParachuteGraphProperty["Acceleration"] = 5] = "Acceleration";
-})(ParachuteGraphProperty || (ParachuteGraphProperty = {}));
-function parachuteGraphPropertyToString(property) {
+var RestitutionSimulationQuality;
+(function (RestitutionSimulationQuality) {
+    RestitutionSimulationQuality[RestitutionSimulationQuality["VeryLow"] = 20] = "VeryLow";
+    RestitutionSimulationQuality[RestitutionSimulationQuality["Low"] = 10] = "Low";
+    RestitutionSimulationQuality[RestitutionSimulationQuality["Medium"] = 5] = "Medium";
+    RestitutionSimulationQuality[RestitutionSimulationQuality["High"] = 2.5] = "High";
+    RestitutionSimulationQuality[RestitutionSimulationQuality["VeryHigh"] = 1] = "VeryHigh";
+})(RestitutionSimulationQuality || (RestitutionSimulationQuality = {}));
+var RestitutionGraphProperty;
+(function (RestitutionGraphProperty) {
+    RestitutionGraphProperty[RestitutionGraphProperty["Y"] = 0] = "Y";
+    RestitutionGraphProperty[RestitutionGraphProperty["Velocity"] = 1] = "Velocity";
+})(RestitutionGraphProperty || (RestitutionGraphProperty = {}));
+function restitutionGraphPropertyToString(property) {
     switch (property) {
-        case ParachuteGraphProperty.Y:
+        case RestitutionGraphProperty.Y:
             return "y (m)";
-        case ParachuteGraphProperty.R:
-            return "r (m)";
-        case ParachuteGraphProperty.Velocity:
+        case RestitutionGraphProperty.Velocity:
             return "v (m s⁻¹)";
-        case ParachuteGraphProperty.AirResistance:
-            return "Rar (N)";
-        case ParachuteGraphProperty.ResultantForce:
-            return "Fr (N)";
-        case ParachuteGraphProperty.Acceleration:
-            return "a (m s⁻²)";
     }
 }
-class ParachuteSettings {
+class RestitutionSettings {
     constructor() {
-        this._mass = 80;
-        this._h0 = 2000;
-        this._hopening = 500;
-        this._openingTime = 5.0;
-        this._cd0 = 0.4;
-        this._A0 = 0.5;
-        this._cd1 = 1.6;
-        this._A1 = 5;
-        this._simulationQuality = ParachuteSimulationQuality.VeryHigh;
-        this._graphProperty = ParachuteGraphProperty.Velocity;
-        this._seeTheoretical = true;
-        this._simulationResults = true;
-        this._fastForward = false;
+        this._h0 = 5;
+        this._coefficient = 0.7;
+        this._simulationQuality = RestitutionSimulationQuality.VeryHigh;
+        this._graphProperty = RestitutionGraphProperty.Y;
     }
-    get mass() { return this._mass; }
     get h0() { return this._h0; }
-    get hopening() { return this._hopening; }
-    get openingTime() { return this._openingTime; }
-    get cd0() { return this._cd0; }
-    get A0() { return this._A0; }
-    get cd1() { return this._cd1; }
-    get A1() { return this._A1; }
+    get coefficient() { return this._coefficient; }
     get simulationQuality() { return this._simulationQuality; }
     get graphProperty() { return this._graphProperty; }
-    get seeTheoretical() { return this._seeTheoretical; }
-    get simulationResults() { return this._simulationResults; }
-    get fastForward() { return this._fastForward; }
     getFromPage() {
-        let settings = new ParachuteSettings();
-        settings._simulationQuality = {
-            "vl": ParachuteSimulationQuality.VeryLow,
-            "l": ParachuteSimulationQuality.Low,
-            "m": ParachuteSimulationQuality.Medium,
-            "h": ParachuteSimulationQuality.High,
-            "vh": ParachuteSimulationQuality.VeryHigh
-        }[document.getElementById("simulation-quality").value];
-        settings._graphProperty = {
-            "y": ParachuteGraphProperty.Y,
-            "r": ParachuteGraphProperty.R,
-            "v": ParachuteGraphProperty.Velocity,
-            "Rar": ParachuteGraphProperty.AirResistance,
-            "Fr": ParachuteGraphProperty.ResultantForce,
-            "a": ParachuteGraphProperty.Acceleration
-        }[document.getElementById("graph-property").value];
-        settings._seeTheoretical =
-            document.getElementById("see-theoretical").checked;
-        settings._simulationResults =
-            document.getElementById("simulation-results-check").checked;
-        settings._fastForward =
-            document.getElementById("fast-checkbox").checked;
+        let settings = new RestitutionSettings();
         let parseWithSettingsUpdate = (id, property, validProperty, min, max = Infinity) => {
             settings[property] = parseInputNumber(id, min, max);
             if (isNaN(settings[property])) {
@@ -1080,20 +866,25 @@ class ParachuteSettings {
                 settings[validProperty] = true;
             }
         };
-        parseWithSettingsUpdate("mass", "_mass", "_validMass", Number.MIN_VALUE);
-        parseWithSettingsUpdate("h0", "_h0", "_validH0", Number.MIN_VALUE);
-        parseWithSettingsUpdate("hopening", "_hopening", "_validHopening", Number.MIN_VALUE, settings._h0);
-        parseWithSettingsUpdate("opening-time", "_openingTime", "_validOpeningTime", 0);
-        parseWithSettingsUpdate("cd0", "_cd0", "_validCd0", Number.MIN_VALUE);
-        parseWithSettingsUpdate("A0", "_A0", "_validA0", Number.MIN_VALUE);
-        parseWithSettingsUpdate("cd1", "_cd1", "_validCd1", Number.MIN_VALUE);
-        parseWithSettingsUpdate("A1", "_A1", "_validA1", Number.MIN_VALUE);
+        parseWithSettingsUpdate("height", "_h0", "_validH0", Number.MIN_VALUE);
+        parseWithSettingsUpdate("coefficient", "_coefficient", "_validCoefficient", Number.MIN_VALUE, 1);
+        settings._simulationQuality = {
+            "vl": RestitutionSimulationQuality.VeryLow,
+            "l": RestitutionSimulationQuality.Low,
+            "m": RestitutionSimulationQuality.Medium,
+            "h": RestitutionSimulationQuality.High,
+            "vh": RestitutionSimulationQuality.VeryHigh
+        }[document.getElementById("simulation-quality").value];
+        settings._graphProperty = {
+            "y": RestitutionGraphProperty.Y,
+            "v": RestitutionGraphProperty.Velocity
+        }[document.getElementById("graph-property").value];
         return settings;
     }
     updatePage() {
-        ParachuteSimulation.state = ParachuteState.BeforeRelease;
-        ParachuteSimulation.graph.axes.verticalAxisName =
-            parachuteGraphPropertyToString(this._graphProperty);
+        RestitutionSimulation.state = RestitutionState.BeforeStart;
+        RestitutionSimulation.graph.axes.verticalAxisName =
+            restitutionGraphPropertyToString(this._graphProperty);
         function adjustColor(error, id, n) {
             let element = document.getElementById(id);
             for (; n > 0; n--) {
@@ -1106,91 +897,55 @@ class ParachuteSettings {
                 element.classList.add("red");
             }
         }
-        adjustColor(this._validMass, "mass", 2);
-        adjustColor(this._validH0, "h0", 2);
-        adjustColor(this._validHopening, "hopening", 2);
-        adjustColor(this._validOpeningTime, "opening-time", 2);
-        adjustColor(this._validCd0, "cd0", 1);
-        adjustColor(this._validA0, "A0", 1);
-        adjustColor(this._validCd1, "cd1", 1);
-        adjustColor(this._validA1, "A1", 1);
-        ParachuteSimulation.body.mass = this._mass;
-        ParachuteSimulation.body.r = new Vec2(0, this._h0);
+        adjustColor(this._validH0, "height", 2);
+        adjustColor(this._validCoefficient, "coefficient", 2);
+        RestitutionSimulation.body.r = new Vec2(0, this._h0);
         document.getElementById("download-button").disabled = true;
     }
     static addEvents() {
         function onUpdate() {
-            ParachuteSimulation.settings = ParachuteSimulation.settings.getFromPage();
-            ParachuteSimulation.settings.updatePage();
+            RestitutionSimulation.settings = RestitutionSimulation.settings.getFromPage();
+            RestitutionSimulation.settings.updatePage();
         }
         let settingsElements = [
-            "simulation-quality", "graph-property", "fast-checkbox"
+            "simulation-quality", "graph-property"
         ];
         for (let i = 0; i < settingsElements.length; ++i) {
             document.getElementById(settingsElements[i]).addEventListener("change", onUpdate);
         }
         settingsElements = [
-            "mass", "h0", "hopening", "opening-time", "cd0", "A0", "cd1", "A1"
+            "height", "coefficient"
         ];
         for (let i = 0; i < settingsElements.length; ++i) {
             document.getElementById(settingsElements[i]).addEventListener("input", onUpdate);
         }
-        let seeTheoreticalCheckbox = document.getElementById("see-theoretical");
-        seeTheoreticalCheckbox.addEventListener("change", () => {
-            ParachuteSimulation.settings._seeTheoretical = seeTheoreticalCheckbox.checked;
-        });
-        let simulationResults = document.getElementById("simulation-results-check");
-        simulationResults.addEventListener("change", () => {
-            ParachuteSimulation.settings._simulationResults = simulationResults.checked;
-        });
-    }
-    static adjustUI() {
-        let gridElements = document.getElementsByClassName("settings-grid-item");
-        let gridElementsY = [];
-        let hiddenElementY = document.getElementById("buttons-centerer").getBoundingClientRect().y;
-        for (let i = 0; i < gridElements.length; ++i) {
-            gridElementsY.push(gridElements[i].getBoundingClientRect().y);
-        }
-        if (gridElementsY[0] === gridElementsY[1] && gridElementsY[0] === gridElementsY[2] &&
-            gridElementsY[0] !== gridElementsY[3] && gridElementsY[0] !== hiddenElementY) {
-            document.getElementById("buttons-centerer").style.display = "initial";
-        }
-        else {
-            document.getElementById("buttons-centerer").style.display = "none";
-        }
     }
     static disableSettingsElements() {
-        document.getElementById("mass").disabled = true;
-        document.getElementById("h0").disabled = true;
-        document.getElementById("hopening").disabled = true;
-        document.getElementById("opening-time").disabled = true;
-        document.getElementById("cd0").disabled = true;
-        document.getElementById("A0").disabled = true;
-        document.getElementById("cd1").disabled = true;
-        document.getElementById("A1").disabled = true;
-        document.getElementById("fast-checkbox").disabled = true;
+        document.getElementById("height").disabled = true;
+        document.getElementById("coefficient").disabled = true;
         document.getElementById("simulation-quality").disabled = true;
         document.getElementById("graph-property").disabled = true;
         document.getElementById("download-button").disabled = true;
     }
     static enableSettingsElements() {
-        document.getElementById("mass").disabled = false;
-        document.getElementById("h0").disabled = false;
-        document.getElementById("hopening").disabled = false;
-        document.getElementById("opening-time").disabled = false;
-        document.getElementById("cd0").disabled = false;
-        document.getElementById("A0").disabled = false;
-        document.getElementById("cd1").disabled = false;
-        document.getElementById("A1").disabled = false;
-        document.getElementById("fast-checkbox").disabled = false;
+        document.getElementById("height").disabled = false;
+        document.getElementById("coefficient").disabled = false;
         document.getElementById("simulation-quality").disabled = false;
         document.getElementById("graph-property").disabled = false;
     }
 }
-class ParachuteSimulation {
+const BODY_MASS = 1;
+var RestitutionState;
+(function (RestitutionState) {
+    RestitutionState[RestitutionState["BeforeStart"] = 0] = "BeforeStart";
+    RestitutionState[RestitutionState["OnAir"] = 1] = "OnAir";
+    RestitutionState[RestitutionState["Ended"] = 2] = "Ended";
+})(RestitutionState || (RestitutionState = {}));
+class RestitutionSimulation {
     static startSimulation() {
-        this.graph = new ParachuteGraph();
-        ParachuteSettings.addEvents();
+        this.body.forces = [new Vec2(0, -BODY_MASS * GRAVITY)];
+        this.graph = new RestitutionGraph();
+        RestitutionSettings.addEvents();
         this.settings = this.settings.getFromPage();
         this.settings.updatePage();
         let newWorker = () => {
@@ -1198,14 +953,15 @@ class ParachuteSimulation {
                 if (this.parallelWorker) {
                     this.parallelWorker.terminate();
                 }
-                this.parallelWorker = new WorkerWrapper("../../js/Parachute/ParachuteWorker.js", this.settings.simulationQuality, (w, data) => {
-                    if ("errorAvg" in data && "openedInstant" in data) {
+                this.parallelWorker = new WorkerWrapper("../../js/Restitution/RestitutionWorker.js", RestitutionSimulation.settings.simulationQuality, (w, data) => {
+                    if (data === "DONE") {
+                        this.workerStopped = true;
                         let downloadButton = document.getElementById("download-button");
                         downloadButton.disabled = false;
                         downloadButton.onclick = () => {
-                            let csv = new CSVTable(this.parallelWorker, this.settings.simulationQuality * PARACHUTE_SIMULATION_SKIPPED_FACTOR, (buf) => {
+                            let csv = new CSVTable(this.parallelWorker, this.settings.simulationQuality * 0.001, (buf) => {
                                 return new Float64Array(buf)[0];
-                            }, parachuteGraphPropertyToString(this.settings.graphProperty));
+                            }, restitutionGraphPropertyToString(this.settings.graphProperty));
                             let a = document.createElement("a");
                             a.href = window.URL.createObjectURL(csv.toBlob());
                             a.download = "Gráfico.csv";
@@ -1214,8 +970,6 @@ class ParachuteSimulation {
                                 window.URL.revokeObjectURL(a.href);
                             }, 10000);
                         };
-                        ParachuteResults.applyToPage(this.theoreticalResults, data.errorAvg, data.openedInstant);
-                        this.workerStopped = true;
                     }
                     else {
                         this.parallelWorker.addBuffer(new NumberedBuffer(this.bufferCount, data.size, data.buf, 8));
@@ -1226,35 +980,32 @@ class ParachuteSimulation {
         };
         newWorker();
         document.getElementById("reset-button").addEventListener("click", () => {
-            if (this.state === ParachuteState.Released) {
+            if (this.state === RestitutionState.OnAir) {
                 newWorker();
             }
-            this.state = ParachuteState.BeforeRelease;
-            ParachuteSettings.enableSettingsElements();
+            this.state = RestitutionState.BeforeStart;
+            RestitutionSettings.enableSettingsElements();
             document.getElementById("download-button").disabled = true;
         });
         document.getElementById("start-button").addEventListener("click", () => {
             this.settings.updatePage();
-            this.theoreticalResults = ParachuteResults.calculateTheoreticalResults(this.settings);
-            let y = this.graph.renderer.canvas.getBoundingClientRect().top + window.scrollY;
-            smoothScroll(0, y, () => {
-                this.workerStopped = false;
-                this.bufferCount = 0;
-                this.state = ParachuteState.Released;
-                this.parallelWorker.start({ body: this.body, settings: this.settings }, this.settings.simulationQuality);
-            });
-            ParachuteSettings.disableSettingsElements();
-        });
-        document.getElementById("simulation-results-ok").addEventListener("click", () => {
-            ParachuteStateManager.hideSimulationResults();
+            this.workerStopped = false;
+            this.bufferCount = 0;
+            this.state = RestitutionState.OnAir;
+            this.graph.elapsedSimulationTime = 0;
+            if (this.state === RestitutionState.OnAir) {
+                newWorker();
+            }
+            this.parallelWorker.start({ body: this.body, settings: this.settings }, this.settings.simulationQuality);
+            RestitutionSettings.disableSettingsElements();
         });
     }
 }
-ParachuteSimulation.body = new Body(80, [], new Vec2());
-ParachuteSimulation.workerStopped = false;
-ParachuteSimulation.bufferCount = 0;
-ParachuteSimulation.settings = new ParachuteSettings();
-ParachuteSimulation.state = ParachuteState.BeforeRelease;
+RestitutionSimulation.body = new Body(BODY_MASS, [], new Vec2(0, 1));
+RestitutionSimulation.settings = new RestitutionSettings();
+RestitutionSimulation.workerStopped = false;
+RestitutionSimulation.bufferCount = 0;
+RestitutionSimulation.state = RestitutionState.BeforeStart;
 window.addEventListener("load", () => {
-    ParachuteSimulation.startSimulation();
+    RestitutionSimulation.startSimulation();
 });

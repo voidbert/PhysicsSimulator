@@ -31,8 +31,8 @@ function parachuteGraphPropertyToString(property) {
             return "a (m s⁻²)";
     }
 }
-var ParachuteSettings = (function () {
-    function ParachuteSettings() {
+class ParachuteSettings {
+    constructor() {
         this._mass = 80;
         this._h0 = 2000;
         this._hopening = 500;
@@ -47,74 +47,21 @@ var ParachuteSettings = (function () {
         this._simulationResults = true;
         this._fastForward = false;
     }
-    Object.defineProperty(ParachuteSettings.prototype, "mass", {
-        get: function () { return this._mass; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ParachuteSettings.prototype, "h0", {
-        get: function () { return this._h0; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ParachuteSettings.prototype, "hopening", {
-        get: function () { return this._hopening; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ParachuteSettings.prototype, "openingTime", {
-        get: function () { return this._openingTime; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ParachuteSettings.prototype, "cd0", {
-        get: function () { return this._cd0; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ParachuteSettings.prototype, "A0", {
-        get: function () { return this._A0; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ParachuteSettings.prototype, "cd1", {
-        get: function () { return this._cd1; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ParachuteSettings.prototype, "A1", {
-        get: function () { return this._A1; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ParachuteSettings.prototype, "simulationQuality", {
-        get: function () { return this._simulationQuality; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ParachuteSettings.prototype, "graphProperty", {
-        get: function () { return this._graphProperty; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ParachuteSettings.prototype, "seeTheoretical", {
-        get: function () { return this._seeTheoretical; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ParachuteSettings.prototype, "simulationResults", {
-        get: function () { return this._simulationResults; },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(ParachuteSettings.prototype, "fastForward", {
-        get: function () { return this._fastForward; },
-        enumerable: false,
-        configurable: true
-    });
-    ParachuteSettings.prototype.getFromPage = function () {
-        var _this = this;
-        var settings = new ParachuteSettings();
+    get mass() { return this._mass; }
+    get h0() { return this._h0; }
+    get hopening() { return this._hopening; }
+    get openingTime() { return this._openingTime; }
+    get cd0() { return this._cd0; }
+    get A0() { return this._A0; }
+    get cd1() { return this._cd1; }
+    get A1() { return this._A1; }
+    get simulationQuality() { return this._simulationQuality; }
+    get graphProperty() { return this._graphProperty; }
+    get seeTheoretical() { return this._seeTheoretical; }
+    get simulationResults() { return this._simulationResults; }
+    get fastForward() { return this._fastForward; }
+    getFromPage() {
+        let settings = new ParachuteSettings();
         settings._simulationQuality = {
             "vl": ParachuteSimulationQuality.VeryLow,
             "l": ParachuteSimulationQuality.Low,
@@ -136,12 +83,11 @@ var ParachuteSettings = (function () {
             document.getElementById("simulation-results-check").checked;
         settings._fastForward =
             document.getElementById("fast-checkbox").checked;
-        var parseWithSettingsUpdate = function (id, property, validProperty, min, max) {
-            if (max === void 0) { max = Infinity; }
+        let parseWithSettingsUpdate = (id, property, validProperty, min, max = Infinity) => {
             settings[property] = parseInputNumber(id, min, max);
             if (isNaN(settings[property])) {
                 settings[validProperty] = false;
-                settings[property] = _this[property];
+                settings[property] = this[property];
             }
             else {
                 settings[validProperty] = true;
@@ -156,13 +102,13 @@ var ParachuteSettings = (function () {
         parseWithSettingsUpdate("cd1", "_cd1", "_validCd1", Number.MIN_VALUE);
         parseWithSettingsUpdate("A1", "_A1", "_validA1", Number.MIN_VALUE);
         return settings;
-    };
-    ParachuteSettings.prototype.updatePage = function () {
+    }
+    updatePage() {
         ParachuteSimulation.state = ParachuteState.BeforeRelease;
         ParachuteSimulation.graph.axes.verticalAxisName =
             parachuteGraphPropertyToString(this._graphProperty);
         function adjustColor(error, id, n) {
-            var element = document.getElementById(id);
+            let element = document.getElementById(id);
             for (; n > 0; n--) {
                 element = element.parentElement;
             }
@@ -184,38 +130,38 @@ var ParachuteSettings = (function () {
         ParachuteSimulation.body.mass = this._mass;
         ParachuteSimulation.body.r = new Vec2(0, this._h0);
         document.getElementById("download-button").disabled = true;
-    };
-    ParachuteSettings.addEvents = function () {
+    }
+    static addEvents() {
         function onUpdate() {
             ParachuteSimulation.settings = ParachuteSimulation.settings.getFromPage();
             ParachuteSimulation.settings.updatePage();
         }
-        var settingsElements = [
+        let settingsElements = [
             "simulation-quality", "graph-property", "fast-checkbox"
         ];
-        for (var i = 0; i < settingsElements.length; ++i) {
+        for (let i = 0; i < settingsElements.length; ++i) {
             document.getElementById(settingsElements[i]).addEventListener("change", onUpdate);
         }
         settingsElements = [
             "mass", "h0", "hopening", "opening-time", "cd0", "A0", "cd1", "A1"
         ];
-        for (var i = 0; i < settingsElements.length; ++i) {
+        for (let i = 0; i < settingsElements.length; ++i) {
             document.getElementById(settingsElements[i]).addEventListener("input", onUpdate);
         }
-        var seeTheoreticalCheckbox = document.getElementById("see-theoretical");
-        seeTheoreticalCheckbox.addEventListener("change", function () {
+        let seeTheoreticalCheckbox = document.getElementById("see-theoretical");
+        seeTheoreticalCheckbox.addEventListener("change", () => {
             ParachuteSimulation.settings._seeTheoretical = seeTheoreticalCheckbox.checked;
         });
-        var simulationResults = document.getElementById("simulation-results-check");
-        simulationResults.addEventListener("change", function () {
+        let simulationResults = document.getElementById("simulation-results-check");
+        simulationResults.addEventListener("change", () => {
             ParachuteSimulation.settings._simulationResults = simulationResults.checked;
         });
-    };
-    ParachuteSettings.adjustUI = function () {
-        var gridElements = document.getElementsByClassName("settings-grid-item");
-        var gridElementsY = [];
-        var hiddenElementY = document.getElementById("buttons-centerer").getBoundingClientRect().y;
-        for (var i = 0; i < gridElements.length; ++i) {
+    }
+    static adjustUI() {
+        let gridElements = document.getElementsByClassName("settings-grid-item");
+        let gridElementsY = [];
+        let hiddenElementY = document.getElementById("buttons-centerer").getBoundingClientRect().y;
+        for (let i = 0; i < gridElements.length; ++i) {
             gridElementsY.push(gridElements[i].getBoundingClientRect().y);
         }
         if (gridElementsY[0] === gridElementsY[1] && gridElementsY[0] === gridElementsY[2] &&
@@ -225,8 +171,8 @@ var ParachuteSettings = (function () {
         else {
             document.getElementById("buttons-centerer").style.display = "none";
         }
-    };
-    ParachuteSettings.disableSettingsElements = function () {
+    }
+    static disableSettingsElements() {
         document.getElementById("mass").disabled = true;
         document.getElementById("h0").disabled = true;
         document.getElementById("hopening").disabled = true;
@@ -239,8 +185,8 @@ var ParachuteSettings = (function () {
         document.getElementById("simulation-quality").disabled = true;
         document.getElementById("graph-property").disabled = true;
         document.getElementById("download-button").disabled = true;
-    };
-    ParachuteSettings.enableSettingsElements = function () {
+    }
+    static enableSettingsElements() {
         document.getElementById("mass").disabled = false;
         document.getElementById("h0").disabled = false;
         document.getElementById("hopening").disabled = false;
@@ -252,6 +198,5 @@ var ParachuteSettings = (function () {
         document.getElementById("fast-checkbox").disabled = false;
         document.getElementById("simulation-quality").disabled = false;
         document.getElementById("graph-property").disabled = false;
-    };
-    return ParachuteSettings;
-}());
+    }
+}

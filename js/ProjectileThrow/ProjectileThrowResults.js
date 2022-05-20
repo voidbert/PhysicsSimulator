@@ -1,17 +1,17 @@
-var ProjectileThrowResults = (function () {
-    function ProjectileThrowResults() {
+class ProjectileThrowResults {
+    constructor() {
         this.time = 0;
         this.distance = 0;
         this.maxHeight = 0;
     }
-    ProjectileThrowResults.calculateTheoreticalResults = function (projectile, settings) {
-        var results = new ProjectileThrowResults();
-        var Fr = new Vec2();
-        for (var i = 0; i < projectile.forces.length; ++i) {
+    static calculateTheoreticalResults(projectile, settings) {
+        let results = new ProjectileThrowResults();
+        let Fr = new Vec2();
+        for (let i = 0; i < projectile.forces.length; ++i) {
             Fr = Fr.add(projectile.forces[i]);
         }
-        var a = Fr.scale(1 / projectile.mass);
-        var solutions = undefined;
+        let a = Fr.scale(1 / projectile.mass);
+        let solutions = undefined;
         if (settings.heightReference === HeightReference.BodyCM) {
             solutions = ExtraMath.solveQuadratic(0.5 * a.y, projectile.v.y, projectile.r.y);
         }
@@ -26,9 +26,9 @@ var ProjectileThrowResults = (function () {
             results.distance = 0;
             return;
         }
-        results.time = Math.max.apply(Math, solutions);
+        results.time = Math.max(...solutions);
         results.distance = projectile.v.x * results.time;
-        var maxHeightTime = -projectile.v.y / a.y;
+        let maxHeightTime = -projectile.v.y / a.y;
         if (projectile.v.y > 0) {
             results.maxHeight =
                 projectile.r.y +
@@ -39,8 +39,8 @@ var ProjectileThrowResults = (function () {
             results.maxHeight = projectile.r.y;
         }
         return results;
-    };
-    ProjectileThrowResults.applyToPage = function (theoreticalValues, experimentalValues) {
+    }
+    static applyToPage(theoreticalValues, experimentalValues) {
         function toString(n) {
             if (isNaN(n) || n === Infinity || n === -Infinity) {
                 return "Divisão por 0";
@@ -65,6 +65,5 @@ var ProjectileThrowResults = (function () {
             toString(ExtraMath.round(theoreticalValues.maxHeight, 2));
         document.getElementById("error-height").textContent =
             toString(ExtraMath.round(ExtraMath.relativeError(experimentalValues.maxHeight, theoreticalValues.maxHeight) * 100, 2));
-    };
-    return ProjectileThrowResults;
-}());
+    }
+}

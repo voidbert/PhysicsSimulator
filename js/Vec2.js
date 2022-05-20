@@ -1,30 +1,30 @@
-var Vec2 = (function () {
-    function Vec2(x, y) {
-        if (x === void 0) { x = 0; }
-        if (y === void 0) { y = 0; }
+class Vec2 {
+    constructor(x = 0, y = 0) {
         this.x = x;
         this.y = y;
     }
-    Vec2.prototype.norm = function () {
+    norm() {
         return Math.sqrt(this.x * this.x + this.y * this.y);
-    };
-    Vec2.prototype.add = function (vec) {
+    }
+    squareNorm() {
+        return this.x * this.x + this.y * this.y;
+    }
+    add(vec) {
         return new Vec2(this.x + vec.x, this.y + vec.y);
-    };
-    Vec2.prototype.subtract = function (vec) {
+    }
+    subtract(vec) {
         return new Vec2(this.x - vec.x, this.y - vec.y);
-    };
-    Vec2.prototype.scale = function (scale) {
+    }
+    scale(scale) {
         return new Vec2(this.x * scale, this.y * scale);
-    };
-    Vec2.prototype.invert = function () {
+    }
+    invert() {
         return new Vec2(1 / this.x, 1 / this.y);
-    };
-    Vec2.prototype.scale2 = function (scale) {
+    }
+    scale2(scale) {
         return new Vec2(this.x * scale.x, this.y * scale.y);
-    };
-    Vec2.prototype.dotProduct = function (vec) {
+    }
+    dotProduct(vec) {
         return (this.x * vec.x) + (this.y * vec.y);
-    };
-    return Vec2;
-}());
+    }
+}

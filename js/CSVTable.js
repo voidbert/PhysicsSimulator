@@ -1,20 +1,18 @@
-var CSVTable = (function () {
-    function CSVTable(worker, horizontalStep, frameParserCallback, verticalAxisName, horizontalAxisName) {
-        if (horizontalAxisName === void 0) { horizontalAxisName = "t (s)"; }
+class CSVTable {
+    constructor(worker, horizontalStep, frameParserCallback, verticalAxisName, horizontalAxisName = "t (s)") {
         this.text = horizontalAxisName + "," + verticalAxisName + "\n";
-        var index = 0;
+        let index = 0;
         while (true) {
-            var frame = worker.getFrame(index);
+            let frame = worker.getFrame(index);
             if (frame === null) {
                 return;
             }
-            var number = frameParserCallback(frame);
+            let number = frameParserCallback(frame);
             this.text += (index * horizontalStep).toString() + "," + number.toString() + "\n";
             index++;
         }
     }
-    CSVTable.prototype.toBlob = function () {
+    toBlob() {
         return new Blob([this.text], { type: "text/csv" });
-    };
-    return CSVTable;
-}());
+    }
+}
