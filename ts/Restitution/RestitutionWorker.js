@@ -12,8 +12,16 @@ let totalSimulationTicks;
 //Creates a settings object with data from the window. Not all properties will be copied
 //(only physics related ones).
 function convertRestitutionSettings(settings) {
-	//TODO
-	return { _graphProperty: RestitutionGraphProperty.Y };
+	//Creating the object in the worker allows access to getters and setters
+	let converted = new RestitutionSettings();
+
+	converted._h0 = settings._h0;
+	converted._coefficient = settings._coefficient;
+
+	converted._simulationQuality = settings._simulationQuality;
+	converted._graphProperty = settings._graphProperty;
+
+	return converted;
 }
 
 self.addEventListener("message", (e) => {
@@ -39,12 +47,9 @@ self.addEventListener("message", (e) => {
 	let bufferUsedFloats = 0; //The number of numbers written to the buffer
 	let sessionUsedBuffers = 0; //The number of buffers posted since allowedBuffers was updated
 
+	let lastCollision = 0; //The time when the last collision happened
+
 	while (sessionUsedBuffers < allowedBuffers) { //While not all allowed buffers were sent
-
-		if (body.forces.length === 0) {
-			body.forces = [ new Vec2(0, -BODY_MASS * GRAVITY), new Vec2() ];
-		}
-
 		let point;
 
 		switch (settings._graphProperty) {
@@ -74,20 +79,24 @@ self.addEventListener("message", (e) => {
 			sessionUsedBuffers++;
 		}
 
-		//TODO - end of simulation
-		if (false) {
-			//Reached the ground. Send the remaining data.
-			postMessage({ size: bufferUsedFloats * 8, buf: buffer }, [buffer]);
-			break;
-		}
-
 		//Collided with the floor. Change the object's velocity.
 		if (body.r.y <= 0) {
-			body.v = new Vec2(body.v.x, -body.v.y);
+			body.v = new Vec2(0, -body.v.y * settings._coefficient);
 			body.r = new Vec2(0, 0);
+
+			if (totalSimulationTicks * settings._simulationQuality - lastCollision <= 50) {
+				//The ball is almost stopping (collisions too close to each other in time). End the
+				//simulation.
+				postMessage({ size: bufferUsedFloats * 8, buf: buffer }, [buffer]);
+				break;
+			}
+
+			lastCollision = totalSimulationTicks * settings._simulationQuality;
 		}
 
 		body.step(simulationQuality);
 		totalSimulationTicks++;
 	}
+
+	postMessage("DONE");
 });

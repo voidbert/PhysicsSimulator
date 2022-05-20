@@ -1,6 +1,107 @@
+/*TODO - mobile layout*/
+
 #graph {
 	position: fixed;
 	top: 1rem; left: 1rem;
 	width: calc(100vw - 2rem);
 	height: calc(100vh - 2rem);
+}
+
+#settings-column {
+	position: fixed;
+	top: 1rem; right: 1rem;
+
+	font: 1rem sans-serif;
+}
+
+.settings-grid-item {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+
+	width: 19rem;
+	height: 12rem;
+	padding: 0.5rem;
+}
+
+.settings-grid-item-border {
+	border-radius: 0.5rem;
+	border: 2px solid black;
+}
+
+.settings-grid-item-title {
+	margin-bottom: 1rem;
+	font-weight: bold;
+}
+
+.settings-grid-item-content {
+	align-content: center;
+	justify-content: center;
+}
+
+.settings-grid-item-content {
+	align-content: center;
+	justify-content: center;
+}
+
+.settings-grid-item-separator {
+	height: 1rem;
+}
+
+.settings-grid-item-subcontent {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+
+	margin-bottom: 0.5rem;
+}
+
+.input-unit-container {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+}
+
+.unit-div {
+	display: inline-block;
+	width: 3ch;
+
+	text-align: right;
+}
+
+input[type="text"] {
+	display: inline-block;
+	width: 7ch;
+}
+
+select {
+	width: 14ch;
+}
+
+button {
+	all: unset;
+
+	padding: 0.5rem;
+	margin: 0.5rem 0.5rem;
+	border-radius: 0.25rem;
+
+	background-color: #d3d3d3;
+	color: black;
+	cursor: pointer;
+
+	text-align: center;
+	user-select: none;
+}
+
+button:hover {
+	background-color: #bbbbbb;
+}
+
+button:disabled {
+	background-color: #eeeeee;
+	cursor: default;
+}
+
+.red {
+	color: red;
 }

@@ -20,15 +20,17 @@ class RestitutionGraph {
 
 	public maxY: number;
 
+	public elapsedSimulationTime: number = 0; //in milliseconds
+
 	constructor() {
-		let elapsedSimulationTime: number = 0; //in milliseconds
+		this.elapsedSimulationTime = 0;
 		let lastRendererTick: number = Date.now();
 
 		this.renderer = new Renderer(window, document.getElementById("graph") as HTMLCanvasElement,
 			() => {
 			//Don't draw the graph unless the body has been released
 			if (RestitutionSimulation.state === RestitutionState.BeforeStart) {
-				elapsedSimulationTime = 0;
+				this.elapsedSimulationTime = 0;
 				lastRendererTick = Date.now();
 				this.maxY = 0;
 
@@ -41,7 +43,7 @@ class RestitutionGraph {
 				return;
 			}
 
-			this.scaleCamera(elapsedSimulationTime * 0.001, this.maxY + 1);
+			this.scaleCamera(this.elapsedSimulationTime * 0.001, this.maxY + 1);
 			this.axes.drawAxes(this.renderer);
 
 			let lackOfData: boolean = false; //To know if simulation time should be counted or not
@@ -62,7 +64,8 @@ class RestitutionGraph {
 				this.renderer.ctx.moveTo(lastPoint.x, lastPoint.y);
 
 				//Draw all points until the current simulation time
-				let maxi = elapsedSimulationTime / (SIMULATION_QUALITY *
+				let maxi = this.elapsedSimulationTime /
+					(RestitutionSimulation.settings.simulationQuality *
 					RESTITUTION_SIMULATION_SKIPPED_FACTOR);
 				for (let i: number = 1; i < maxi; i++) {
 					frame = RestitutionSimulation.parallelWorker.getFrame(i);
@@ -73,7 +76,7 @@ class RestitutionGraph {
 
 					let y = new Float64Array(frame)[0];
 					let point = this.camera.pointToScreenPosition(
-						new Vec2(i * SIMULATION_QUALITY *
+						new Vec2(i * RestitutionSimulation.settings.simulationQuality *
 						RESTITUTION_SIMULATION_SKIPPED_FACTOR * 0.001, y));
 
 					if (y > this.maxY) {
@@ -92,15 +95,15 @@ class RestitutionGraph {
 				if (RestitutionSimulation.workerStopped &&
 					RestitutionSimulation.state === RestitutionState.OnAir) {
 
-					//TODO
-					//RestitutionSettings.enableSettingsElements();
+					RestitutionSimulation.state = RestitutionState.Ended;
+					RestitutionSettings.enableSettingsElements();
 				}
 
 				//Worker doesn't have the data yet. Reset the clock.
 				lastRendererTick = Date.now();
 			} else {
 				//Simulation time has passed
-				elapsedSimulationTime += Date.now() - lastRendererTick;
+				this.elapsedSimulationTime += Date.now() - lastRendererTick;
 				lastRendererTick = Date.now();
 			}
 		}, () => {

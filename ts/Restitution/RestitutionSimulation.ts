@@ -1,5 +1,3 @@
-const SIMULATION_QUALITY = RestitutionSimulationQuality.VeryLow; //TODO - non constant quality
-
 const BODY_MASS = 1; //Mass is irrelevant for this simulation
 
 enum RestitutionState {
@@ -19,7 +17,13 @@ class RestitutionSimulation {
 	static state: RestitutionState = RestitutionState.BeforeStart;
 
 	static startSimulation() {
+		this.body.forces = [ new Vec2(0, -BODY_MASS * GRAVITY) ];
+
 		this.graph = new RestitutionGraph();
+
+		RestitutionSettings.addEvents();
+		this.settings = this.settings.getFromPage();
+		this.settings.updatePage();
 
 		//Creates a new worker. If the old one stopped, there's no need to recreate it. It can be
 		//reused because it will no longer post messages about old simulations.
@@ -31,11 +35,33 @@ class RestitutionSimulation {
 
 				this.parallelWorker = new WorkerWrapper(
 					"../../js/Restitution/RestitutionWorker.js",
-					SIMULATION_QUALITY,
+					RestitutionSimulation.settings.simulationQuality,
 					(w: Worker, data: any) => {
 						//Worker posted a message. Stop the worker if it is done.
-						if ("errorAvg" in data && "openedInstant" in data) {
+						if (data === "DONE") {
 							this.workerStopped = true;
+
+							//Prepare the download button
+							let downloadButton: HTMLButtonElement =
+								document.getElementById("download-button") as HTMLButtonElement;
+							downloadButton.disabled = false;
+							downloadButton.onclick = () => {
+								let csv = new CSVTable(this.parallelWorker,
+									this.settings.simulationQuality * RESTITUTION_SIMULATION_SKIPPED_FACTOR,
+									(buf: ArrayBuffer) => {
+										return new Float64Array(buf)[0];
+									}, restitutionGraphPropertyToString(this.settings.graphProperty));
+
+								//Download the CSV file
+								let a: HTMLAnchorElement = document.createElement("a");
+								a.href = window.URL.createObjectURL(csv.toBlob());
+								a.download = "Gráfico.csv";
+								a.click();
+
+								setTimeout(() => {
+									window.URL.revokeObjectURL(a.href);
+								}, 10000); //Delete the blob after some time
+							}
 						} else {
 							this.parallelWorker.addBuffer(
 								new NumberedBuffer(this.bufferCount, data.size, data.buf, 8));
@@ -48,12 +74,36 @@ class RestitutionSimulation {
 		}
 		newWorker();
 
-		this.workerStopped = false;
-		this.bufferCount = 0;
-		this.state = RestitutionState.OnAir;
-		this.parallelWorker.start(
-			{body: this.body, settings: null }, //TODO - change null to settings
-			SIMULATION_QUALITY);
+		document.getElementById("reset-button").addEventListener("click", () => {
+			if (this.state === RestitutionState.OnAir) {
+				newWorker();
+			}
+
+			this.state = RestitutionState.BeforeStart;
+			RestitutionSettings.enableSettingsElements();
+			(document.getElementById("download-button") as HTMLButtonElement).disabled = true;
+		});
+
+		//Start the simulation when the user clicks the button
+		document.getElementById("start-button").addEventListener("click", () => {
+			this.settings.updatePage(); //Make sure the settings are up to date before starting
+			
+			this.workerStopped = false;
+			this.bufferCount = 0;
+			this.state = RestitutionState.OnAir;
+
+			this.graph.elapsedSimulationTime = 0;
+
+			if (this.state === RestitutionState.OnAir) {
+				newWorker();
+			}
+
+			this.parallelWorker.start(
+				{body: this.body, settings: this.settings},
+				this.settings.simulationQuality);	
+
+			RestitutionSettings.disableSettingsElements();
+		});
 	}
 }
 
