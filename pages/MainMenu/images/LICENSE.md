@@ -21,3 +21,9 @@ The file [Parachute.png](./Parachute.png) is under public domain. Source:
 
 The file [SolarSystem.png](./SolarSystem.png) is under public domain. Source:
 [www.publicdomainpictures.net](https://www.publicdomainpictures.net/en/view-image.php?image=427107&picture=solar-system-vintage-astrology-old).
+
+### TennisBall.png
+
+The file [TennisBall.png](./TennisBall.png) is under the MIT License. See [this](/LICENSE). The
+image of the ball itself (without the parabolae) is public domain:
+[www.publicdomainpictures.net](https://www.publicdomainpictures.net/en/view-image.php?image=19248&picture=tennis-ball).
