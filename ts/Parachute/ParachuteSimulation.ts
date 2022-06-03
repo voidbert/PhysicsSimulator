@@ -38,7 +38,8 @@ class ParachuteSimulation {
 							downloadButton.disabled = false;
 							downloadButton.onclick = () => {
 								let csv = new CSVTable(this.parallelWorker,
-									this.settings.simulationQuality * PARACHUTE_SIMULATION_SKIPPED_FACTOR,
+									this.settings.simulationQuality *
+									PARACHUTE_SIMULATION_SKIPPED_FACTOR * 0.001,
 									(buf: ArrayBuffer) => {
 										return new Float64Array(buf)[0];
 									}, parachuteGraphPropertyToString(this.settings.graphProperty));
