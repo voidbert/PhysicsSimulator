@@ -24,6 +24,19 @@ function convertRestitutionSettings(settings) {
 	return converted;
 }
 
+//-1 is return if an error occurs
+function calculateNextTheoreticalCollision(body, lastCollision) {
+	//y = y0 + vy * t + 0.5 * a * t^2 (y = 0 -> ground reached)
+	let solutions = ExtraMath.solveQuadratic(-0.5 * GRAVITY, body.v.y, body.r.y);
+	if (solutions.length === 0) {
+		//Fatal error. Communicate it to the main thread.
+		postMessage(new Error("Falha no cálculo de resultados teóricos - quadrática sem soluções!"));
+		return -1;
+	} else {
+		return Math.max(...solutions) + lastCollision;
+	}
+}
+
 self.addEventListener("message", (e) => {
 	if ("body" in e.data) {
 		body = convertBody(e.data.body);
@@ -42,37 +55,78 @@ self.addEventListener("message", (e) => {
 		allowedBuffers = e.data.allowedBuffers;
 
 	//Create the buffers with the body graph y axis values that will be sent
-	let buffer = new ArrayBuffer(bufferSize * 8); // sizeof(number) = 8 bytes
+	// sizeof(number) * 2 (theoretical & simulated) = 16 bytes
+	let buffer = new ArrayBuffer(bufferSize * 16);
 	let view = new Float64Array(buffer);
-	let bufferUsedFloats = 0; //The number of numbers written to the buffer
+	let bufferUsedPoints = 0; //The number of numbers written to the buffer
 	let sessionUsedBuffers = 0; //The number of buffers posted since allowedBuffers was updated
 
 	let lastCollision = 0; //The time when the last collision happened
 
+	let lastTheoreticalCollision = 0;
+	let nextTheoreticalCollision = 0;
+
+	let theoreticalBody = new Body(body.mass, [], body.r);
+	theoreticalBody.v = body.v;
+	theoreticalBody.forces = body.forces;
+
+	nextTheoreticalCollision =
+		calculateNextTheoreticalCollision(theoreticalBody, lastTheoreticalCollision);
+	if (nextTheoreticalCollision === -1) {
+		return;
+	}
+
 	while (sessionUsedBuffers < allowedBuffers) { //While not all allowed buffers were sent
-		let point;
+		let point, theoreticalPoint;
+
+		let time = totalSimulationTicks * simulationQuality * 0.001;
+		while (time > nextTheoreticalCollision) {
+			lastTheoreticalCollision = nextTheoreticalCollision;
+
+			// At height = 0, the body only has kinetic energy. So:
+			// E_kinetic = E_potential + E_kineticTop 
+			// 0.5 * m * v^2 = m * g * h + 0.5 * m * v_initial^2
+			// 0.5 * v^2 = g * h + 0.5 * v_initial^2
+			// v = sqrt( 2 * g * h + v_initial^2 )
+
+			let v = Math.sqrt(2 * GRAVITY * theoreticalBody.r.y + theoreticalBody.v.y * theoreticalBody.v.y);
+			theoreticalBody.r = new Vec2(0, 0);
+			theoreticalBody.v = new Vec2(0, v * settings._coefficient);
+
+			nextTheoreticalCollision =
+				calculateNextTheoreticalCollision(theoreticalBody, lastTheoreticalCollision);
+			if (nextTheoreticalCollision === -1) {
+				return;
+			}
+		}
+		time -= lastTheoreticalCollision;
 
 		switch (settings._graphProperty) {
 			case RestitutionGraphProperty.Y:
 				point = body.r.y;
+				theoreticalPoint = -0.5 * GRAVITY * time * time + theoreticalBody.v.y * time +
+					theoreticalBody.r.y;
 				break;
 
 			case RestitutionGraphProperty.Velocity:
 				point = Math.abs(body.v.y);
+				theoreticalPoint = Math.abs(-GRAVITY * time + theoreticalBody.v.y);
 				break;
 		}
 
 		//Add the current body property to the buffer
-		view[bufferUsedFloats] = point;
-		bufferUsedFloats++;
+		view[bufferUsedPoints * 2] = point;
+		view[bufferUsedPoints * 2 + 1] = theoreticalPoint;
 
-		if (bufferUsedFloats === bufferSize) {
+		bufferUsedPoints++;
+
+		if (bufferUsedPoints === bufferSize) {
 			//Buffer is full. Message it to the window and recreate it.
-			postMessage({ size: bufferUsedFloats * 8, buf: buffer }, [buffer]);
+			postMessage({ size: bufferUsedPoints * 16, buf: buffer }, [buffer]);
 
-			buffer = new ArrayBuffer(bufferSize * 8);
+			buffer = new ArrayBuffer(bufferSize * 16);
 			view = new Float64Array(buffer);
-			bufferUsedFloats = 0;
+			bufferUsedPoints = 0;
 			sessionUsedBuffers++;
 		}
 
@@ -84,7 +138,7 @@ self.addEventListener("message", (e) => {
 			if (totalSimulationTicks * settings._simulationQuality - lastCollision <= 50) {
 				//The ball is almost stopping (collisions too close to each other in time). End the
 				//simulation.
-				postMessage({ size: bufferUsedFloats * 8, buf: buffer }, [buffer]);
+				postMessage({ size: bufferUsedPoints * 16, buf: buffer }, [buffer]);
 				break;
 			}
 

@@ -53,36 +53,65 @@ class RestitutionGraph {
 			}
 
 			if (!lackOfData) {
-				let lastPoint =
-					this.camera.pointToScreenPosition(new Vec2(0, new Float64Array(frame)[0]));
+				//Draw all points until the current simulation time (frame number maxi)
+				let maxi = Math.floor(this.elapsedSimulationTime /
+					RestitutionSimulation.settings.simulationQuality);
 
-				this.renderer.ctx.strokeStyle = "#00ff00";
-				this.renderer.ctx.lineWidth = 2;
-				this.renderer.ctx.beginPath();
-				this.renderer.ctx.moveTo(lastPoint.x, lastPoint.y);
+				//x is used for simulator values and y for theoretical ones
+				let frames: Vec2[] = new Array<Vec2>(maxi);
+				let array = new Float64Array(frame);
+				frames[0] = new Vec2(array[0], array[1]);
 
-				//Draw all points until the current simulation time
-				let maxi = this.elapsedSimulationTime /
-					RestitutionSimulation.settings.simulationQuality;
-				for (let i: number = 1; i < maxi; i++) {
+				//Get all frames and store the data for rendering the graph lines
+				for (let i: number = 1; i < maxi; ++i) {
 					frame = RestitutionSimulation.parallelWorker.getFrame(i);
 					if (frame === null) {
 						lackOfData = true; //Data not ready yet
+						maxi = i - 1;
 						break; 
 					}
 
-					let y = new Float64Array(frame)[0];
-					let point = this.camera.pointToScreenPosition(
-						new Vec2(i * RestitutionSimulation.settings.simulationQuality * 0.001, y));
+					array = new Float64Array(frame);
+					frames[i] = new Vec2(array[0], array[1]);
 
-					if (y > this.maxY) {
-						this.maxY = y;
-					}
-
-					this.renderer.ctx.lineTo(point.x, point.y);
-					lastPoint = point;
+					let frameMaxY = Math.max(array[0], array[1]);
+					if (frameMaxY > this.maxY) {
+						this.maxY = frameMaxY;
+					}				
 				}
-				this.renderer.ctx.stroke();
+
+				if (!lackOfData || RestitutionSimulation.workerStopped) {
+					let lastPoint =
+					this.camera.pointToScreenPosition(new Vec2(0, frames[0].x));
+
+					this.renderer.ctx.strokeStyle = "#00ff00";
+					this.renderer.ctx.lineWidth = 2;
+					this.renderer.ctx.beginPath();
+					this.renderer.ctx.moveTo(lastPoint.x, lastPoint.y);
+
+					for (let i = 1; i < maxi; ++i) {
+						let point = this.camera.pointToScreenPosition(new Vec2(i * 
+							RestitutionSimulation.settings.simulationQuality * 0.001, frames[i].x));
+
+						this.renderer.ctx.lineTo(point.x, point.y);
+					}
+					this.renderer.ctx.stroke();
+
+					lastPoint =
+						this.camera.pointToScreenPosition(new Vec2(0, frames[0].y));
+
+					this.renderer.ctx.strokeStyle = "#ff0000aa";
+					this.renderer.ctx.beginPath();
+					this.renderer.ctx.moveTo(lastPoint.x, lastPoint.y);
+
+					for (let i = 1; i < maxi; ++i) {
+						let point = this.camera.pointToScreenPosition(new Vec2(i *
+							RestitutionSimulation.settings.simulationQuality * 0.001, frames[i].y));
+
+						this.renderer.ctx.lineTo(point.x, point.y);
+					}
+					this.renderer.ctx.stroke();
+				}
 			}
 
 			if (lackOfData) {

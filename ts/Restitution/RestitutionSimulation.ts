@@ -62,9 +62,12 @@ class RestitutionSimulation {
 									window.URL.revokeObjectURL(a.href);
 								}, 10000); //Delete the blob after some time
 							}
+						} else if (data instanceof Error) {
+							this.workerStopped = true;
+							alert(data.message);
 						} else {
 							this.parallelWorker.addBuffer(
-								new NumberedBuffer(this.bufferCount, data.size, data.buf, 8));
+								new NumberedBuffer(this.bufferCount, data.size, data.buf, 16));
 							this.bufferCount++;
 						}
 					},
